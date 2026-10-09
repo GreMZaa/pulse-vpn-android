@@ -162,9 +162,10 @@ private fun ServerListPage(
                 .verticalScrollbar(gridState),
             contentPadding = contentPadding
         ) {
-            itemsIndexed(items = rows, key = { _, item -> item.guid }) { _, row ->
+            itemsIndexed(items = rows, key = { _, item -> item.guid }) { index, row ->
                 val content: @Composable () -> Unit = {
                     ServerItemColumn(
+                        index = index,
                         row = row,
                         isSelected = row.guid == selectedGuid,
                         doubleColumnDisplay = true,
@@ -205,7 +206,7 @@ private fun ServerListPage(
                 .verticalScrollbar(listState),
             contentPadding = contentPadding
         ) {
-            itemsIndexed(items = rows, key = { _, item -> item.guid }) { _, row ->
+            itemsIndexed(items = rows, key = { _, item -> item.guid }) { index, row ->
                 if (canReorder && reorderableState != null) {
                     ReorderableItem(
                         reorderableState,
@@ -216,14 +217,16 @@ private fun ServerListPage(
                             isDragging = isDragging
                         ) {
                             ServerItemRow(
+                                index = index,
                                 row = row,
-                                isSelected = row.guid == selectedGuid,
+                                selectedGuid == row.guid,
                                 actions = actions
                             )
                         }
                     }
                 } else {
                     ServerItemRow(
+                        index = index,
                         row = row,
                         isSelected = row.guid == selectedGuid,
                         actions = actions
@@ -268,11 +271,13 @@ private fun LocateTargetEffect(
 
 @Composable
 private fun ServerItemRow(
+    index: Int,
     row: ServerRowUiModel,
     isSelected: Boolean,
     actions: ServerRowActions
 ) {
     ServerListItem(
+        index = index,
         row = row,
         isSelected = isSelected,
         doubleColumnDisplay = false,
@@ -282,6 +287,7 @@ private fun ServerItemRow(
 
 @Composable
 private fun ServerItemColumn(
+    index: Int,
     row: ServerRowUiModel,
     isSelected: Boolean,
     doubleColumnDisplay: Boolean,
@@ -289,6 +295,7 @@ private fun ServerItemColumn(
 ) {
     Column {
         ServerListItem(
+            index = index,
             row = row,
             isSelected = isSelected,
             doubleColumnDisplay = doubleColumnDisplay,
@@ -300,6 +307,7 @@ private fun ServerItemColumn(
 
 @Composable
 private fun ServerListItem(
+    index: Int,
     row: ServerRowUiModel,
     isSelected: Boolean,
     doubleColumnDisplay: Boolean,
@@ -347,8 +355,9 @@ private fun ServerListItem(
             Spacer(modifier = Modifier.width(14.dp))
 
             // Название и номер сервера
+            val displayName = if (row.remarks.startsWith("#")) row.remarks else "#${index + 1}  ${row.remarks}"
             Text(
-                text = row.remarks,
+                text = displayName,
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,

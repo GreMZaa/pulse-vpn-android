@@ -78,7 +78,8 @@ private val drawerItems = primaryDrawerItems + listOf(
 @Composable
 fun MainDrawerContent(
     drawerState: DrawerState,
-    onNavigate: (MainDestination) -> Unit
+    onNavigate: (MainDestination) -> Unit,
+    onRefresh: () -> Unit = {}
 ) {
     ModalDrawerSheet(
         drawerState = drawerState,
@@ -132,7 +133,7 @@ fun MainDrawerContent(
 
             // ЕДИНСТВЕННАЯ КНОПКА — ОБНОВИТЬ
             Button(
-                onClick = { onNavigate(MainDestination.CheckUpdate) },
+                onClick = { onRefresh() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),

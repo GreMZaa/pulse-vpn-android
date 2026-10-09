@@ -45,6 +45,13 @@ import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.PatternSyntaxException
 
+private fun pingSortScore(delayMillis: Long): Long = when {
+    delayMillis in 1L..999L -> delayMillis
+    delayMillis >= 1000L -> 100_000L + delayMillis
+    delayMillis == 0L -> 500_000_000L // еще не тестирован
+    else -> Long.MAX_VALUE // < 0 (нет ответа) - в самый конец
+}
+
 private fun applyTestDelayResults(
     servers: List<ServersCache>,
     updates: Map<String, Long>,
@@ -55,7 +62,7 @@ private fun applyTestDelayResults(
     } else {
         server.copy(testDelayMillis = delayMillis)
     }
-}
+}.sortedBy { pingSortScore(it.testDelayMillis) }
 
 private fun applyTestDelayResultsToRows(
     rows: List<ServerRowUiModel>,
@@ -67,7 +74,7 @@ private fun applyTestDelayResultsToRows(
     } else {
         row.copy(testDelayMillis = delayMillis)
     }
-}
+}.sortedBy { pingSortScore(it.testDelayMillis) }
 
 class MainViewModel(
     application: Application,

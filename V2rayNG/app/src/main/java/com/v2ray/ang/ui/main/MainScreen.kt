@@ -144,12 +144,9 @@ fun MainScreen(
         if (!hasServers) {
             showPromoFullscreen = true
         } else {
-            // АВТОМАТИЧЕСКОЕ ОБНОВЛЕНИЕ ПИНГА РАЗ В 5 СЕКУНД
-            while (true) {
-                if (!isLoading) {
-                    onAction(MainAction.TestRealAllServers)
-                }
-                kotlinx.coroutines.delay(5000L)
+            // Тестируем пинг один раз при запуске
+            if (!isLoading) {
+                onAction(MainAction.TestRealAllServers)
             }
         }
     }
@@ -492,6 +489,10 @@ fun MainScreen(
                 onNavigate = { route ->
                     scope.launch { drawerState.close() }
                     onNavigate(route)
+                },
+                onRefresh = {
+                    scope.launch { drawerState.close() }
+                    onAction(MainAction.TestRealAllServers)
                 }
             )
         }
@@ -501,7 +502,8 @@ fun MainScreen(
             topBar = {
                 MainTopBar(
                     isLoading = isLoading,
-                    onMenuClick = { scope.launch { drawerState.open() } }
+                    onMenuClick = { scope.launch { drawerState.open() } },
+                    onRefreshClick = { onAction(MainAction.TestRealAllServers) }
                 )
             },
             containerColor = Color(0xFF121212)

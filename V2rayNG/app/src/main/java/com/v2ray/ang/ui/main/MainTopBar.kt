@@ -41,7 +41,8 @@ import com.v2ray.ang.R
 @Composable
 fun MainTopBar(
     isLoading: Boolean,
-    onMenuClick: () -> Unit
+    onMenuClick: () -> Unit,
+    onRefreshClick: () -> Unit = {}
 ) {
     Column {
         TopAppBar(
@@ -80,7 +81,15 @@ fun MainTopBar(
                     )
                 }
             },
-            actions = {},
+            actions = {
+                IconButton(onClick = onRefreshClick) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_check_update_24dp),
+                        contentDescription = "Обновить",
+                        tint = Color.White
+                    )
+                }
+            },
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = Color(0xFF121212),
                 titleContentColor = Color.White,

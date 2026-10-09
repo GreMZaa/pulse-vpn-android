@@ -569,7 +569,12 @@ object AngConfigManager {
             .map { guid ->
                 val delay =
                     MmkvManager.decodeServerAffiliationInfo(guid)?.testDelayMillis ?: 0L
-                guid to if (delay <= 0L) Long.MAX_VALUE else delay
+                val score = when {
+                    delay in 1L..999L -> delay
+                    delay >= 1000L -> 100_000L + delay
+                    else -> Long.MAX_VALUE // 0 (не тестирован) или <0 (нет ответа/ошибка) - в самый низ
+                }
+                guid to score
             }
             .sortedBy { it.second }
             .map { it.first }
