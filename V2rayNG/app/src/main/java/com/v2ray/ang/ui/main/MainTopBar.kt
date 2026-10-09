@@ -51,35 +51,27 @@ fun MainTopBar(
                     horizontalArrangement = Arrangement.Start,
                     modifier = Modifier.padding(start = 4.dp)
                 ) {
-                    // НАШ ЛОГОТИП ПУЛЬС // ВПН (Иконка пульса с градиентной подложкой)
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xFF003822)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_pulse_logo),
-                            contentDescription = "Логотип ПУЛЬС",
-                            tint = Color(0xFF00F59B),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
+                    // МИНИМАЛИСТИЧНЫЙ ЛОГОТИП ПУЛЬС
+                    Icon(
+                        painter = painterResource(R.drawable.ic_pulse_logo),
+                        contentDescription = "Пульс",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
 
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
 
                     Text(
                         text = "ПУЛЬС",
-                        fontWeight = FontWeight.Black,
-                        fontSize = 20.sp,
-                        letterSpacing = 0.1.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        letterSpacing = 1.sp,
                         color = Color.White
                     )
                 }
             },
             navigationIcon = {
-                // 1) БУРГЕР МЕНЮ
+                // БУРГЕР МЕНЮ
                 IconButton(onClick = onMenuClick) {
                     Icon(
                         painter = painterResource(R.drawable.ic_menu_24dp),
@@ -88,9 +80,9 @@ fun MainTopBar(
                     )
                 }
             },
-            actions = {}, // И ВСЁ БЕЗ ДРУГИХ КНОПОК
+            actions = {},
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color(0xFF0D1017),
+                containerColor = Color(0xFF121212),
                 titleContentColor = Color.White,
                 navigationIconContentColor = Color.White
             )

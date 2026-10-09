@@ -82,29 +82,29 @@ fun MainDrawerContent(
     ModalDrawerSheet(
         drawerState = drawerState,
         modifier = Modifier.fillMaxWidth(0.75f),
-        drawerContainerColor = Color(0xFF0D1017)
+        drawerContainerColor = Color(0xFF141414)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(20.dp),
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(36.dp))
 
-            // Фирменный логотип ПУЛЬС
+            // Чистый логотип ПУЛЬС
             Box(
                 modifier = Modifier
-                    .size(64.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF003822)),
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF1E1E1E)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     painter = painterResource(com.v2ray.ang.R.drawable.ic_pulse_logo),
                     contentDescription = null,
-                    tint = Color(0xFF00F59B),
-                    modifier = Modifier.size(40.dp)
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
                 )
             }
 
@@ -112,20 +112,19 @@ fun MainDrawerContent(
 
             Text(
                 text = "ПУЛЬС",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 0.1.sp,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp,
                 color = Color.White
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             // ВЕРХ: ВЕРСИЯ ПРИЛОЖЕНИЯ
             Text(
-                text = "Версия ${BuildConfig.VERSION_NAME} (Сборка ${BuildConfig.VERSION_CODE})",
+                text = "Версия ${BuildConfig.VERSION_NAME}",
                 fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFF90A4AE)
+                color = Color(0xFF777777)
             )
 
             Spacer(modifier = Modifier.height(36.dp))
@@ -135,11 +134,11 @@ fun MainDrawerContent(
                 onClick = { onNavigate(MainDestination.CheckUpdate) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .height(48.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF00F59B),
-                    contentColor = Color(0xFF07080A)
+                    containerColor = Color.White,
+                    contentColor = Color.Black
                 )
             ) {
                 Icon(

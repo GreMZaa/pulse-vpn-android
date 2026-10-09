@@ -311,37 +311,37 @@ private fun ServerListItem(
         else -> "--"
     }
     val pingColor = when {
-        row.testDelayMillis > 0L -> Color(0xFF00F59B)
-        row.testDelayMillis < 0L -> Color(0xFFFF5252)
-        else -> Color(0xFF78909C)
+        row.testDelayMillis > 0L -> Color.White
+        row.testDelayMillis < 0L -> Color(0xFFE57373)
+        else -> Color(0xFF666666)
     }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 4.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .padding(horizontal = 20.dp, vertical = 3.dp)
+            .clip(RoundedCornerShape(12.dp))
             .background(
-                if (isSelected) Color(0xFF131D26) else Color(0xFF10141D)
+                if (isSelected) Color(0xFF1E1E1E) else Color(0xFF161616)
             )
             .border(
-                width = if (isSelected) 1.5.dp else 1.dp,
-                color = if (isSelected) Color(0xFF00F59B).copy(alpha = 0.6f) else Color(0xFF1B2332),
-                shape = RoundedCornerShape(14.dp)
+                width = 1.dp,
+                color = if (isSelected) Color(0xFF3A3A3A) else Color(0xFF222222),
+                shape = RoundedCornerShape(12.dp)
             )
             .clickable { actions.select(row.guid) }
-            .padding(horizontal = 16.dp, vertical = 13.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Круговой светящийся маркер активности
+            // Точка активности
             Box(
                 modifier = Modifier
-                    .size(8.dp)
+                    .size(6.dp)
                     .clip(CircleShape)
-                    .background(if (isSelected) Color(0xFF00F59B) else Color(0xFF37474F))
+                    .background(if (isSelected) Color.White else Color(0xFF333333))
             )
 
             Spacer(modifier = Modifier.width(14.dp))
@@ -351,31 +351,22 @@ private fun ServerListItem(
                 text = row.remarks,
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                color = if (isSelected) Color.White else Color(0xFFCFD8DC),
-                fontSize = 15.sp,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (isSelected) Color.White else Color(0xFFCCCCCC),
+                fontSize = 14.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(8.dp))
 
-            // Неоновый значок пинга
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(pingColor.copy(alpha = 0.12f))
-                    .border(0.5.dp, pingColor.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = pingText,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = pingColor
-                )
-            }
+            // Чистый компактный пинг
+            Text(
+                text = pingText,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = pingColor
+            )
         }
     }
 }

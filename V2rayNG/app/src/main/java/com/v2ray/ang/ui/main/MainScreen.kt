@@ -2,15 +2,6 @@ package com.v2ray.ang.ui.main
 
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -69,9 +60,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -224,7 +212,7 @@ fun MainScreen(
         QRCodeDialog(bitmap = shareQRCodeBitmap, onDismiss = { onAction(MainAction.DismissQRCodeDialog) })
     }
 
-    // 🌟 ПОЛНОЭКРАННЫЙ УЛЬТРАСОВРЕМЕННЫЙ ВВОД ПРОМОКОДА
+    // 🌟 МИНИМАЛИСТИЧНЫЙ ПОЛНОЭКРАННЫЙ ВВОД ПРОМОКОДА
     if (showPromoFullscreen) {
         Dialog(
             onDismissRequest = {
@@ -239,33 +227,15 @@ fun MainScreen(
             )
         ) {
             val focusManager = LocalFocusManager.current
-            val infiniteTransition = rememberInfiniteTransition(label = "pulseGlow")
-            val pulseScale by infiniteTransition.animateFloat(
-                initialValue = 1.0f,
-                targetValue = 1.08f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(1500, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "pulseScale"
-            )
 
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xFF090D14),
-                                Color(0xFF0D121D),
-                                Color(0xFF05080E)
-                            )
-                        )
-                    )
+                    .background(Color(0xFF121212))
                     .statusBarsPadding()
                     .navigationBarsPadding()
             ) {
-                // Если сервера уже есть — крестик для закрытия
+                // Если сервера уже есть — лаконичный крестик в углу
                 if (hasServers) {
                     IconButton(
                         onClick = {
@@ -279,7 +249,7 @@ fun MainScreen(
                         Icon(
                             painter = painterResource(R.drawable.ic_close_24dp),
                             contentDescription = "Закрыть",
-                            tint = Color(0xFF90A4AE),
+                            tint = Color(0xFF757575),
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -288,62 +258,50 @@ fun MainScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 28.dp)
+                        .padding(horizontal = 32.dp)
                         .verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    // Неоновый светящийся логотип пульса
+                    // Строгий белый логотип пульса
                     Box(
                         modifier = Modifier
-                            .scale(pulseScale)
-                            .size(100.dp)
+                            .size(72.dp)
                             .clip(CircleShape)
-                            .background(
-                                brush = Brush.radialGradient(
-                                    colors = listOf(
-                                        Color(0xFF00F59B).copy(alpha = 0.25f),
-                                        Color(0xFF003822).copy(alpha = 0.8f),
-                                        Color.Transparent
-                                    )
-                                )
-                            )
-                            .border(2.dp, Color(0xFF00F59B).copy(alpha = 0.7f), CircleShape),
+                            .background(Color(0xFF1E1E1E))
+                            .border(1.dp, Color(0xFF2C2C2C), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_pulse_logo),
                             contentDescription = "Пульс",
-                            tint = Color(0xFF00F59B),
-                            modifier = Modifier.size(52.dp)
+                            tint = Color.White,
+                            modifier = Modifier.size(36.dp)
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(28.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     Text(
                         text = "ПУЛЬС",
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 2.sp,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
                         color = Color.White
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Активация неограниченного доступа",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF8094A8),
+                        text = "Введите промокод для активации",
+                        fontSize = 14.sp,
+                        color = Color(0xFF888888),
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(36.dp))
+                    Spacer(modifier = Modifier.height(32.dp))
 
-                    // Поле ввода промокода с неоновой рамкой
+                    // Минималистичное аккуратное поле ввода
                     OutlinedTextField(
                         value = enteredPromoCode,
                         onValueChange = {
@@ -353,21 +311,12 @@ fun MainScreen(
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = {
                             Text(
-                                "Введите промокод или ключ...",
-                                color = Color(0xFF546E7A),
-                                fontSize = 15.sp
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_vpn_key_24dp),
-                                contentDescription = null,
-                                tint = Color(0xFF00F59B),
-                                modifier = Modifier.size(20.dp)
+                                "Промокод или ключ",
+                                color = Color(0xFF555555),
+                                fontSize = 14.sp
                             )
                         },
                         trailingIcon = {
-                            // Кнопка вставить из буфера обмена
                             IconButton(
                                 onClick = {
                                     val clip = clipboardManager.getText()?.text?.trim()
@@ -380,21 +329,21 @@ fun MainScreen(
                                 Icon(
                                     painter = painterResource(R.drawable.ic_copy),
                                     contentDescription = "Вставить",
-                                    tint = Color(0xFF8094A8),
-                                    modifier = Modifier.size(20.dp)
+                                    tint = Color(0xFF777777),
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
                         },
                         singleLine = true,
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(12.dp),
                         isError = promoDialogError != null,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF00F59B),
-                            unfocusedBorderColor = Color(0xFF263238),
-                            errorBorderColor = Color(0xFFFF5252),
-                            focusedContainerColor = Color(0xFF131A26),
-                            unfocusedContainerColor = Color(0xFF101620),
-                            cursorColor = Color(0xFF00F59B),
+                            focusedBorderColor = Color.White,
+                            unfocusedBorderColor = Color(0xFF2C2C2C),
+                            errorBorderColor = Color(0xFFCF6679),
+                            focusedContainerColor = Color(0xFF1A1A1A),
+                            unfocusedContainerColor = Color(0xFF1A1A1A),
+                            cursorColor = Color.White,
                             focusedTextColor = Color.White,
                             unfocusedTextColor = Color.White
                         ),
@@ -403,19 +352,18 @@ fun MainScreen(
                     )
 
                     if (promoDialogError != null) {
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = promoDialogError ?: "",
-                            color = Color(0xFFFF5252),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFFCF6679),
+                            fontSize = 12.sp,
                             textAlign = TextAlign.Center
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
-                    // Большая кнопка "Активировать" с неоновым градиентом
+                    // Стильная минималистичная кнопка
                     Button(
                         onClick = {
                             val code = enteredPromoCode.trim()
@@ -439,7 +387,7 @@ fun MainScreen(
                                         promoDialogError = "Промокод не найден или срок действия истек"
                                     }
                                 } catch (e: Exception) {
-                                    promoDialogError = "Ошибка соединения с облаком: ${e.message}"
+                                    promoDialogError = "Ошибка соединения: ${e.message}"
                                 } finally {
                                     isActivatingPromo = false
                                 }
@@ -447,88 +395,30 @@ fun MainScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp)
-                            .shadow(
-                                elevation = if (isActivatingPromo) 0.dp else 12.dp,
-                                shape = RoundedCornerShape(16.dp),
-                                spotColor = Color(0xFF00F59B)
-                            ),
-                        shape = RoundedCornerShape(16.dp),
+                            .height(50.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF00F59B),
-                            contentColor = Color(0xFF002914)
+                            containerColor = Color.White,
+                            contentColor = Color.Black
                         ),
                         enabled = !isActivatingPromo
                     ) {
                         if (isActivatingPromo) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = Color(0xFF002914),
-                                strokeWidth = 2.5.dp
+                                modifier = Modifier.size(20.dp),
+                                color = Color.Black,
+                                strokeWidth = 2.dp
                             )
                         } else {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_flash_on_24dp),
-                                    contentDescription = null,
-                                    tint = Color(0xFF002914),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "АКТИВИРОВАТЬ СЕРВЕРЫ",
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    letterSpacing = 1.sp
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(30.dp))
-
-                    // Блок преимуществ / информации
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0xFF131A26), RoundedCornerShape(14.dp))
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFF00F59B).copy(alpha = 0.15f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_lock_24dp),
-                                contentDescription = null,
-                                tint = Color(0xFF00F59B),
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
                             Text(
-                                text = "Мгновенная настройка",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                            Text(
-                                text = "Все серверы и ключи шифрования загрузятся автоматически",
-                                fontSize = 11.sp,
-                                color = Color(0xFF8094A8)
+                                text = "Подключить",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
@@ -566,26 +456,6 @@ fun MainScreen(
                             text = update.releaseNotes.orEmpty().ifBlank { "Доступно новое обновление приложения ПУЛЬС." },
                             style = MaterialTheme.typography.bodyMedium
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "💡 Если система сообщает о конфликте пакета, сначала удалите старую версию с телефона:",
-                            fontSize = 12.sp,
-                            color = Color(0xFFFFB74D)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        androidx.compose.material3.TextButton(
-                            onClick = {
-                                try {
-                                    val uninstallIntent = Intent(Intent.ACTION_DELETE).apply {
-                                        data = android.net.Uri.parse("package:" + context.packageName)
-                                    }
-                                    context.startActivity(uninstallIntent)
-                                } catch (_: Exception) {}
-                            },
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("🗑 Удалить текущее перед установкой", color = Color(0xFFFF5252), fontSize = 12.sp)
-                        }
                     }
                 }
             },
@@ -634,74 +504,40 @@ fun MainScreen(
                     onMenuClick = { scope.launch { drawerState.open() } }
                 )
             },
-            containerColor = Color(0xFF0B0E14)
+            containerColor = Color(0xFF121212)
         ) { innerPadding ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .background(Color(0xFF0B0E14))
+                    .background(Color(0xFF121212))
             ) {
-                // ВЕРХНИЙ БЛОК: СОВРЕМЕННАЯ КАРТОЧКА ПИТАНИЯ (POWER CARD)
+                // ВЕРХНИЙ БЛОК: ЧИСТЫЙ МИНИМАЛИСТИЧНЫЙ КНОПОЧНЫЙ БЛОК
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = if (isRunning) listOf(Color(0xFF0C2417), Color(0xFF081910))
-                                else listOf(Color(0xFF141923), Color(0xFF0F131C))
-                            )
-                        )
-                        .border(
-                            width = 1.dp,
-                            color = if (isRunning) Color(0xFF00F59B).copy(alpha = 0.4f) else Color(0xFF1E2638),
-                            shape = RoundedCornerShape(24.dp)
-                        )
-                        .padding(vertical = 20.dp, horizontal = 16.dp),
+                        .padding(horizontal = 20.dp, vertical = 12.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(0xFF181818))
+                        .border(1.dp, Color(0xFF242424), RoundedCornerShape(20.dp))
+                        .padding(vertical = 24.dp, horizontal = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        // БОЛЬШАЯ НЕОНОВАЯ КНОПКА ПИТАНИЯ (POWER BUTTON)
-                        val glowTransition = rememberInfiniteTransition(label = "powerGlow")
-                        val activeScale by glowTransition.animateFloat(
-                            initialValue = 1.0f,
-                            targetValue = if (isRunning) 1.05f else 1.0f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(1200, easing = FastOutSlowInEasing),
-                                repeatMode = RepeatMode.Reverse
-                            ),
-                            label = "activeScale"
-                        )
-
+                        // МИНИМАЛИСТИЧНАЯ КНОПКА ПИТАНИЯ (ЧИСТЫЙ МОНОХРОМ / АКЦЕНТ)
                         Box(
                             modifier = Modifier
-                                .scale(activeScale)
-                                .size(92.dp)
-                                .shadow(
-                                    elevation = if (isRunning) 20.dp else 4.dp,
-                                    shape = CircleShape,
-                                    spotColor = if (isRunning) Color(0xFF00F59B) else Color.Transparent
-                                )
+                                .size(84.dp)
                                 .clip(CircleShape)
                                 .background(
-                                    brush = Brush.radialGradient(
-                                        colors = if (isRunning) listOf(
-                                            Color(0xFF00F59B),
-                                            Color(0xFF00B06F)
-                                        ) else listOf(
-                                            Color(0xFF263242),
-                                            Color(0xFF19202B)
-                                        )
-                                    )
+                                    if (isRunning) Color.White else Color(0xFF222222)
                                 )
                                 .border(
-                                    width = 3.dp,
-                                    color = if (isRunning) Color(0xFFB9F6CA) else Color(0xFF37474F),
+                                    width = 1.dp,
+                                    color = if (isRunning) Color.White else Color(0xFF333333),
                                     shape = CircleShape
                                 )
                                 .clickable {
@@ -717,33 +553,32 @@ fun MainScreen(
                                 painter = if (isRunning) painterResource(R.drawable.ic_stop_24dp)
                                 else painterResource(R.drawable.ic_play_24dp),
                                 contentDescription = if (isRunning) "Отключить" else "Подключить",
-                                tint = if (isRunning) Color(0xFF003822) else Color.White,
-                                modifier = Modifier.size(40.dp)
+                                tint = if (isRunning) Color.Black else Color.White,
+                                modifier = Modifier.size(36.dp)
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         // ТЕКСТ СТАТУСА
                         Text(
-                            text = if (isRunning) "ЗАЩИЩЕНО // В СЕТИ" else "ОТКЛЮЧЕНО",
-                            fontWeight = FontWeight.Black,
-                            fontSize = 17.sp,
+                            text = if (isRunning) "ПОДКЛЮЧЕНО" else "ОТКЛЮЧЕНО",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp,
                             letterSpacing = 1.sp,
-                            color = if (isRunning) Color(0xFF00F59B) else Color(0xFFB0BEC5)
+                            color = if (isRunning) Color.White else Color(0xFF888888)
                         )
 
                         Spacer(modifier = Modifier.height(4.dp))
 
                         Text(
-                            text = if (isRunning) "Трафик зашифрован • Нажмите для остановки"
-                            else "Нажмите на кнопку для включения защиты",
+                            text = if (isRunning) "Защита активна" else "Нажмите для подключения",
                             fontSize = 12.sp,
-                            color = Color(0xFF78909C)
+                            color = Color(0xFF555555)
                         )
 
                         if (hasServers) {
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.Center,
@@ -753,23 +588,16 @@ fun MainScreen(
                                     onClick = { onAction(MainAction.TestRealAllServers) },
                                     modifier = Modifier.height(32.dp),
                                     shape = RoundedCornerShape(16.dp),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1F2B3C)),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF2A2A2A)),
                                     colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                                        contentColor = Color(0xFF00F59B)
+                                        contentColor = Color.White
                                     ),
                                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
                                 ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_check_update_24dp),
-                                        contentDescription = null,
-                                        tint = Color(0xFF00F59B),
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        "Проверить пинг",
+                                        "Тест скорости",
                                         fontSize = 11.sp,
-                                        fontWeight = FontWeight.SemiBold
+                                        fontWeight = FontWeight.Medium
                                     )
                                 }
 
@@ -779,23 +607,16 @@ fun MainScreen(
                                     onClick = { showPromoFullscreen = true },
                                     modifier = Modifier.height(32.dp),
                                     shape = RoundedCornerShape(16.dp),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1F2B3C)),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF2A2A2A)),
                                     colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                                        contentColor = Color(0xFF8094A8)
+                                        contentColor = Color(0xFFAAAAAA)
                                     ),
                                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
                                 ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_vpn_key_24dp),
-                                        contentDescription = null,
-                                        tint = Color(0xFF8094A8),
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        "Ввести промокод",
+                                        "Промокод",
                                         fontSize = 11.sp,
-                                        fontWeight = FontWeight.SemiBold
+                                        fontWeight = FontWeight.Medium
                                     )
                                 }
                             }
