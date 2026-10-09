@@ -69,30 +69,13 @@ fun MainTopBar(
 
                     Spacer(modifier = Modifier.width(12.dp))
 
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "ПУЛЬС",
-                                fontWeight = FontWeight.Black,
-                                fontSize = 18.sp,
-                                letterSpacing = 0.08.sp,
-                                color = Color.White
-                            )
-                            Text(
-                                text = " // ",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
-                                color = Color(0xFF00F59B)
-                            )
-                            Text(
-                                text = "ВПН",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp,
-                                letterSpacing = 0.06.sp,
-                                color = Color(0xFFB0BEC5)
-                            )
-                        }
-                    }
+                    Text(
+                        text = "ПУЛЬС",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 20.sp,
+                        letterSpacing = 0.1.sp,
+                        color = Color.White
+                    )
                 }
             },
             navigationIcon = {

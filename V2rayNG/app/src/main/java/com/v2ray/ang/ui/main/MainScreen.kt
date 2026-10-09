@@ -133,6 +133,14 @@ fun MainScreen(
     LaunchedEffect(hasServers) {
         if (!hasServers) {
             showPromoActivationDialog = true
+        } else {
+            // АВТОМАТИЧЕСКОЕ ОБНОВЛЕНИЕ ПИНГА РАЗ В 5 СЕКУНД
+            while (true) {
+                if (!isLoading) {
+                    onAction(MainAction.TestRealAllServers)
+                }
+                kotlinx.coroutines.delay(5000L)
+            }
         }
     }
 

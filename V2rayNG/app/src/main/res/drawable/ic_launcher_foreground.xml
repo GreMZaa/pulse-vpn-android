@@ -1,0 +1,21 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Pulse icon with glow for launcher foreground -->
+    <path
+        android:strokeColor="#003822"
+        android:strokeWidth="10"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M18,54 L34,54 L44,26 L56,82 L68,42 L78,62 L84,54 L94,54" />
+    <path
+        android:strokeColor="#00F59B"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M18,54 L34,54 L44,26 L56,82 L68,42 L78,62 L84,54 L94,54" />
+</vector>

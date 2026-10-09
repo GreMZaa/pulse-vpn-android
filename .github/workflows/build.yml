@@ -146,8 +146,8 @@ jobs:
       uses: softprops/action-gh-release@v2
       if: github.ref == 'refs/heads/master'
       with:
-        tag_name: v2.3.12-pulse
-        name: "ПУЛЬС ВПН v2.3.12"
+        tag_name: v2.3.13-pulse
+        name: "ПУЛЬС v2.3.13"
         body: |
           Официальный релиз приложения **ПУЛЬС // ВПН** для Android.
           - Быстрое подключение и защищенный трафик (V2Ray / Xray)
