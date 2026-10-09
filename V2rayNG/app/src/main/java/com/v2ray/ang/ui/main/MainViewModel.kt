@@ -366,7 +366,7 @@ class MainViewModel(
 
     // ---------- Initialization ----------
     fun initialize() {
-        checkForUpdateSilently()
+        // Only check updates when manually requested by user from drawer
         viewModelScope.launch(preloadDispatcher) {
             try {
                 initialPageReady.await()
