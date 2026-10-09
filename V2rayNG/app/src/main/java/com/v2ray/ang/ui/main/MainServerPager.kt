@@ -220,7 +220,6 @@ private fun ServerListPage(
                                 actions = actions
                             )
                         }
-                        ItemDivider()
                     }
                 } else {
                     ServerItemRow(
@@ -228,7 +227,6 @@ private fun ServerListPage(
                         isSelected = row.guid == selectedGuid,
                         actions = actions
                     )
-                    ItemDivider()
                 }
             }
         }
@@ -317,51 +315,66 @@ private fun ServerListItem(
         else -> Color(0xFF78909C)
     }
 
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { actions.select(row.guid) }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Левый индикатор активности выбранного сервера
-        Box(
-            modifier = Modifier
-                .width(4.dp)
-                .height(28.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(if (isSelected) Color(0xFF00F59B) else Color.Transparent)
-        )
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        // Название и номер сервера
-        Text(
-            text = row.remarks,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-            color = if (isSelected) Color.White else Color(0xFFCFD8DC),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        // Пинг сервера справа
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(6.dp))
-                .background(pingColor.copy(alpha = 0.12f))
-                .padding(horizontal = 8.dp, vertical = 4.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = pingText,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = pingColor
+            .padding(horizontal = 14.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(
+                if (isSelected) Color(0xFF131D26) else Color(0xFF10141D)
             )
+            .border(
+                width = if (isSelected) 1.5.dp else 1.dp,
+                color = if (isSelected) Color(0xFF00F59B).copy(alpha = 0.6f) else Color(0xFF1B2332),
+                shape = RoundedCornerShape(14.dp)
+            )
+            .clickable { actions.select(row.guid) }
+            .padding(horizontal = 16.dp, vertical = 13.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Круговой светящийся маркер активности
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(if (isSelected) Color(0xFF00F59B) else Color(0xFF37474F))
+            )
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            // Название и номер сервера
+            Text(
+                text = row.remarks,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                color = if (isSelected) Color.White else Color(0xFFCFD8DC),
+                fontSize = 15.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            // Неоновый значок пинга
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(pingColor.copy(alpha = 0.12f))
+                    .border(0.5.dp, pingColor.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = pingText,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = pingColor
+                )
+            }
         }
     }
 }

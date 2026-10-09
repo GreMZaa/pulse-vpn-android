@@ -1,18 +1,59 @@
 package com.v2ray.ang.ui.main
+
 import android.content.Intent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,46 +66,26 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.v2ray.ang.R
 import com.v2ray.ang.dto.UrlContentRequest
 import com.v2ray.ang.dto.entities.ProfileItem
@@ -93,7 +114,8 @@ fun MainScreen(
     val shareQRCodeBitmap = uiState.shareQRCodeBitmap
 
     val isDarkTheme = LocalDarkTheme.current
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var showSearch by remember { mutableStateOf(false) }
@@ -109,7 +131,7 @@ fun MainScreen(
     val hasServers = remember(groups, uiState.selectedGuid) {
         com.v2ray.ang.handler.MmkvManager.decodeAllServerList().isNotEmpty()
     }
-    var showPromoActivationDialog by remember { mutableStateOf(!hasServers) }
+    var showPromoFullscreen by remember { mutableStateOf(!hasServers) }
     var enteredPromoCode by remember { mutableStateOf("") }
     var promoDialogError by remember { mutableStateOf<String?>(null) }
     var isActivatingPromo by remember { mutableStateOf(false) }
@@ -132,7 +154,7 @@ fun MainScreen(
 
     LaunchedEffect(hasServers) {
         if (!hasServers) {
-            showPromoActivationDialog = true
+            showPromoFullscreen = true
         } else {
             // АВТОМАТИЧЕСКОЕ ОБНОВЛЕНИЕ ПИНГА РАЗ В 5 СЕКУНД
             while (true) {
@@ -202,100 +224,314 @@ fun MainScreen(
         QRCodeDialog(bitmap = shareQRCodeBitmap, onDismiss = { onAction(MainAction.DismissQRCodeDialog) })
     }
 
-    if (showPromoActivationDialog) {
-        AlertDialog(
+    // 🌟 ПОЛНОЭКРАННЫЙ УЛЬТРАСОВРЕМЕННЫЙ ВВОД ПРОМОКОДА
+    if (showPromoFullscreen) {
+        Dialog(
             onDismissRequest = {
-                // If there are already servers, user can dismiss
                 if (hasServers) {
-                    showPromoActivationDialog = false
+                    showPromoFullscreen = false
                     promoDialogError = null
                 }
             },
-            title = {
-                Text(text = "Активация ПУЛЬС ВПН")
-            },
-            text = {
-                Column {
-                    Text(
-                        text = "Введите ваш промокод или ключ доступа для автоматического подключения серверов:",
-                        style = MaterialTheme.typography.bodyMedium
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false
+            )
+        ) {
+            val focusManager = LocalFocusManager.current
+            val infiniteTransition = rememberInfiniteTransition(label = "pulseGlow")
+            val pulseScale by infiniteTransition.animateFloat(
+                initialValue = 1.0f,
+                targetValue = 1.08f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(1500, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "pulseScale"
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFF090D14),
+                                Color(0xFF0D121D),
+                                Color(0xFF05080E)
+                            )
+                        )
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+            ) {
+                // Если сервера уже есть — крестик для закрытия
+                if (hasServers) {
+                    IconButton(
+                        onClick = {
+                            showPromoFullscreen = false
+                            promoDialogError = null
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(16.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_close_24dp),
+                            contentDescription = "Закрыть",
+                            tint = Color(0xFF90A4AE),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 28.dp)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // Неоновый светящийся логотип пульса
+                    Box(
+                        modifier = Modifier
+                            .scale(pulseScale)
+                            .size(100.dp)
+                            .clip(CircleShape)
+                            .background(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(
+                                        Color(0xFF00F59B).copy(alpha = 0.25f),
+                                        Color(0xFF003822).copy(alpha = 0.8f),
+                                        Color.Transparent
+                                    )
+                                )
+                            )
+                            .border(2.dp, Color(0xFF00F59B).copy(alpha = 0.7f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_pulse_logo),
+                            contentDescription = "Пульс",
+                            tint = Color(0xFF00F59B),
+                            modifier = Modifier.size(52.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(28.dp))
+
+                    Text(
+                        text = "ПУЛЬС",
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 2.sp,
+                        color = Color.White
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Активация неограниченного доступа",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF8094A8),
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(36.dp))
+
+                    // Поле ввода промокода с неоновой рамкой
                     OutlinedTextField(
                         value = enteredPromoCode,
                         onValueChange = {
                             enteredPromoCode = it.trim()
                             promoDialogError = null
                         },
-                        label = { Text("Промокод / Ключ") },
-                        placeholder = { Text("например: PULSE-FREE") },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = {
+                            Text(
+                                "Введите промокод или ключ...",
+                                color = Color(0xFF546E7A),
+                                fontSize = 15.sp
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_vpn_key_24dp),
+                                contentDescription = null,
+                                tint = Color(0xFF00F59B),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        },
+                        trailingIcon = {
+                            // Кнопка вставить из буфера обмена
+                            IconButton(
+                                onClick = {
+                                    val clip = clipboardManager.getText()?.text?.trim()
+                                    if (!clip.isNullOrEmpty()) {
+                                        enteredPromoCode = clip
+                                        promoDialogError = null
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_copy),
+                                    contentDescription = "Вставить",
+                                    tint = Color(0xFF8094A8),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        },
                         singleLine = true,
+                        shape = RoundedCornerShape(16.dp),
                         isError = promoDialogError != null,
-                        modifier = Modifier.fillMaxWidth()
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF00F59B),
+                            unfocusedBorderColor = Color(0xFF263238),
+                            errorBorderColor = Color(0xFFFF5252),
+                            focusedContainerColor = Color(0xFF131A26),
+                            unfocusedContainerColor = Color(0xFF101620),
+                            cursorColor = Color(0xFF00F59B),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
                     )
+
                     if (promoDialogError != null) {
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             text = promoDialogError ?: "",
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall
+                            color = Color(0xFFFF5252),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center
                         )
                     }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val code = enteredPromoCode.trim()
-                        if (code.isEmpty()) {
-                            promoDialogError = "Пожалуйста, введите промокод"
-                            return@Button
-                        }
-                        isActivatingPromo = true
-                        promoDialogError = null
-                        scope.launch {
-                            try {
-                                val url = "https://greemzaa-pulsewl-vpn.static.hf.space/sub/$code"
-                                val content = withContext(Dispatchers.IO) {
-                                    HttpUtil.getUrlContent(UrlContentRequest(url = url, timeout = 10000))
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Большая кнопка "Активировать" с неоновым градиентом
+                    Button(
+                        onClick = {
+                            val code = enteredPromoCode.trim()
+                            if (code.isEmpty()) {
+                                promoDialogError = "Пожалуйста, введите промокод"
+                                return@Button
+                            }
+                            isActivatingPromo = true
+                            promoDialogError = null
+                            scope.launch {
+                                try {
+                                    val url = "https://greemzaa-pulsewl-vpn.static.hf.space/sub/$code"
+                                    val content = withContext(Dispatchers.IO) {
+                                        HttpUtil.getUrlContent(UrlContentRequest(url = url, timeout = 10000))
+                                    }
+                                    if (!content.isNullOrBlank()) {
+                                        onAction(MainAction.ImportBatchConfig(content.trim()))
+                                        showPromoFullscreen = false
+                                        enteredPromoCode = ""
+                                    } else {
+                                        promoDialogError = "Промокод не найден или срок действия истек"
+                                    }
+                                } catch (e: Exception) {
+                                    promoDialogError = "Ошибка соединения с облаком: ${e.message}"
+                                } finally {
+                                    isActivatingPromo = false
                                 }
-                                if (!content.isNullOrBlank()) {
-                                    onAction(MainAction.ImportBatchConfig(content.trim()))
-                                    showPromoActivationDialog = false
-                                    enteredPromoCode = ""
-                                } else {
-                                    promoDialogError = "Неверный промокод или сервер недоступен"
-                                }
-                            } catch (e: Exception) {
-                                promoDialogError = "Ошибка подключения: ${e.message}"
-                            } finally {
-                                isActivatingPromo = false
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .shadow(
+                                elevation = if (isActivatingPromo) 0.dp else 12.dp,
+                                shape = RoundedCornerShape(16.dp),
+                                spotColor = Color(0xFF00F59B)
+                            ),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF00F59B),
+                            contentColor = Color(0xFF002914)
+                        ),
+                        enabled = !isActivatingPromo
+                    ) {
+                        if (isActivatingPromo) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color(0xFF002914),
+                                strokeWidth = 2.5.dp
+                            )
+                        } else {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_flash_on_24dp),
+                                    contentDescription = null,
+                                    tint = Color(0xFF002914),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "АКТИВИРОВАТЬ СЕРВЕРЫ",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 1.sp
+                                )
                             }
                         }
-                    },
-                    enabled = !isActivatingPromo
-                ) {
-                    if (isActivatingPromo) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text("Активировать")
                     }
-                }
-            },
-            dismissButton = {
-                if (hasServers) {
-                    TextButton(onClick = {
-                        showPromoActivationDialog = false
-                        promoDialogError = null
-                    }) {
-                        Text("Отмена")
+
+                    Spacer(modifier = Modifier.height(30.dp))
+
+                    // Блок преимуществ / информации
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFF131A26), RoundedCornerShape(14.dp))
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF00F59B).copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_lock_24dp),
+                                contentDescription = null,
+                                tint = Color(0xFF00F59B),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Мгновенная настройка",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Все серверы и ключи шифрования загрузятся автоматически",
+                                fontSize = 11.sp,
+                                color = Color(0xFF8094A8)
+                            )
+                        }
                     }
+
+                    Spacer(modifier = Modifier.height(20.dp))
                 }
             }
-        )
+        }
     }
 
     if (uiState.appUpdateResult != null) {
@@ -327,12 +563,12 @@ fun MainScreen(
                         )
                     } else {
                         Text(
-                            text = update.releaseNotes.orEmpty().ifBlank { "Доступно новое обновление приложения ПУЛЬС ВПН." },
+                            text = update.releaseNotes.orEmpty().ifBlank { "Доступно новое обновление приложения ПУЛЬС." },
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "💡 Если система сообщает о конфликте пакета, сначала удалите старую версию с телефона, либо нажмите кнопку ниже:",
+                            text = "💡 Если система сообщает о конфликте пакета, сначала удалите старую версию с телефона:",
                             fontSize = 12.sp,
                             color = Color(0xFFFFB74D)
                         )
@@ -397,45 +633,80 @@ fun MainScreen(
                     isLoading = isLoading,
                     onMenuClick = { scope.launch { drawerState.open() } }
                 )
-            }
+            },
+            containerColor = Color(0xFF0B0E14)
         ) { innerPadding ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
+                    .background(Color(0xFF0B0E14))
             ) {
-                // ВЕРХНИЙ БЛОК: КАРТОЧКА БЫСТРОГО ПОДКЛЮЧЕНИЯ (POWER BUTTON)
-                Card(
+                // ВЕРХНИЙ БЛОК: СОВРЕМЕННАЯ КАРТОЧКА ПИТАНИЯ (POWER CARD)
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isRunning) Color(0xFF0F291E) else Color(0xFF161B26)
-                    ),
-                    shape = RoundedCornerShape(16.dp)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = if (isRunning) listOf(Color(0xFF0C2417), Color(0xFF081910))
+                                else listOf(Color(0xFF141923), Color(0xFF0F131C))
+                            )
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = if (isRunning) Color(0xFF00F59B).copy(alpha = 0.4f) else Color(0xFF1E2638),
+                            shape = RoundedCornerShape(24.dp)
+                        )
+                        .padding(vertical = 20.dp, horizontal = 16.dp),
+                    contentAlignment = Alignment.Center
                 ) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 18.dp, horizontal = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        // БОЛЬШАЯ КРУГЛАЯ КНОПКА ПИТАНИЯ (POWER BUTTON)
+                        // БОЛЬШАЯ НЕОНОВАЯ КНОПКА ПИТАНИЯ (POWER BUTTON)
+                        val glowTransition = rememberInfiniteTransition(label = "powerGlow")
+                        val activeScale by glowTransition.animateFloat(
+                            initialValue = 1.0f,
+                            targetValue = if (isRunning) 1.05f else 1.0f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(1200, easing = FastOutSlowInEasing),
+                                repeatMode = RepeatMode.Reverse
+                            ),
+                            label = "activeScale"
+                        )
+
                         Box(
                             modifier = Modifier
-                                .size(96.dp)
+                                .scale(activeScale)
+                                .size(92.dp)
+                                .shadow(
+                                    elevation = if (isRunning) 20.dp else 4.dp,
+                                    shape = CircleShape,
+                                    spotColor = if (isRunning) Color(0xFF00F59B) else Color.Transparent
+                                )
                                 .clip(CircleShape)
                                 .background(
-                                    if (isRunning) Color(0xFF00E676) else Color(0xFF263238)
+                                    brush = Brush.radialGradient(
+                                        colors = if (isRunning) listOf(
+                                            Color(0xFF00F59B),
+                                            Color(0xFF00B06F)
+                                        ) else listOf(
+                                            Color(0xFF263242),
+                                            Color(0xFF19202B)
+                                        )
+                                    )
                                 )
                                 .border(
-                                    width = 4.dp,
+                                    width = 3.dp,
                                     color = if (isRunning) Color(0xFFB9F6CA) else Color(0xFF37474F),
                                     shape = CircleShape
                                 )
                                 .clickable {
                                     if (!hasServers && !isRunning) {
-                                        showPromoActivationDialog = true
+                                        showPromoFullscreen = true
                                     } else {
                                         onAction(MainAction.ToggleService)
                                     }
@@ -446,30 +717,33 @@ fun MainScreen(
                                 painter = if (isRunning) painterResource(R.drawable.ic_stop_24dp)
                                 else painterResource(R.drawable.ic_play_24dp),
                                 contentDescription = if (isRunning) "Отключить" else "Подключить",
-                                tint = if (isRunning) Color(0xFF003314) else Color.White,
-                                modifier = Modifier.size(44.dp)
+                                tint = if (isRunning) Color(0xFF003822) else Color.White,
+                                modifier = Modifier.size(40.dp)
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
 
+                        // ТЕКСТ СТАТУСА
                         Text(
                             text = if (isRunning) "ЗАЩИЩЕНО // В СЕТИ" else "ОТКЛЮЧЕНО",
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Black,
                             fontSize = 17.sp,
-                            color = if (isRunning) Color(0xFF00E676) else Color.White
+                            letterSpacing = 1.sp,
+                            color = if (isRunning) Color(0xFF00F59B) else Color(0xFFB0BEC5)
                         )
 
                         Spacer(modifier = Modifier.height(4.dp))
 
                         Text(
-                            text = if (isRunning) "Нажмите для остановки VPN" else "Нажмите большую кнопку для подключения",
+                            text = if (isRunning) "Трафик зашифрован • Нажмите для остановки"
+                            else "Нажмите на кнопку для включения защиты",
                             fontSize = 12.sp,
-                            color = Color(0xFF90A4AE)
+                            color = Color(0xFF78909C)
                         )
 
                         if (hasServers) {
-                            Spacer(modifier = Modifier.height(14.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.Center,
@@ -477,125 +751,60 @@ fun MainScreen(
                             ) {
                                 androidx.compose.material3.OutlinedButton(
                                     onClick = { onAction(MainAction.TestRealAllServers) },
-                                    modifier = Modifier.height(34.dp),
-                                    shape = RoundedCornerShape(17.dp),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF263238)),
+                                    modifier = Modifier.height(32.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1F2B3C)),
                                     colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
                                         contentColor = Color(0xFF00F59B)
                                     ),
                                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
                                 ) {
-                                    Text("⚡ Проверить и поднять рабочие наверх", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_check_update_24dp),
+                                        contentDescription = null,
+                                        tint = Color(0xFF00F59B),
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        "Проверить пинг",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                androidx.compose.material3.OutlinedButton(
+                                    onClick = { showPromoFullscreen = true },
+                                    modifier = Modifier.height(32.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1F2B3C)),
+                                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                        contentColor = Color(0xFF8094A8)
+                                    ),
+                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_vpn_key_24dp),
+                                        contentDescription = null,
+                                        tint = Color(0xFF8094A8),
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        "Ввести промокод",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
                                 }
                             }
                         }
                     }
                 }
 
-                // ЕСЛИ СПИСОК СЕРВЕРОВ ПУСТ — ПОКАЗЫВАЕМ БОЛЬШОЙ ДРУЖЕЛЮБНЫЙ БЛОК ВВОДА ПРОМОКОДА
-                if (!hasServers) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1F2C)),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(20.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "🚀 Добро пожаловать в ПУЛЬС ВПН",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp,
-                                color = Color.White
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Text(
-                                text = "Для автоматической загрузки серверов введите промокод или персональный ключ:",
-                                fontSize = 13.sp,
-                                color = Color(0xFFB0BEC5),
-                                textAlign = TextAlign.Center
-                            )
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            OutlinedTextField(
-                                value = enteredPromoCode,
-                                onValueChange = {
-                                    enteredPromoCode = it.trim()
-                                    promoDialogError = null
-                                },
-                                label = { Text("Промокод / Ключ") },
-                                placeholder = { Text("например: PULSE-FREE") },
-                                singleLine = true,
-                                isError = promoDialogError != null,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-
-                            if (promoDialogError != null) {
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    text = promoDialogError ?: "",
-                                    color = MaterialTheme.colorScheme.error,
-                                    fontSize = 12.sp
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Button(
-                                onClick = {
-                                    val code = enteredPromoCode.trim()
-                                    if (code.isEmpty()) {
-                                        promoDialogError = "Введите промокод"
-                                        return@Button
-                                    }
-                                    isActivatingPromo = true
-                                    promoDialogError = null
-                                    scope.launch {
-                                        try {
-                                            val url = "https://greemzaa-pulsewl-vpn.static.hf.space/sub/$code"
-                                            val content = withContext(Dispatchers.IO) {
-                                                HttpUtil.getUrlContent(UrlContentRequest(url = url, timeout = 10000))
-                                            }
-                                            if (!content.isNullOrBlank()) {
-                                                onAction(MainAction.ImportBatchConfig(content.trim()))
-                                                enteredPromoCode = ""
-                                            } else {
-                                                promoDialogError = "Неверный промокод или сервер недоступен"
-                                            }
-                                        } catch (e: Exception) {
-                                            promoDialogError = "Ошибка: ${e.message}"
-                                        } finally {
-                                            isActivatingPromo = false
-                                        }
-                                    }
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(48.dp),
-                                enabled = !isActivatingPromo
-                            ) {
-                                if (isActivatingPromo) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(20.dp),
-                                        color = Color.White,
-                                        strokeWidth = 2.dp
-                                    )
-                                } else {
-                                    Text("⚡ Активировать и получить доступ", fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    // КОГДА СЕРВЕРЫ УЖЕ ЗАГРУЖЕНЫ — ОТОБРАЖАЕМ ИХ СПИСКОМ
+                // СПИСОК СЕРВЕРОВ
+                if (hasServers) {
                     if (groups.size > 1) {
                         GroupTabBar(
                             groups = groups,
@@ -650,6 +859,5 @@ fun MainScreen(
                 }
             }
         }
-
     }
 }
