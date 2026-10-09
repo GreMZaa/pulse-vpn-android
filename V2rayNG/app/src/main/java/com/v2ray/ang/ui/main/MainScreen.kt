@@ -129,6 +129,9 @@ fun MainScreen(
         val validGroupIds = groups.map { it.id }.toSet()
         lazyListStates.keys.retainAll(validGroupIds)
         lazyGridStates.keys.retainAll(validGroupIds)
+        if (groups.isEmpty()) {
+            showPromoActivationDialog = true
+        }
     }
 
     LaunchedEffect(groups, uiState.selectedGroupId) {
@@ -212,7 +215,7 @@ fun MainScreen(
                         placeholder = { Text("например: PULSE-FREE") },
                         singleLine = true,
                         isError = promoDialogError != null,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxWidth()
                     )
                     if (promoDialogError != null) {
                         Spacer(modifier = Modifier.height(4.dp))
@@ -431,7 +434,11 @@ fun MainScreen(
                                     shape = CircleShape
                                 )
                                 .clickable {
-                                    onAction(MainAction.ToggleService)
+                                    if (groups.isEmpty() && !isRunning) {
+                                        showPromoActivationDialog = true
+                                    } else {
+                                        onAction(MainAction.ToggleService)
+                                    }
                                 },
                             contentAlignment = Alignment.Center
                         ) {

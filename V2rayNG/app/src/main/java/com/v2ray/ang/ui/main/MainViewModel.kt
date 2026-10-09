@@ -527,6 +527,17 @@ class MainViewModel(
                 val selectedServers = loadGroup(selectedGroup, forceRefresh)
                 updateGroupUi(selectedGroup, selectedServers)
 
+                var currentGuid = dataSource.getSelectServer()
+                if (currentGuid.isNullOrEmpty() || dataSource.decodeServerConfig(currentGuid) == null) {
+                    val fallbackGuid = selectedServers.firstOrNull()?.guid
+                        ?: dataSource.getServerGuidList("").firstOrNull()
+                    if (!fallbackGuid.isNullOrEmpty()) {
+                        dataSource.setSelectServer(fallbackGuid)
+                        currentGuid = fallbackGuid
+                    }
+                }
+                _uiState.update { it.copy(selectedGuid = currentGuid) }
+
                 if (!initialPageReady.isCompleted) {
                     initialPageReady.complete(Unit)
                 }

@@ -182,9 +182,16 @@ class MainActivity : HelperBaseComponentActivity() {
     }
 
     private fun startV2Ray() {
-        if (mainViewModel.uiState.value.selectedGuid.isNullOrEmpty()) {
-            toast(R.string.title_file_chooser)
-            return
+        var guid = mainViewModel.uiState.value.selectedGuid
+        if (guid.isNullOrEmpty()) {
+            val allServers = MmkvManager.decodeAllServerList()
+            if (allServers.isNotEmpty()) {
+                guid = allServers.first()
+                mainViewModel.updateSelectedGuid(guid)
+            } else {
+                toast("Пожалуйста, активируйте промокод для подключения к серверу")
+                return
+            }
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN
         ) {

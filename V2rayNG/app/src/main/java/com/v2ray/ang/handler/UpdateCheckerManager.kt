@@ -62,7 +62,7 @@ object UpdateCheckerManager {
             "Found new version: $latestVersion (tag: ${latestRelease.tagName}, current: ${BuildConfig.VERSION_NAME})"
         )
 
-        return@withContext if (compareVersions(latestVersion, BuildConfig.VERSION_NAME) > 0 || (latestRelease.tagName.contains("pulse") && !BuildConfig.VERSION_NAME.contains("pulse"))) {
+        return@withContext if (compareVersions(latestVersion, BuildConfig.VERSION_NAME) > 0) {
             val downloadUrl = getDownloadUrl(latestRelease, Build.SUPPORTED_ABIS.firstOrNull() ?: "arm64-v8a")
             CheckUpdateResult(
                 hasUpdate = true,
