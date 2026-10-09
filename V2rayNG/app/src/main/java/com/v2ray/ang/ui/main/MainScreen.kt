@@ -367,16 +367,7 @@ fun MainScreen(
                     isLoading = isLoading,
                     onMenuClick = { scope.launch { drawerState.open() } }
                 )
-            },
-            bottomBar = {
-                MainBottomBar(
-                    displayText = displayText,
-                    isRunning = isRunning,
-                    isDarkTheme = isDarkTheme,
-                    onAction = onAction
-                )
-            },
-            floatingActionButton = {},
+            }
         ) { innerPadding ->
             Column(
                 modifier = Modifier
@@ -622,7 +613,7 @@ fun MainScreen(
                                 start = 0.dp,
                                 top = 0.dp,
                                 end = 0.dp,
-                                bottom = 80.dp
+                                bottom = 24.dp
                             )
                         )
                     }
