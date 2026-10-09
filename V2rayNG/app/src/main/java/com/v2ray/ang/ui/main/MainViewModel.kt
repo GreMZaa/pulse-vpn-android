@@ -18,6 +18,9 @@ import com.v2ray.ang.extension.delay
 import com.v2ray.ang.extension.isComplexType
 import com.v2ray.ang.extension.matchesPattern
 import com.v2ray.ang.extension.moveItem
+import com.v2ray.ang.handler.AppUpdateInstaller
+import com.v2ray.ang.handler.MmkvManager
+import com.v2ray.ang.handler.UpdateCheckerManager
 import com.v2ray.ang.ui.base.BaseViewModel
 import com.v2ray.ang.util.LogUtil
 import kotlinx.coroutines.CancellationException
@@ -341,10 +344,11 @@ class MainViewModel(
         _uiState.update { it.copy(isUpdatingApp = true, appUpdateProgress = 0) }
         viewModelScope.launch {
             try {
+                val context: android.content.Context = getApplication()
                 val success = AppUpdateInstaller.downloadAndInstallApk(
-                    context = getApplication(),
+                    context = context,
                     downloadUrl = url,
-                    onProgress = { progress ->
+                    onProgress = { progress: Int ->
                         _uiState.update { it.copy(appUpdateProgress = progress) }
                     }
                 )
