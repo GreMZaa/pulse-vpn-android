@@ -150,8 +150,8 @@ fun MainDrawerContent(
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "Обновить",
-                    fontSize = 15.sp,
+                    text = "Проверить обновление",
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
