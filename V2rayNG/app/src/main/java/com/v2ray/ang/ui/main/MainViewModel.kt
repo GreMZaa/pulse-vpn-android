@@ -300,6 +300,12 @@ class MainViewModel(
                 _uiState.update { it.copy(shareQRCodeBitmap = null) }
             }
 
+            MainAction.CheckForUpdateSilently -> checkForUpdateSilently()
+            MainAction.DismissUpdateDialog -> {
+                _uiState.update { it.copy(appUpdateResult = null, isUpdatingApp = false) }
+            }
+            is MainAction.ConfirmAppUpdate -> downloadAndInstallApp(action.downloadUrl)
+
             MainAction.ToggleService,
             MainAction.TestCurrentServer,
             MainAction.ImportQRcode,
@@ -316,6 +322,44 @@ class MainViewModel(
         }
     }
 
+    private fun checkForUpdateSilently() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val preRelease = MmkvManager.decodeSettingsBool(AppConfig.PREF_CHECK_UPDATE_PRE_RELEASE, false)
+                val result = UpdateCheckerManager.checkForUpdate(preRelease)
+                if (result.hasUpdate) {
+                    _uiState.update { it.copy(appUpdateResult = result) }
+                }
+            } catch (e: Exception) {
+                LogUtil.e(AppConfig.TAG, "Silent update check failed", e)
+            }
+        }
+    }
+
+    private fun downloadAndInstallApp(url: String) {
+        if (_uiState.value.isUpdatingApp) return
+        _uiState.update { it.copy(isUpdatingApp = true, appUpdateProgress = 0) }
+        viewModelScope.launch {
+            try {
+                val success = AppUpdateInstaller.downloadAndInstallApk(
+                    context = getApplication(),
+                    downloadUrl = url,
+                    onProgress = { progress ->
+                        _uiState.update { it.copy(appUpdateProgress = progress) }
+                    }
+                )
+                if (!success) {
+                    toastError(R.string.update_download_failed)
+                    _uiState.update { it.copy(isUpdatingApp = false) }
+                }
+            } catch (e: Exception) {
+                LogUtil.e(AppConfig.TAG, "Update download failed", e)
+                toastError(R.string.update_download_failed)
+                _uiState.update { it.copy(isUpdatingApp = false) }
+            }
+        }
+    }
+
     // ---------- Initialization ----------
     fun initialize() {
         viewModelScope.launch(preloadDispatcher) {
@@ -324,6 +368,7 @@ class MainViewModel(
                 delay(32)
                 dataSource.initAssets()
                 dataSource.syncSubscriptions()
+                checkForUpdateSilently()
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {

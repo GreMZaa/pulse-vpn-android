@@ -25,6 +25,12 @@ class CheckUpdateViewModel(application: Application) : BaseViewModel(application
     private val _showUpdateDialog = MutableStateFlow(false)
     val showUpdateDialog: StateFlow<Boolean> = _showUpdateDialog.asStateFlow()
 
+    private val _isDownloading = MutableStateFlow(false)
+    val isDownloading: StateFlow<Boolean> = _isDownloading.asStateFlow()
+
+    private val _downloadProgress = MutableStateFlow(0)
+    val downloadProgress: StateFlow<Int> = _downloadProgress.asStateFlow()
+
     fun toggleCheckPreRelease(enabled: Boolean) {
         _checkPreRelease.value = enabled
         MmkvManager.encodeSettings(AppConfig.PREF_CHECK_UPDATE_PRE_RELEASE, enabled)
@@ -43,6 +49,31 @@ class CheckUpdateViewModel(application: Application) : BaseViewModel(application
             } catch (e: Exception) {
                 LogUtil.e(AppConfig.TAG, "Failed to check for updates", e)
                 toastError(R.string.toast_failure)
+            }
+        }
+    }
+
+    fun downloadAndInstall(url: String) {
+        if (_isDownloading.value) return
+        _isDownloading.value = true
+        _downloadProgress.value = 0
+        launchLoading {
+            try {
+                val success = com.v2ray.ang.handler.AppUpdateInstaller.downloadAndInstallApk(
+                    context = getApplication(),
+                    downloadUrl = url,
+                    onProgress = { percent ->
+                        _downloadProgress.value = percent
+                    }
+                )
+                if (!success) {
+                    toastError(R.string.update_download_failed)
+                }
+            } catch (e: Exception) {
+                LogUtil.e(AppConfig.TAG, "Update download failed", e)
+                toastError(R.string.update_download_failed)
+            } finally {
+                _isDownloading.value = false
             }
         }
     }

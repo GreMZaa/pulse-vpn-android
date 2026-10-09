@@ -26,7 +26,10 @@ data class MainUiState(
     val locateTarget: LocateTarget? = null,
     val confirmRemove: Boolean = false,
     val doubleColumnDisplay: Boolean = false,
-    val shareQRCodeBitmap: android.graphics.Bitmap? = null
+    val shareQRCodeBitmap: android.graphics.Bitmap? = null,
+    val appUpdateResult: com.v2ray.ang.dto.CheckUpdateResult? = null,
+    val isUpdatingApp: Boolean = false,
+    val appUpdateProgress: Int = 0
 )
 
 /**
@@ -67,4 +70,7 @@ sealed interface MainAction {
     data class ImportBatchConfig(val configText: String) : MainAction
 
     data object LocateHandled : MainAction
+    data object CheckForUpdateSilently : MainAction
+    data object DismissUpdateDialog : MainAction
+    data class ConfirmAppUpdate(val downloadUrl: String) : MainAction
 }

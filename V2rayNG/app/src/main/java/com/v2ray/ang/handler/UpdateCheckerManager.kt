@@ -55,17 +55,18 @@ object UpdateCheckerManager {
             return@withContext CheckUpdateResult(hasUpdate = false)
         }
 
-        val latestVersion = latestRelease.tagName.removePrefix("v")
+        val rawTag = latestRelease.tagName.removePrefix("v")
+        val latestVersion = rawTag.substringBefore("-").trim()
         LogUtil.i(
             AppConfig.TAG,
-            "Found new version: $latestVersion (current: ${BuildConfig.VERSION_NAME})"
+            "Found new version: $latestVersion (tag: ${latestRelease.tagName}, current: ${BuildConfig.VERSION_NAME})"
         )
 
-        return@withContext if (compareVersions(latestVersion, BuildConfig.VERSION_NAME) > 0) {
-            val downloadUrl = getDownloadUrl(latestRelease, Build.SUPPORTED_ABIS[0])
+        return@withContext if (compareVersions(latestVersion, BuildConfig.VERSION_NAME) > 0 || (latestRelease.tagName.contains("pulse") && !BuildConfig.VERSION_NAME.contains("pulse"))) {
+            val downloadUrl = getDownloadUrl(latestRelease, Build.SUPPORTED_ABIS.firstOrNull() ?: "arm64-v8a")
             CheckUpdateResult(
                 hasUpdate = true,
-                latestVersion = latestVersion,
+                latestVersion = latestRelease.tagName,
                 releaseNotes = latestRelease.body,
                 downloadUrl = downloadUrl,
                 isPreRelease = latestRelease.prerelease
@@ -76,12 +77,12 @@ object UpdateCheckerManager {
     }
 
     private fun compareVersions(version1: String, version2: String): Int {
-        val v1 = version1.split(".")
-        val v2 = version2.split(".")
+        val clean1 = version1.substringBefore("-").split(".")
+        val clean2 = version2.substringBefore("-").split(".")
 
-        for (i in 0 until maxOf(v1.size, v2.size)) {
-            val num1 = if (i < v1.size) v1[i].toInt() else 0
-            val num2 = if (i < v2.size) v2[i].toInt() else 0
+        for (i in 0 until maxOf(clean1.size, clean2.size)) {
+            val num1 = if (i < clean1.size) clean1[i].toIntOrNull() ?: 0 else 0
+            val num2 = if (i < clean2.size) clean2[i].toIntOrNull() ?: 0 else 0
             if (num1 != num2) return num1 - num2
         }
         return 0
@@ -98,7 +99,8 @@ object UpdateCheckerManager {
             assetsByAbi.firstOrNull { it.name.contains(fDroid) }
         } else {
             assetsByAbi.firstOrNull { !it.name.contains(fDroid) }
-        }
+        } ?: release.assets.firstOrNull { it.name.contains("universal", ignoreCase = true) }
+          ?: release.assets.firstOrNull { it.name.endsWith(".apk") }
 
         return asset?.browserDownloadUrl
             ?: throw IllegalStateException("No compatible APK found")

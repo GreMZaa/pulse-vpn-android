@@ -275,6 +275,66 @@ fun MainScreen(
         )
     }
 
+    if (uiState.appUpdateResult != null) {
+        val update = uiState.appUpdateResult!!
+        AlertDialog(
+            onDismissRequest = {
+                if (!uiState.isUpdatingApp) {
+                    onAction(MainAction.DismissUpdateDialog)
+                }
+            },
+            title = {
+                Text(stringResource(R.string.update_new_version_found, update.latestVersion ?: ""))
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    if (uiState.isUpdatingApp) {
+                        Text(
+                            text = stringResource(R.string.update_downloading, uiState.appUpdateProgress),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        LinearProgressIndicator(
+                            progress = { uiState.appUpdateProgress / 100f },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else {
+                        Text(
+                            text = update.releaseNotes.orEmpty().ifBlank { "Доступно новое обновление приложения ПУЛЬС ВПН." },
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                if (!uiState.isUpdatingApp) {
+                    Button(
+                        onClick = {
+                            update.downloadUrl?.let { url ->
+                                onAction(MainAction.ConfirmAppUpdate(url))
+                            } ?: run {
+                                onAction(MainAction.DismissUpdateDialog)
+                            }
+                        }
+                    ) {
+                        Text(stringResource(R.string.update_now))
+                    }
+                }
+            },
+            dismissButton = {
+                if (!uiState.isUpdatingApp) {
+                    TextButton(onClick = { onAction(MainAction.DismissUpdateDialog) }) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
+                }
+            }
+        )
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {

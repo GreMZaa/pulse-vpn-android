@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -61,6 +62,8 @@ fun CheckUpdateScreen(
     val checkPreRelease by viewModel.checkPreRelease.collectAsStateWithLifecycle()
     val showUpdateDialog by viewModel.showUpdateDialog.collectAsStateWithLifecycle()
     val updateResult by viewModel.updateResult.collectAsStateWithLifecycle()
+    val isDownloading by viewModel.isDownloading.collectAsStateWithLifecycle()
+    val downloadProgress by viewModel.downloadProgress.collectAsStateWithLifecycle()
 
     val libVersion = CoreNativeManager.getLibVersion()
     val versionText = "v${BuildConfig.VERSION_NAME} ($libVersion)"
@@ -71,7 +74,7 @@ fun CheckUpdateScreen(
             AppTopBar(
                 title = stringResource(R.string.update_check_for_update),
                 onBackClick = onBackClick,
-                isLoading = isLoading
+                isLoading = isLoading || isDownloading
             )
         }
     ) { innerPadding ->
@@ -100,29 +103,56 @@ fun CheckUpdateScreen(
     if (showUpdateDialog && updateResult != null) {
         val result = updateResult!!
         AlertDialog(
-            onDismissRequest = { viewModel.dismissUpdateDialog() },
+            onDismissRequest = {
+                if (!isDownloading) {
+                    viewModel.dismissUpdateDialog()
+                }
+            },
             title = { Text(stringResource(R.string.update_new_version_found, result.latestVersion ?: "")) },
             text = {
                 val scrollState = rememberScrollState()
-                Text(
-                    text = result.releaseNotes.orEmpty(),
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .verticalScroll(scrollState)
                         .verticalScrollbar(scrollState)
-                )
+                ) {
+                    if (isDownloading) {
+                        Text(
+                            text = stringResource(R.string.update_downloading, downloadProgress),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(top = 12.dp))
+                        androidx.compose.material3.LinearProgressIndicator(
+                            progress = { downloadProgress / 100f },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else {
+                        Text(
+                            text = result.releaseNotes.orEmpty(),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
             },
             confirmButton = {
-                TextButton(onClick = {
-                    viewModel.dismissUpdateDialog()
-                    result.downloadUrl?.let { Utils.openUri(context, it) }
-                }) {
-                    Text(stringResource(R.string.update_now))
+                if (!isDownloading) {
+                    TextButton(onClick = {
+                        result.downloadUrl?.let { url ->
+                            viewModel.downloadAndInstall(url)
+                        } ?: run {
+                            viewModel.dismissUpdateDialog()
+                        }
+                    }) {
+                        Text(stringResource(R.string.update_now))
+                    }
                 }
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.dismissUpdateDialog() }) {
-                    Text(stringResource(R.string.action_cancel))
+                if (!isDownloading) {
+                    TextButton(onClick = { viewModel.dismissUpdateDialog() }) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
                 }
             },
             containerColor = MaterialTheme.colorScheme.surface
