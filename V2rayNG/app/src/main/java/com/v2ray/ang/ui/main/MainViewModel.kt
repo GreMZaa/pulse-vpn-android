@@ -366,13 +366,13 @@ class MainViewModel(
 
     // ---------- Initialization ----------
     fun initialize() {
+        checkForUpdateSilently()
         viewModelScope.launch(preloadDispatcher) {
             try {
                 initialPageReady.await()
                 delay(32)
                 dataSource.initAssets()
                 dataSource.syncSubscriptions()
-                checkForUpdateSilently()
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
