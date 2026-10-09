@@ -964,8 +964,28 @@ class MainViewModel(
         if (testRequests.completeBulk(requestId) == null) return
         resetTestStatus()
         viewModelScope.launch(ioDispatcher) {
-            cacheMutex.withLock { groupDataCache.clear() }
-            reloadAllGroups(_uiState.value.groups.map { it.id })
+            try {
+                // 1. Автоматически сортируем серверы по пингу в БД (работающие поднимаются наверх)
+                sortByTestResultsInternal()
+                cacheMutex.withLock { groupDataCache.clear() }
+
+                // 2. Обновляем вкладки и список серверов
+                setupGroupTab(forceRefresh = true).join()
+
+                // 3. Автоматически выбираем самый быстрый работающий сервер
+                val selectedGroup = uiState.value.selectedGroupId
+                val freshServers = loadGroup(selectedGroup, forceRefresh = true)
+                val fastestWorking = freshServers.filter { it.testDelayMillis > 0L }
+                    .minByOrNull { it.testDelayMillis }
+                    ?: freshServers.firstOrNull()
+
+                fastestWorking?.let {
+                    dataSource.setSelectServer(it.guid)
+                    updateSelectedGuid(it.guid)
+                }
+            } catch (e: Exception) {
+                LogUtil.e(AppConfig.TAG, "Auto sort and select fastest server failed", e)
+            }
         }
     }
 
