@@ -86,48 +86,70 @@ jobs:
         distribution: 'temurin'
         java-version: '21'
 
-    - name: Decode Keystore
-      uses: timheuer/base64-to-file@v2.0.0
-      id: android_keystore
-      with:
-        fileName: "android_keystore.jks"
-        encodedString: ${{ secrets.APP_KEYSTORE_BASE64 }}
+    - name: Setup Keystore
+      run: |
+        if [ -n "${{ secrets.APP_KEYSTORE_BASE64 }}" ]; then
+          echo "${{ secrets.APP_KEYSTORE_BASE64 }}" | base64 -d > android_keystore.jks
+          echo "KEYSTORE_PATH=$(pwd)/android_keystore.jks" >> $GITHUB_ENV
+          echo "KEYSTORE_PASS=${{ secrets.APP_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+          echo "KEY_ALIAS=${{ secrets.APP_KEYSTORE_ALIAS }}" >> $GITHUB_ENV
+          echo "KEY_PASS=${{ secrets.APP_KEY_PASSWORD }}" >> $GITHUB_ENV
+        else
+          echo "Creating self-signed keystore for release build..."
+          keytool -genkeypair -v -keystore pulse_keystore.jks -alias pulsevpn -keyalg RSA -keysize 2048 -validity 10000 -storepass pulsevpn123 -keypass pulsevpn123 -dname "CN=PulseVPN, OU=Pulse, O=Pulse, L=City, S=State, C=US"
+          echo "KEYSTORE_PATH=$(pwd)/pulse_keystore.jks" >> $GITHUB_ENV
+          echo "KEYSTORE_PASS=pulsevpn123" >> $GITHUB_ENV
+          echo "KEY_ALIAS=pulsevpn" >> $GITHUB_ENV
+          echo "KEY_PASS=pulsevpn123" >> $GITHUB_ENV
+        fi
 
     - name: Build APK
       run: |
         cd ${{ github.workspace }}/V2rayNG
         echo "sdk.dir=${ANDROID_HOME}" > local.properties
         chmod 755 gradlew
-        ./gradlew licenseFdroidReleaseReport
-        ./gradlew assembleRelease -Pandroid.injected.signing.store.file=${{ steps.android_keystore.outputs.filePath }} -Pandroid.injected.signing.store.password=${{ secrets.APP_KEYSTORE_PASSWORD }} -Pandroid.injected.signing.key.alias=${{ secrets.APP_KEYSTORE_ALIAS }} -Pandroid.injected.signing.key.password=${{ secrets.APP_KEY_PASSWORD }}
-    
+        ./gradlew licenseFdroidReleaseReport || true
+        ./gradlew assembleRelease \
+          -Pandroid.injected.signing.store.file=${KEYSTORE_PATH} \
+          -Pandroid.injected.signing.store.password=${KEYSTORE_PASS} \
+          -Pandroid.injected.signing.key.alias=${KEY_ALIAS} \
+          -Pandroid.injected.signing.key.password=${KEY_PASS}
+
     - name: Upload arm64-v8a APK
-      uses: actions/upload-artifact@v7
-      if: ${{  success() }}
-      with:
-        name: arm64-v8a
-        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*arm64-v8a*.apk
-
-    - name: Upload armeabi-v7a APK
-      uses: actions/upload-artifact@v7
-      if: ${{  success() }}
-      with:
-        name: armeabi-v7a
-        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*armeabi-v7a*.apk
-
-    - name: Upload x86 APK
-      uses: actions/upload-artifact@v7
-      if: ${{  success() }}
-      with:
-        name: x86-apk
-        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*x86*.apk
-
-    - name: Upload universal APK
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       if: ${{ success() }}
       with:
-        name: universal-apk
-        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*universal*.apk
+        name: PulseVPN-arm64-v8a
+        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/*/*arm64-v8a*.apk
+
+    - name: Upload armeabi-v7a APK
+      uses: actions/upload-artifact@v4
+      if: ${{ success() }}
+      with:
+        name: PulseVPN-armeabi-v7a
+        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/*/*armeabi-v7a*.apk
+
+    - name: Upload universal APK
+      uses: actions/upload-artifact@v4
+      if: ${{ success() }}
+      with:
+        name: PulseVPN-universal
+        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/*/*universal*.apk
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      if: github.ref == 'refs/heads/master'
+      with:
+        tag_name: v2.3.10-pulse
+        name: "ПУЛЬС ВПН v2.3.10"
+        body: |
+          Официальный релиз приложения **ПУЛЬС // ВПН** для Android.
+          - Быстрое подключение и защищенный трафик (V2Ray / Xray)
+          - Встроенная автоматическая активация по промокоду
+        draft: false
+        prerelease: false
+        files: |
+          ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/*/*.apk
 
   sign-and-release:
     needs: build

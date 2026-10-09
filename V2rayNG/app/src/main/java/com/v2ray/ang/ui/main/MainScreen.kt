@@ -28,11 +28,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import com.v2ray.ang.dto.UrlContentRequest
 import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.ui.compose.LocalDarkTheme
 import com.v2ray.ang.ui.compose.QRCodeDialog
+import com.v2ray.ang.util.HttpUtil
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun MainScreen(
@@ -63,6 +77,11 @@ fun MainScreen(
     }
 
     var shareTarget by remember { mutableStateOf<Triple<String, ProfileItem, Boolean>?>(null) }
+    var showPromoActivationDialog by remember { mutableStateOf(groups.isEmpty()) }
+    var enteredPromoCode by remember { mutableStateOf("") }
+    var promoDialogError by remember { mutableStateOf<String?>(null) }
+    var isActivatingPromo by remember { mutableStateOf(false) }
+
     val removeServer: (String, String) -> Unit = { guid, profileName ->
         if (confirmRemove) {
             showRemoveConfirm = ServerDeleteTarget(guid, profileName)
@@ -135,6 +154,102 @@ fun MainScreen(
     }
     if (shareQRCodeBitmap != null) {
         QRCodeDialog(bitmap = shareQRCodeBitmap, onDismiss = { onAction(MainAction.DismissQRCodeDialog) })
+    }
+
+    if (showPromoActivationDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                // If there are already servers, user can dismiss
+                if (groups.isNotEmpty()) {
+                    showPromoActivationDialog = false
+                    promoDialogError = null
+                }
+            },
+            title = {
+                Text(text = "Активация ПУЛЬС ВПН")
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Введите ваш промокод или ключ доступа для автоматического подключения серверов:",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = enteredPromoCode,
+                        onValueChange = {
+                            enteredPromoCode = it.trim()
+                            promoDialogError = null
+                        },
+                        label = { Text("Промокод / Ключ") },
+                        placeholder = { Text("например: PULSE-FREE") },
+                        singleLine = true,
+                        isError = promoDialogError != null,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    if (promoDialogError != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = promoDialogError ?: "",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val code = enteredPromoCode.trim()
+                        if (code.isEmpty()) {
+                            promoDialogError = "Пожалуйста, введите промокод"
+                            return@Button
+                        }
+                        isActivatingPromo = true
+                        promoDialogError = null
+                        scope.launch {
+                            try {
+                                val url = "https://greemzaa-pulsewl-vpn.static.hf.space/sub/$code"
+                                val content = withContext(Dispatchers.IO) {
+                                    HttpUtil.getUrlContent(UrlContentRequest(url = url, timeout = 10000))
+                                }
+                                if (!content.isNullOrBlank()) {
+                                    onAction(MainAction.ImportBatchConfig(content.trim()))
+                                    showPromoActivationDialog = false
+                                    enteredPromoCode = ""
+                                } else {
+                                    promoDialogError = "Неверный промокод или сервер недоступен"
+                                }
+                            } catch (e: Exception) {
+                                promoDialogError = "Ошибка подключения: ${e.message}"
+                            } finally {
+                                isActivatingPromo = false
+                            }
+                        }
+                    },
+                    enabled = !isActivatingPromo
+                ) {
+                    if (isActivatingPromo) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Активировать")
+                    }
+                }
+            },
+            dismissButton = {
+                if (groups.isNotEmpty()) {
+                    TextButton(onClick = {
+                        showPromoActivationDialog = false
+                        promoDialogError = null
+                    }) {
+                        Text("Отмена")
+                    }
+                }
+            }
+        )
     }
 
     ModalNavigationDrawer(
