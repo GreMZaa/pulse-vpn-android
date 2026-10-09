@@ -104,7 +104,10 @@ fun MainScreen(
     }
 
     var shareTarget by remember { mutableStateOf<Triple<String, ProfileItem, Boolean>?>(null) }
-    var showPromoActivationDialog by remember { mutableStateOf(groups.isEmpty()) }
+    val hasServers = remember(groups, uiState.selectedGuid) {
+        com.v2ray.ang.handler.MmkvManager.decodeAllServerList().isNotEmpty()
+    }
+    var showPromoActivationDialog by remember { mutableStateOf(!hasServers) }
     var enteredPromoCode by remember { mutableStateOf("") }
     var promoDialogError by remember { mutableStateOf<String?>(null) }
     var isActivatingPromo by remember { mutableStateOf(false) }
@@ -125,13 +128,16 @@ fun MainScreen(
     val lazyListStates = remember { mutableStateMapOf<String, LazyListState>() }
     val lazyGridStates = remember { mutableStateMapOf<String, LazyGridState>() }
 
+    LaunchedEffect(hasServers) {
+        if (!hasServers) {
+            showPromoActivationDialog = true
+        }
+    }
+
     LaunchedEffect(groups) {
         val validGroupIds = groups.map { it.id }.toSet()
         lazyListStates.keys.retainAll(validGroupIds)
         lazyGridStates.keys.retainAll(validGroupIds)
-        if (groups.isEmpty()) {
-            showPromoActivationDialog = true
-        }
     }
 
     LaunchedEffect(groups, uiState.selectedGroupId) {
@@ -190,7 +196,7 @@ fun MainScreen(
         AlertDialog(
             onDismissRequest = {
                 // If there are already servers, user can dismiss
-                if (groups.isNotEmpty()) {
+                if (hasServers) {
                     showPromoActivationDialog = false
                     promoDialogError = null
                 }
@@ -270,7 +276,7 @@ fun MainScreen(
                 }
             },
             dismissButton = {
-                if (groups.isNotEmpty()) {
+                if (hasServers) {
                     TextButton(onClick = {
                         showPromoActivationDialog = false
                         promoDialogError = null
@@ -434,7 +440,7 @@ fun MainScreen(
                                     shape = CircleShape
                                 )
                                 .clickable {
-                                    if (groups.isEmpty() && !isRunning) {
+                                    if (!hasServers && !isRunning) {
                                         showPromoActivationDialog = true
                                     } else {
                                         onAction(MainAction.ToggleService)
@@ -471,7 +477,7 @@ fun MainScreen(
                 }
 
                 // ЕСЛИ СПИСОК СЕРВЕРОВ ПУСТ — ПОКАЗЫВАЕМ БОЛЬШОЙ ДРУЖЕЛЮБНЫЙ БЛОК ВВОДА ПРОМОКОДА
-                if (groups.isEmpty()) {
+                if (!hasServers) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
