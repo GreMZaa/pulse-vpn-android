@@ -34,6 +34,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -157,9 +158,9 @@ fun MainDrawerContent(
             Spacer(modifier = Modifier.weight(1f))
 
             Text(
-                text = "ПУЛЬС // Быстрое подключение",
+                text = "ПУЛЬС",
                 fontSize = 11.sp,
-                color = Color(0xFF546E7A)
+                color = Color(0xFF555555)
             )
             Spacer(modifier = Modifier.height(16.dp))
         }
