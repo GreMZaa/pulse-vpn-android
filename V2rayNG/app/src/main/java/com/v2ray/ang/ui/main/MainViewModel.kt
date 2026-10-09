@@ -311,6 +311,7 @@ class MainViewModel(
             }
 
             MainAction.CheckForUpdateSilently -> checkForUpdateSilently()
+            MainAction.CheckForUpdateExplicit -> checkForUpdateExplicitly()
             MainAction.DismissUpdateDialog -> {
                 _uiState.update { it.copy(appUpdateResult = null, isUpdatingApp = false) }
             }
@@ -328,6 +329,25 @@ class MainViewModel(
             is MainAction.ShareClipboard,
             is MainAction.ShareFullContent -> {
                 // Handled by Activity via its onAction lambda
+            }
+        }
+    }
+
+    private fun checkForUpdateExplicitly() {
+        launchLoading {
+            withContext(Dispatchers.IO) {
+                try {
+                    val preRelease = MmkvManager.decodeSettingsBool(AppConfig.PREF_CHECK_UPDATE_PRE_RELEASE, false)
+                    val result = UpdateCheckerManager.checkForUpdate(preRelease)
+                    if (result.hasUpdate) {
+                        _uiState.update { it.copy(appUpdateResult = result) }
+                    } else {
+                        toastSuccess(R.string.update_already_latest_version)
+                    }
+                } catch (e: Exception) {
+                    LogUtil.e(AppConfig.TAG, "Update check failed", e)
+                    toastError(R.string.toast_failure)
+                }
             }
         }
     }

@@ -71,6 +71,7 @@ sealed interface MainAction {
 
     data object LocateHandled : MainAction
     data object CheckForUpdateSilently : MainAction
+    data object CheckForUpdateExplicit : MainAction
     data object DismissUpdateDialog : MainAction
     data class ConfirmAppUpdate(val downloadUrl: String) : MainAction
 }

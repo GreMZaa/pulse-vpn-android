@@ -492,7 +492,7 @@ fun MainScreen(
                 },
                 onRefresh = {
                     scope.launch { drawerState.close() }
-                    onAction(MainAction.TestRealAllServers)
+                    onAction(MainAction.CheckForUpdateExplicit)
                 }
             )
         }
