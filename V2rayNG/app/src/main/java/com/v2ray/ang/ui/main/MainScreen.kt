@@ -365,34 +365,7 @@ fun MainScreen(
             topBar = {
                 MainTopBar(
                     isLoading = isLoading,
-                    showSearch = showSearch,
-                    searchQuery = searchQuery,
-                    onSearchQueryChange = { query: String ->
-                        searchQuery = query
-                        onAction(MainAction.Search(query))
-                    },
-                    onSearchClose = {
-                        searchQuery = ""
-                        onAction(MainAction.Search(""))
-                        showSearch = false
-                    },
-                    onSearchToggle = { show: Boolean -> showSearch = show },
-                    onMenuClick = { scope.launch { drawerState.open() } },
-                    onAction = onAction,
-                    onMoreMenuAction = { action ->
-                        when (action) {
-                            MainMoreMenuAction.RestartService -> onAction(MainAction.RestartService)
-                            MainMoreMenuAction.DeleteAll -> showDelAllConfirm = true
-                            MainMoreMenuAction.DeleteDuplicate -> showDelDuplicateConfirm = true
-                            MainMoreMenuAction.DeleteInvalid -> showDelInvalidConfirm = true
-                            MainMoreMenuAction.ExportAll -> onAction(MainAction.ExportAll)
-                            MainMoreMenuAction.LocateSelected -> onAction(MainAction.LocateSelectedServer)
-                            MainMoreMenuAction.SortByTestResults -> onAction(MainAction.SortByTestResults)
-                            MainMoreMenuAction.TestAll -> onAction(MainAction.TestAllServers)
-                            MainMoreMenuAction.TestAllRealPing -> onAction(MainAction.TestRealAllServers)
-                            MainMoreMenuAction.UpdateSubscriptions -> onAction(MainAction.UpdateSubscriptions)
-                        }
-                    }
+                    onMenuClick = { scope.launch { drawerState.open() } }
                 )
             },
             bottomBar = {
@@ -473,6 +446,28 @@ fun MainScreen(
                             fontSize = 12.sp,
                             color = Color(0xFF90A4AE)
                         )
+
+                        if (hasServers) {
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                androidx.compose.material3.OutlinedButton(
+                                    onClick = { onAction(MainAction.TestRealAllServers) },
+                                    modifier = Modifier.height(34.dp),
+                                    shape = RoundedCornerShape(17.dp),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF263238)),
+                                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                        contentColor = Color(0xFF00F59B)
+                                    ),
+                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
+                                ) {
+                                    Text("⚡ Проверить и поднять рабочие наверх", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                        }
                     }
                 }
 

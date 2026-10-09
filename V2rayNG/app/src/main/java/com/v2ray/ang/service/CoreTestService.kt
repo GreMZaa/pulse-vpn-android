@@ -166,7 +166,7 @@ class CoreTestService : Service() {
                         AngConfigManager.removeInvalidServer(message.subscriptionId)
                     }
 
-                    if (MmkvManager.decodeSettingsBool(AppConfig.PREF_AUTO_SORT_AFTER_TEST, false)) {
+                    if (MmkvManager.decodeSettingsBool(AppConfig.PREF_AUTO_SORT_AFTER_TEST, true)) {
                         AngConfigManager.sortByTestResultsForSub(message.subscriptionId)
                     }
                 }
