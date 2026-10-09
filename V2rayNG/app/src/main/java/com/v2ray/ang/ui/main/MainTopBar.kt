@@ -68,6 +68,13 @@ fun MainTopBar(
             }
         },
         actions = {
+            IconButton(onClick = { onAction(MainAction.ImportBatchConfig("__OPEN_PROMO_DIALOG__")) }) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_promotion_24dp),
+                    contentDescription = "Ввести промокод",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
             if (!showSearch) {
                 IconButton(onClick = { onSearchToggle(true) }) {
                     Icon(painterResource(R.drawable.ic_search_24dp), contentDescription = stringResource(R.string.acc_search))

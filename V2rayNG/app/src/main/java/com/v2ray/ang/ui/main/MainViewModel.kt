@@ -517,9 +517,19 @@ class MainViewModel(
                         count > 0 -> {
                             toast(dataSource.getString(R.string.title_import_config_count, count))
                             setupGroupTab(forceRefresh = true)
+                            val guids = dataSource.getServerGuidList(uiState.value.selectedGroupId)
+                            if (guids.isNotEmpty()) {
+                                updateSelectedGuid(guids.first())
+                            }
                         }
 
-                        countSub > 0 -> setupGroupTab(forceRefresh = true)
+                        countSub > 0 -> {
+                            setupGroupTab(forceRefresh = true)
+                            val guids = dataSource.getServerGuidList(uiState.value.selectedGroupId)
+                            if (guids.isNotEmpty()) {
+                                updateSelectedGuid(guids.first())
+                            }
+                        }
                         else -> toastError(R.string.toast_failure)
                     }
                 } catch (cancelled: CancellationException) {

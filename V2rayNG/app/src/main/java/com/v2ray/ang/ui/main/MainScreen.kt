@@ -37,7 +37,30 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
+import com.v2ray.ang.R
 import com.v2ray.ang.dto.UrlContentRequest
 import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.ui.compose.LocalDarkTheme
@@ -309,14 +332,177 @@ fun MainScreen(
             },
             floatingActionButton = {},
         ) { innerPadding ->
-            val layoutDirection = LocalLayoutDirection.current
-
-            if (groups.isNotEmpty()) {
-                Column(
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                // ВЕРХНИЙ БЛОК: КАРТОЧКА БЫСТРОГО ПОДКЛЮЧЕНИЯ (POWER BUTTON)
+                Card(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isRunning) Color(0xFF0F291E) else Color(0xFF161B26)
+                    ),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 18.dp, horizontal = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // БОЛЬШАЯ КРУГЛАЯ КНОПКА ПИТАНИЯ (POWER BUTTON)
+                        Box(
+                            modifier = Modifier
+                                .size(96.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (isRunning) Color(0xFF00E676) else Color(0xFF263238)
+                                )
+                                .border(
+                                    width = 4.dp,
+                                    color = if (isRunning) Color(0xFFB9F6CA) else Color(0xFF37474F),
+                                    shape = CircleShape
+                                )
+                                .clickable {
+                                    onAction(MainAction.ToggleService)
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = if (isRunning) painterResource(R.drawable.ic_stop_24dp)
+                                else painterResource(R.drawable.ic_play_24dp),
+                                contentDescription = if (isRunning) "Отключить" else "Подключить",
+                                tint = if (isRunning) Color(0xFF003314) else Color.White,
+                                modifier = Modifier.size(44.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text = if (isRunning) "ЗАЩИЩЕНО // В СЕТИ" else "ОТКЛЮЧЕНО",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp,
+                            color = if (isRunning) Color(0xFF00E676) else Color.White
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = if (isRunning) "Нажмите для остановки VPN" else "Нажмите большую кнопку для подключения",
+                            fontSize = 12.sp,
+                            color = Color(0xFF90A4AE)
+                        )
+                    }
+                }
+
+                // ЕСЛИ СПИСОК СЕРВЕРОВ ПУСТ — ПОКАЗЫВАЕМ БОЛЬШОЙ ДРУЖЕЛЮБНЫЙ БЛОК ВВОДА ПРОМОКОДА
+                if (groups.isEmpty()) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1F2C)),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "🚀 Добро пожаловать в ПУЛЬС ВПН",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = Color.White
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Text(
+                                text = "Для автоматической загрузки серверов введите промокод или персональный ключ:",
+                                fontSize = 13.sp,
+                                color = Color(0xFFB0BEC5),
+                                textAlign = TextAlign.Center
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            OutlinedTextField(
+                                value = enteredPromoCode,
+                                onValueChange = {
+                                    enteredPromoCode = it.trim()
+                                    promoDialogError = null
+                                },
+                                label = { Text("Промокод / Ключ") },
+                                placeholder = { Text("например: PULSE-FREE") },
+                                singleLine = true,
+                                isError = promoDialogError != null,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            if (promoDialogError != null) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = promoDialogError ?: "",
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontSize = 12.sp
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Button(
+                                onClick = {
+                                    val code = enteredPromoCode.trim()
+                                    if (code.isEmpty()) {
+                                        promoDialogError = "Введите промокод"
+                                        return@Button
+                                    }
+                                    isActivatingPromo = true
+                                    promoDialogError = null
+                                    scope.launch {
+                                        try {
+                                            val url = "https://greemzaa-pulsewl-vpn.static.hf.space/sub/$code"
+                                            val content = withContext(Dispatchers.IO) {
+                                                HttpUtil.getUrlContent(UrlContentRequest(url = url, timeout = 10000))
+                                            }
+                                            if (!content.isNullOrBlank()) {
+                                                onAction(MainAction.ImportBatchConfig(content.trim()))
+                                                enteredPromoCode = ""
+                                            } else {
+                                                promoDialogError = "Неверный промокод или сервер недоступен"
+                                            }
+                                        } catch (e: Exception) {
+                                            promoDialogError = "Ошибка: ${e.message}"
+                                        } finally {
+                                            isActivatingPromo = false
+                                        }
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                enabled = !isActivatingPromo
+                            ) {
+                                if (isActivatingPromo) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        color = Color.White,
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Text("⚡ Активировать и получить доступ", fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // КОГДА СЕРВЕРЫ УЖЕ ЗАГРУЖЕНЫ — ОТОБРАЖАЕМ ИХ СПИСКОМ
                     if (groups.size > 1) {
                         GroupTabBar(
                             groups = groups,
@@ -371,5 +557,6 @@ fun MainScreen(
                 }
             }
         }
+
     }
 }
