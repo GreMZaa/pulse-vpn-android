@@ -93,6 +93,7 @@ fun MainScreen(
     val shareQRCodeBitmap = uiState.shareQRCodeBitmap
 
     val isDarkTheme = LocalDarkTheme.current
+    val context = androidx.compose.ui.platform.LocalContext.current
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var showSearch by remember { mutableStateOf(false) }
@@ -321,6 +322,26 @@ fun MainScreen(
                             text = update.releaseNotes.orEmpty().ifBlank { "Доступно новое обновление приложения ПУЛЬС ВПН." },
                             style = MaterialTheme.typography.bodyMedium
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "💡 Если система сообщает о конфликте пакета, сначала удалите старую версию с телефона, либо нажмите кнопку ниже:",
+                            fontSize = 12.sp,
+                            color = Color(0xFFFFB74D)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        androidx.compose.material3.TextButton(
+                            onClick = {
+                                try {
+                                    val uninstallIntent = Intent(Intent.ACTION_DELETE).apply {
+                                        data = android.net.Uri.parse("package:" + context.packageName)
+                                    }
+                                    context.startActivity(uninstallIntent)
+                                } catch (_: Exception) {}
+                            },
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text("🗑 Удалить текущее перед установкой", color = Color(0xFFFF5252), fontSize = 12.sp)
+                        }
                     }
                 }
             },

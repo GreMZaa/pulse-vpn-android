@@ -88,7 +88,13 @@ jobs:
 
     - name: Setup Keystore
       run: |
-        if [ -n "${{ secrets.APP_KEYSTORE_BASE64 }}" ]; then
+        if [ -f "pulse_release.jks" ]; then
+          echo "Using repository committed release keystore..."
+          echo "KEYSTORE_PATH=$(pwd)/pulse_release.jks" >> $GITHUB_ENV
+          echo "KEYSTORE_PASS=pulsevpn123" >> $GITHUB_ENV
+          echo "KEY_ALIAS=pulsevpn" >> $GITHUB_ENV
+          echo "KEY_PASS=pulsevpn123" >> $GITHUB_ENV
+        elif [ -n "${{ secrets.APP_KEYSTORE_BASE64 }}" ]; then
           echo "${{ secrets.APP_KEYSTORE_BASE64 }}" | base64 -d > android_keystore.jks
           echo "KEYSTORE_PATH=$(pwd)/android_keystore.jks" >> $GITHUB_ENV
           echo "KEYSTORE_PASS=${{ secrets.APP_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
@@ -96,8 +102,8 @@ jobs:
           echo "KEY_PASS=${{ secrets.APP_KEY_PASSWORD }}" >> $GITHUB_ENV
         else
           echo "Creating self-signed keystore for release build..."
-          keytool -genkeypair -v -keystore pulse_keystore.jks -alias pulsevpn -keyalg RSA -keysize 2048 -validity 10000 -storepass pulsevpn123 -keypass pulsevpn123 -dname "CN=PulseVPN, OU=Pulse, O=Pulse, L=City, S=State, C=US"
-          echo "KEYSTORE_PATH=$(pwd)/pulse_keystore.jks" >> $GITHUB_ENV
+          keytool -genkeypair -v -keystore pulse_release.jks -alias pulsevpn -keyalg RSA -keysize 2048 -validity 10000 -storepass pulsevpn123 -keypass pulsevpn123 -dname "CN=PulseVPN, OU=Pulse, O=Pulse, L=City, S=State, C=US"
+          echo "KEYSTORE_PATH=$(pwd)/pulse_release.jks" >> $GITHUB_ENV
           echo "KEYSTORE_PASS=pulsevpn123" >> $GITHUB_ENV
           echo "KEY_ALIAS=pulsevpn" >> $GITHUB_ENV
           echo "KEY_PASS=pulsevpn123" >> $GITHUB_ENV
