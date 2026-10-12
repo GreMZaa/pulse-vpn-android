@@ -5,11 +5,13 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DrawerState
@@ -85,7 +87,7 @@ fun MainDrawerContent(
         drawerState = drawerState,
         modifier = Modifier
             .fillMaxWidth(0.85f)
-            .androidx.compose.foundation.layout.widthIn(max = 320.dp),
+            .widthIn(max = 320.dp),
         drawerContainerColor = Color(0xFF141414)
     ) {
         Column(
@@ -140,7 +142,7 @@ fun MainDrawerContent(
                     .fillMaxWidth()
                     .height(48.dp),
                 shape = RoundedCornerShape(12.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF222222),
                     contentColor = Color.White
@@ -170,7 +172,7 @@ fun MainDrawerContent(
                     .fillMaxWidth()
                     .height(48.dp),
                 shape = RoundedCornerShape(12.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.White,
                     contentColor = Color.Black
