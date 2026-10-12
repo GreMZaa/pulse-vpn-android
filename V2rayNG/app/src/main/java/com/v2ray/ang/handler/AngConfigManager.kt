@@ -567,14 +567,19 @@ object AngConfigManager {
 
         val sorted = serverList
             .map { guid ->
+                val profile = MmkvManager.decodeServerConfig(guid)
                 val delay =
                     MmkvManager.decodeServerAffiliationInfo(guid)?.testDelayMillis ?: 0L
-                val score = when {
+                val priority = profile?.getWhitelistPriority() ?: 3
+
+                val delayScore = when {
                     delay in 1L..999L -> delay
-                    delay >= 1000L -> 100_000L + delay
-                    else -> Long.MAX_VALUE // 0 (не тестирован) или <0 (нет ответа/ошибка) - в самый низ
+                    delay >= 1000L -> 10_000L + delay
+                    else -> 500_000L // 0 (не тестирован) или <0 (нет ответа)
                 }
-                guid to score
+                // priority 0 (Белый список) ВСЕГДА выше остальных серверов
+                val totalScore = (priority * 1_000_000L) + delayScore
+                guid to totalScore
             }
             .sortedBy { it.second }
             .map { it.first }

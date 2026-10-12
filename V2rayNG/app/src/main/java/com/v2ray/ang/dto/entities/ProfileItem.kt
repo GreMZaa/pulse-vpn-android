@@ -108,6 +108,42 @@ data class ProfileItem(
             subscriptionId = "",
             addedTime = 0L,
             remarks = "",
-            description = null
         )
+
+    /**
+     * Determines whitelist priority for Russian ISP filtering bypass.
+     * 0: VLESS Reality + Russian domain (top whitelist)
+     * 1: Russian server / explicit Russia mark
+     * 2: Other Reality servers
+     * 3: Plain TLS / foreign domains (lowest)
+     */
+    fun getWhitelistPriority(): Int {
+        val sniLower = (sni ?: "").lowercase()
+        val secLower = (security ?: "").lowercase()
+        val remarksLower = remarks.lowercase()
+
+        val isRussianSni = sniLower.contains("yandex") ||
+                sniLower.contains("vk.com") ||
+                sniLower.contains("ok.ru") ||
+                sniLower.contains("mail.ru") ||
+                sniLower.contains("gosuslugi") ||
+                sniLower.contains("ozon") ||
+                sniLower.contains("wildberries") ||
+                sniLower.contains("sber") ||
+                sniLower.contains("tinkoff") ||
+                sniLower.contains("t-bank") ||
+                sniLower.contains("max.ru") ||
+                sniLower.contains("ligastavok") ||
+                sniLower.contains("selectel") ||
+                sniLower.contains("dzen.ru") ||
+                sniLower.contains("rutube") ||
+                sniLower.contains("avito") ||
+                sniLower.endsWith(".ru") ||
+                sniLower.endsWith(".рф")
+
+        if (secLower == "reality" && isRussianSni) return 0
+        if (remarksLower.contains("🇷🇺") || remarksLower.contains("russia") || remarksLower.contains("россия") || remarksLower.contains("бел") || remarksLower.contains("white")) return 1
+        if (secLower == "reality") return 2
+        return 3
+    }
 }

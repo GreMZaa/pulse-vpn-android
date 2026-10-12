@@ -436,7 +436,19 @@ class MainViewModel(
                 profile = profile.copy(),
                 testDelayMillis = affiliation?.testDelayMillis ?: 0L
             )
-        }
+        }.sortedWith(
+            compareBy(
+                { it.profile.getWhitelistPriority() },
+                {
+                    val delay = it.testDelayMillis
+                    when {
+                        delay in 1L..999L -> delay
+                        delay >= 1000L -> 10_000L + delay
+                        else -> 500_000L
+                    }
+                }
+            )
+        )
 
     private suspend fun loadGroup(
         groupId: String,
