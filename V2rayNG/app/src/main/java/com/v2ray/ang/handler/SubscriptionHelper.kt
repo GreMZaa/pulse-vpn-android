@@ -20,7 +20,7 @@ object SubscriptionHelper {
 
     fun getActiveSubscription(): SubscriptionInfo? {
         val code = MmkvManager.decodeSettingsString(AppConfig.PREF_SUBSCRIPTION_CODE)
-        val serverCount = MmkvManager.decodeServerList().size
+        val serverCount = MmkvManager.decodeAllServerList().size
         if (code.isNullOrBlank() && serverCount == 0) {
             return null
         }

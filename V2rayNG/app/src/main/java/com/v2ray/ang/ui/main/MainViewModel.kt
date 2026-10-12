@@ -342,7 +342,7 @@ class MainViewModel(
                     if (result.hasUpdate) {
                         _uiState.update { it.copy(appUpdateResult = result) }
                     } else {
-                        val verStr = BuildConfig.VERSION_NAME
+                        val verStr = com.v2ray.ang.BuildConfig.VERSION_NAME
                         val msg = "${getApplication<com.v2ray.ang.AngApplication>().getString(R.string.update_already_latest_version)} (v$verStr)"
                         toastSuccess(msg)
                     }

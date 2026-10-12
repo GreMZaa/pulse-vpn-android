@@ -38,7 +38,7 @@ object UpdateCheckerManager {
             )
         }
 
-        val allReleases = JsonUtil.fromJsonSafe(response, Array<GitHubRelease>::class.java)?.toList()
+        val allReleases = response?.let { JsonUtil.fromJsonSafe(it, Array<GitHubRelease>::class.java) }?.toList()
 
         // 2. Если список получен, находим самый свежий релиз ПУЛЬС (отфильтровав старые 2.3.x)
         val targetRelease: GitHubRelease? = if (!allReleases.isNullOrEmpty()) {
@@ -62,7 +62,7 @@ object UpdateCheckerManager {
                     )
                 )
             }
-            JsonUtil.fromJsonSafe(singleResp, GitHubRelease::class.java)?.takeIf { !isLegacyRelease(it.tagName) }
+            singleResp?.let { JsonUtil.fromJsonSafe(it, GitHubRelease::class.java) }?.takeIf { !isLegacyRelease(it.tagName) }
         }
 
         if (targetRelease == null) {
