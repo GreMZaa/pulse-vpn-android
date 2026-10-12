@@ -1042,7 +1042,7 @@ class MainViewModel(
         val selectedGroup = uiState.value.selectedGroupId
         val cached = groupDataCache[selectedGroup] ?: emptyList()
         val allList = if (cached.isNotEmpty()) cached else {
-            val guids = dataSource.getServerGuidList(selectedGroup).ifEmpty { dataSource.getAllServerList() }
+            val guids = dataSource.getServerGuidList(selectedGroup).ifEmpty { com.v2ray.ang.handler.MmkvManager.decodeAllServerList() }
             guids.mapNotNull { guid -> dataSource.decodeServerConfig(guid)?.let { ServersCache(guid, it, 0L) } }
         }
         if (allList.isEmpty()) return null
