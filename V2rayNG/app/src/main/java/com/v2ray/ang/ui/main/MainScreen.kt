@@ -378,6 +378,8 @@ fun MainScreen(
                                         onAction(MainAction.ImportBatchConfig(data.rawConfig))
                                         showPromoFullscreen = false
                                         enteredPromoCode = ""
+                                        kotlinx.coroutines.delay(600)
+                                        onAction(MainAction.TestRealAllServers)
                                     } else {
                                         promoDialogError = res.exceptionOrNull()?.message ?: "Промокод не найден или срок действия истек"
                                     }

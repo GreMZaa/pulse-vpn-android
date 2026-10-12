@@ -395,13 +395,17 @@ class MainViewModel(
 
     // ---------- Initialization ----------
     fun initialize() {
-        // Only check updates when manually requested by user from drawer
         viewModelScope.launch(preloadDispatcher) {
             try {
                 initialPageReady.await()
-                delay(32)
+                delay(300)
                 dataSource.initAssets()
                 dataSource.syncSubscriptions()
+                checkForUpdateSilently()
+                delay(500)
+                withContext(Dispatchers.Main) {
+                    testAllRealPing()
+                }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {

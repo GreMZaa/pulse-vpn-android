@@ -261,23 +261,34 @@ fun SubSettingScreen(
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column {
-                                    Text("Осталось", fontSize = 11.sp, color = Color(0xFF777777))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Осталось времени", fontSize = 11.sp, color = Color(0xFF888888))
+                                    Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        "${info.daysLeft} дней",
+                                        text = formatRemainingTime(info.expiresAt),
                                         fontSize = 15.sp,
-                                        fontWeight = FontWeight.SemiBold,
+                                        fontWeight = FontWeight.Bold,
                                         color = Color.White
                                     )
+                                    if (info.expiresAt > 0L) {
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = "До ${formatExpireDate(info.expiresAt)}",
+                                            fontSize = 11.sp,
+                                            color = Color(0xFFAAAAAA)
+                                        )
+                                    }
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
-                                    Text("Серверов в пуле", fontSize = 11.sp, color = Color(0xFF777777))
+                                    Text("Серверов в пуле", fontSize = 11.sp, color = Color(0xFF888888))
+                                    Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        "${info.serverCount} узлов",
+                                        text = "${info.serverCount} узлов",
                                         fontSize = 15.sp,
-                                        fontWeight = FontWeight.SemiBold,
+                                        fontWeight = FontWeight.Bold,
                                         color = Color.White
                                     )
                                 }
@@ -502,4 +513,26 @@ fun SubSettingScreen(
 
         }
     }
+}
+
+private fun formatRemainingTime(expiresAt: Long): String {
+    val now = System.currentTimeMillis()
+    if (expiresAt <= 0L) return "Без ограничений"
+    val diff = expiresAt - now
+    if (diff <= 0) return "Срок истек"
+    val days = (diff / (1000L * 60 * 60 * 24)).toInt()
+    val hours = ((diff / (1000L * 60 * 60)) % 24).toInt()
+    val minutes = ((diff / (1000L * 60)) % 60).toInt()
+    return when {
+        days > 0 && hours > 0 -> "$days дн. $hours ч."
+        days > 0 -> "$days дн."
+        hours > 0 -> "$hours ч. $minutes мин."
+        else -> "$minutes мин."
+    }
+}
+
+private fun formatExpireDate(expiresAt: Long): String {
+    if (expiresAt <= 0L) return ""
+    val sdf = java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale.getDefault())
+    return sdf.format(java.util.Date(expiresAt))
 }

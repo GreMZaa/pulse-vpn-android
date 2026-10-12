@@ -88,6 +88,7 @@ class MainActivity : HelperBaseComponentActivity() {
             val refreshGroups = SettingsChangeManager.consumeSetupGroupTab()
             mainViewModel.refreshUiSettings()
             mainViewModel.reloadServerList()
+            mainViewModel.testAllRealPing()
             if (refreshGroups) mainViewModel.onAction(MainAction.RefreshGroups)
             if (restartService) LauncherManager.restartService(this)
         }
