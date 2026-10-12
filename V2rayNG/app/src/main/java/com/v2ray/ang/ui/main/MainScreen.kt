@@ -61,6 +61,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -68,6 +73,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -298,14 +304,57 @@ fun MainScreen(
 
                     Spacer(modifier = Modifier.height(32.dp))
 
+                    val doActivatePromo = {
+                        val code = enteredPromoCode.trim()
+                        if (code.isEmpty()) {
+                            promoDialogError = "Пожалуйста, введите промокод"
+                        } else if (!isActivatingPromo) {
+                            focusManager.clearFocus()
+                            isActivatingPromo = true
+                            promoDialogError = null
+                            scope.launch {
+                                try {
+                                    val res = com.v2ray.ang.handler.SubscriptionHelper.activateCodeOrKey(code)
+                                    if (res.isSuccess) {
+                                        val data = res.getOrThrow()
+                                        onAction(MainAction.ImportBatchConfig(data.rawConfig))
+                                        showPromoFullscreen = false
+                                        enteredPromoCode = ""
+                                        kotlinx.coroutines.delay(600)
+                                        onAction(MainAction.TestRealAllServers)
+                                    } else {
+                                        promoDialogError = res.exceptionOrNull()?.message ?: "Промокод не найден или срок действия истек"
+                                    }
+                                } catch (e: Exception) {
+                                    promoDialogError = "Ошибка: ${e.message}"
+                                } finally {
+                                    isActivatingPromo = false
+                                }
+                            }
+                        }
+                    }
+
                     // Минималистичное аккуратное поле ввода
                     OutlinedTextField(
                         value = enteredPromoCode,
-                        onValueChange = {
-                            enteredPromoCode = it.trim()
-                            promoDialogError = null
+                        onValueChange = { newValue ->
+                            if (newValue.contains('\n') || newValue.contains('\r')) {
+                                enteredPromoCode = newValue.replace("\n", "").replace("\r", "").trim()
+                                promoDialogError = null
+                                doActivatePromo()
+                            } else {
+                                enteredPromoCode = newValue.trim()
+                                promoDialogError = null
+                            }
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onKeyEvent {
+                                if ((it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyUp) {
+                                    doActivatePromo()
+                                    true
+                                } else false
+                            },
                         placeholder = {
                             Text(
                                 "Промокод или ключ",
@@ -344,8 +393,15 @@ fun MainScreen(
                             focusedTextColor = Color.White,
                             unfocusedTextColor = Color.White
                         ),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
+                        keyboardOptions = KeyboardOptions(
+                            imeAction = ImeAction.Done,
+                            keyboardType = KeyboardType.Ascii
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = { doActivatePromo() },
+                            onGo = { doActivatePromo() },
+                            onSend = { doActivatePromo() }
+                        )
                     )
 
                     if (promoDialogError != null) {
@@ -362,34 +418,7 @@ fun MainScreen(
 
                     // Стильная минималистичная кнопка
                     Button(
-                        onClick = {
-                            val code = enteredPromoCode.trim()
-                            if (code.isEmpty()) {
-                                promoDialogError = "Пожалуйста, введите промокод"
-                                return@Button
-                            }
-                            isActivatingPromo = true
-                            promoDialogError = null
-                            scope.launch {
-                                try {
-                                    val res = com.v2ray.ang.handler.SubscriptionHelper.activateCodeOrKey(code)
-                                    if (res.isSuccess) {
-                                        val data = res.getOrThrow()
-                                        onAction(MainAction.ImportBatchConfig(data.rawConfig))
-                                        showPromoFullscreen = false
-                                        enteredPromoCode = ""
-                                        kotlinx.coroutines.delay(600)
-                                        onAction(MainAction.TestRealAllServers)
-                                    } else {
-                                        promoDialogError = res.exceptionOrNull()?.message ?: "Промокод не найден или срок действия истек"
-                                    }
-                                } catch (e: Exception) {
-                                    promoDialogError = "Ошибка: ${e.message}"
-                                } finally {
-                                    isActivatingPromo = false
-                                }
-                            }
-                        },
+                        onClick = { doActivatePromo() },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),

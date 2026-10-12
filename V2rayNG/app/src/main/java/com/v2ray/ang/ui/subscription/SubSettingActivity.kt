@@ -50,11 +50,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -135,6 +145,7 @@ fun SubSettingScreen(
     onShareClipboard: (String) -> Unit
 ) {
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
     val scope = rememberCoroutineScope()
     val subscriptions by viewModel.subsFlow.collectAsStateWithLifecycle()
 
@@ -342,14 +353,59 @@ fun SubSettingScreen(
 
                         Spacer(modifier = Modifier.height(14.dp))
 
+                        val doActivateKey = {
+                            val code = inputCodeOrKey.trim()
+                            if (code.isEmpty()) {
+                                actionMessage = "Пожалуйста, введите промокод или ключ"
+                                isActionError = true
+                            } else if (!isActivating) {
+                                focusManager.clearFocus()
+                                isActivating = true
+                                actionMessage = null
+                                scope.launch {
+                                    try {
+                                        val res = SubscriptionHelper.activateCodeOrKey(code)
+                                        if (res.isSuccess) {
+                                            val data = res.getOrThrow()
+                                            actionMessage = data.message
+                                            isActionError = false
+                                            inputCodeOrKey = ""
+                                            refreshState()
+                                        } else {
+                                            actionMessage = res.exceptionOrNull()?.message ?: "Промокод не найден или истек"
+                                            isActionError = true
+                                        }
+                                    } catch (e: Exception) {
+                                        actionMessage = "Ошибка: ${e.message}"
+                                        isActionError = true
+                                    } finally {
+                                        isActivating = false
+                                    }
+                                }
+                            }
+                        }
+
                         // Поле ввода
                         OutlinedTextField(
                             value = inputCodeOrKey,
-                            onValueChange = {
-                                inputCodeOrKey = it
-                                actionMessage = null
+                            onValueChange = { newValue ->
+                                if (newValue.contains('\n') || newValue.contains('\r')) {
+                                    inputCodeOrKey = newValue.replace("\n", "").replace("\r", "").trim()
+                                    actionMessage = null
+                                    doActivateKey()
+                                } else {
+                                    inputCodeOrKey = newValue
+                                    actionMessage = null
+                                }
                             },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .onKeyEvent {
+                                    if ((it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyUp) {
+                                        doActivateKey()
+                                        true
+                                    } else false
+                                },
                             placeholder = {
                                 Text(
                                     text = "Промокод или ключ доступа...",
@@ -384,8 +440,16 @@ fun SubSettingScreen(
                                 unfocusedBorderColor = Color(0xFF333333)
                             ),
                             shape = RoundedCornerShape(10.dp),
-                            singleLine = false,
-                            maxLines = 3
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                imeAction = ImeAction.Done,
+                                keyboardType = KeyboardType.Ascii
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = { doActivateKey() },
+                                onGo = { doActivateKey() },
+                                onSend = { doActivateKey() }
+                            )
                         )
 
                         if (!actionMessage.isNullOrEmpty()) {
@@ -402,36 +466,7 @@ fun SubSettingScreen(
 
                         // Кнопка подключения
                         Button(
-                            onClick = {
-                                val code = inputCodeOrKey.trim()
-                                if (code.isEmpty()) {
-                                    actionMessage = "Пожалуйста, введите промокод или ключ"
-                                    isActionError = true
-                                    return@Button
-                                }
-                                isActivating = true
-                                actionMessage = null
-                                scope.launch {
-                                    try {
-                                        val res = SubscriptionHelper.activateCodeOrKey(code)
-                                        if (res.isSuccess) {
-                                            val data = res.getOrThrow()
-                                            actionMessage = data.message
-                                            isActionError = false
-                                            inputCodeOrKey = ""
-                                            refreshState()
-                                        } else {
-                                            actionMessage = res.exceptionOrNull()?.message ?: "Промокод не найден или истек"
-                                            isActionError = true
-                                        }
-                                    } catch (e: Exception) {
-                                        actionMessage = "Ошибка: ${e.message}"
-                                        isActionError = true
-                                    } finally {
-                                        isActivating = false
-                                    }
-                                }
-                            },
+                            onClick = { doActivateKey() },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
