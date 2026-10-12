@@ -329,6 +329,7 @@
     <string name="title_del_invalid_config">Удалить нерабочие профили</string>
     <string name="title_export_all">Экспорт профилей в буфер обмена</string>
     <string name="title_sub_setting">Группы</string>
+    <string name="title_my_subscription">Моя подписка</string>
     <string name="sub_setting_remarks">Название</string>
     <string name="sub_setting_url">URL (необязательно)</string>
     <string name="sub_setting_user_agent" translatable="false">User Agent</string>

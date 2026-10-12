@@ -372,19 +372,16 @@ fun MainScreen(
                             promoDialogError = null
                             scope.launch {
                                 try {
-                                    val url = "https://greemzaa-pulsewl-vpn.static.hf.space/sub/$code"
-                                    val content = withContext(Dispatchers.IO) {
-                                        HttpUtil.getUrlContent(UrlContentRequest(url = url, timeout = 10000))
-                                    }
-                                    if (!content.isNullOrBlank()) {
-                                        onAction(MainAction.ImportBatchConfig(content.trim()))
+                                    val res = com.v2ray.ang.handler.SubscriptionHelper.activateCodeOrKey(code)
+                                    if (res.isSuccess) {
                                         showPromoFullscreen = false
                                         enteredPromoCode = ""
+                                        onAction(MainAction.TestRealAllServers)
                                     } else {
-                                        promoDialogError = "Промокод не найден или срок действия истек"
+                                        promoDialogError = res.exceptionOrNull()?.message ?: "Промокод не найден или срок действия истек"
                                     }
                                 } catch (e: Exception) {
-                                    promoDialogError = "Ошибка соединения: ${e.message}"
+                                    promoDialogError = "Ошибка: ${e.message}"
                                 } finally {
                                     isActivatingPromo = false
                                 }

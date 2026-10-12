@@ -112,10 +112,13 @@ object HttpUtil {
     fun getUrlContent(request: UrlContentRequest): String? {
         val url = request.url ?: return null
         val client = buildOkHttpClient(request.timeout, request.httpPort, request.proxyUsername, request.proxyPassword, followRedirects = true)
+        val userAgent = request.userAgent.takeIf { !it.isNullOrBlank() }
+            ?: "PulseVPN/${BuildConfig.VERSION_NAME} (Android; Linux)"
         val requestBuilder = Request.Builder()
             .url(url)
             .get()
             .header("Connection", "close")
+            .header("User-Agent", userAgent)
         if (request.httpPort != 0 && !request.proxyUsername.isNullOrBlank() && !request.proxyPassword.isNullOrBlank()) {
             requestBuilder.header("Proxy-Authorization", Credentials.basic(request.proxyUsername, request.proxyPassword))
         }

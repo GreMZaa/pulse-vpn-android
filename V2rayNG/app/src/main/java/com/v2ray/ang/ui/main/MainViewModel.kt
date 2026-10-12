@@ -342,7 +342,9 @@ class MainViewModel(
                     if (result.hasUpdate) {
                         _uiState.update { it.copy(appUpdateResult = result) }
                     } else {
-                        toastSuccess(R.string.update_already_latest_version)
+                        val verStr = BuildConfig.VERSION_NAME
+                        val msg = "${getApplication<com.v2ray.ang.AngApplication>().getString(R.string.update_already_latest_version)} (v$verStr)"
+                        toastSuccess(msg)
                     }
                 } catch (e: Exception) {
                     LogUtil.e(AppConfig.TAG, "Update check failed", e)

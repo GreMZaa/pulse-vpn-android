@@ -47,7 +47,7 @@ import com.v2ray.ang.ui.compose.LocalDarkTheme
 import com.v2ray.ang.ui.compose.verticalScrollbar
 
 enum class MainDestination(@DrawableRes val iconRes: Int, @StringRes val labelRes: Int) {
-    Subscriptions(R.drawable.ic_subscriptions_24dp, R.string.title_sub_setting),
+    Subscriptions(R.drawable.ic_subscriptions_24dp, R.string.title_my_subscription),
     PerAppProxy(R.drawable.ic_per_apps_24dp, R.string.per_app_proxy_settings),
     Routing(R.drawable.ic_routing_24dp, R.string.routing_settings_title),
     UserAssets(R.drawable.ic_file_24dp, R.string.title_user_asset_setting),
@@ -131,7 +131,35 @@ fun MainDrawerContent(
 
             Spacer(modifier = Modifier.height(36.dp))
 
-            // ЕДИНСТВЕННАЯ КНОПКА — ОБНОВИТЬ
+            // КНОПКА — МОЯ ПОДПИСКА
+            Button(
+                onClick = { onNavigate(MainDestination.Subscriptions) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF222222),
+                    contentColor = Color.White
+                )
+            ) {
+                Icon(
+                    painter = painterResource(com.v2ray.ang.R.drawable.ic_subscriptions_24dp),
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = Color.White
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "Моя подписка",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // КНОПКА — ПРОВЕРИТЬ ОБНОВЛЕНИЕ
             Button(
                 onClick = { onRefresh() },
                 modifier = Modifier
@@ -146,7 +174,8 @@ fun MainDrawerContent(
                 Icon(
                     painter = painterResource(com.v2ray.ang.R.drawable.ic_check_update_24dp),
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
+                    tint = Color.Black
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(

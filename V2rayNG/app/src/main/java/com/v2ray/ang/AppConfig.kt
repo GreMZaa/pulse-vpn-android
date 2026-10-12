@@ -89,6 +89,10 @@ object AppConfig {
     const val PREF_AUTO_REMOVE_INVALID_AFTER_TEST = "pref_auto_remove_invalid_after_test"
     const val PREF_AUTO_SORT_AFTER_TEST = "pref_auto_sort_after_test"
     const val PREF_REAL_PING_CONCURRENCY = "pref_real_ping_concurrency"
+    const val PREF_SUBSCRIPTION_CODE = "pref_subscription_code"
+    const val PREF_SUBSCRIPTION_PLAN = "pref_subscription_plan"
+    const val PREF_SUBSCRIPTION_EXPIRES = "pref_subscription_expires"
+    const val PREF_SUBSCRIPTION_DAYS = "pref_subscription_days"
 
     /** Cache keys. */
     const val CACHE_SUBSCRIPTION_ID = "cache_subscription_id"

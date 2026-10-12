@@ -142,18 +142,25 @@ jobs:
         name: PulseVPN-universal
         path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/*/*universal*.apk
 
+    - name: Extract App Version
+      id: get_version
+      run: |
+        VERSION=$(grep 'versionName = ' V2rayNG/app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+        echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+        echo "Extracted App Version: $VERSION"
+
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       if: github.ref == 'refs/heads/master'
       with:
-        tag_name: v0.0.1
-        name: "ПУЛЬС v0.0.1"
+        tag_name: v${{ env.APP_VERSION }}
+        name: "ПУЛЬС v${{ env.APP_VERSION }}"
         body: |
-          Официальный релиз приложения **ПУЛЬС** для Android (v0.0.1).
-          - Новый фирменный логотип «ПУЛЬС»
-          - Минималистичный интерфейс серверов (номер, имя, авто-пинг каждые 5 сек)
+          Официальный релиз приложения **ПУЛЬС** для Android (v${{ env.APP_VERSION }}).
+          - В бургер-меню добавлен раздел «Моя подписка» с отслеживанием дней и вводом промокода/ключа
+          - Проверка и загрузка обновлений прямо с GitHub Releases
+          - Минималистичный темный дизайн
           - Быстрое подключение и защищенный трафик (V2Ray / Xray)
-          - Встроенная автоматическая активация по промокоду
         draft: false
         prerelease: false
         files: |

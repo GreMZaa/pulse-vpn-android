@@ -15,65 +15,94 @@ import kotlinx.coroutines.withContext
 
 object UpdateCheckerManager {
     suspend fun checkForUpdate(includePreRelease: Boolean = false): CheckUpdateResult = withContext(Dispatchers.IO) {
-        val url = if (includePreRelease) {
-            AppConfig.APP_API_URL
-        } else {
-            AppConfig.APP_API_URL.concatUrl("latest")
-        }
-
         val proxyUsername = SettingsManager.getSocksUsername()
         val proxyPassword = SettingsManager.getSocksPassword()
+        val httpPort = SettingsManager.getHttpPort()
 
+        // 1. Сначала пробуем получить список всех релизов с GitHub
         var response = HttpUtil.getUrlContent(
             UrlContentRequest(
-                url = url,
-                timeout = 5000
+                url = AppConfig.APP_API_URL,
+                timeout = 7000
             )
         )
-        if (response.isNullOrEmpty()) {
-            val httpPort = SettingsManager.getHttpPort()
+        if (response.isNullOrEmpty() && httpPort != 0) {
             response = HttpUtil.getUrlContent(
                 UrlContentRequest(
-                    url = url,
-                    timeout = 5000,
+                    url = AppConfig.APP_API_URL,
+                    timeout = 7000,
                     httpPort = httpPort,
                     proxyUsername = proxyUsername,
                     proxyPassword = proxyPassword
                 )
             )
-                ?: throw IllegalStateException("Failed to get response")
         }
 
-        val latestRelease = if (includePreRelease) {
-            JsonUtil.fromJsonSafe(response, Array<GitHubRelease>::class.java)
-                ?.firstOrNull()
-                ?: throw IllegalStateException("No pre-release found")
+        val allReleases = JsonUtil.fromJsonSafe(response, Array<GitHubRelease>::class.java)?.toList()
+
+        // 2. Если список получен, находим самый свежий релиз ПУЛЬС (отфильтровав старые 2.3.x)
+        val targetRelease: GitHubRelease? = if (!allReleases.isNullOrEmpty()) {
+            allReleases
+                .filter { (includePreRelease || !it.prerelease) && !isLegacyRelease(it.tagName) }
+                .maxByOrNull {
+                    val raw = it.tagName.removePrefix("v").substringBefore("-").trim()
+                    parseVersionWeight(raw)
+                } ?: allReleases.firstOrNull { !isLegacyRelease(it.tagName) }
         } else {
-            JsonUtil.fromJsonSafe(response, GitHubRelease::class.java)
+            val latestUrl = AppConfig.APP_API_URL.concatUrl("latest")
+            var singleResp = HttpUtil.getUrlContent(UrlContentRequest(url = latestUrl, timeout = 7000))
+            if (singleResp.isNullOrEmpty() && httpPort != 0) {
+                singleResp = HttpUtil.getUrlContent(
+                    UrlContentRequest(
+                        url = latestUrl,
+                        timeout = 7000,
+                        httpPort = httpPort,
+                        proxyUsername = proxyUsername,
+                        proxyPassword = proxyPassword
+                    )
+                )
+            }
+            JsonUtil.fromJsonSafe(singleResp, GitHubRelease::class.java)?.takeIf { !isLegacyRelease(it.tagName) }
         }
-        if (latestRelease == null) {
+
+        if (targetRelease == null) {
             return@withContext CheckUpdateResult(hasUpdate = false)
         }
 
-        val rawTag = latestRelease.tagName.removePrefix("v")
+        val rawTag = targetRelease.tagName.removePrefix("v")
         val latestVersion = rawTag.substringBefore("-").trim()
         LogUtil.i(
             AppConfig.TAG,
-            "Found new version: $latestVersion (tag: ${latestRelease.tagName}, current: ${BuildConfig.VERSION_NAME})"
+            "Found GitHub release: $latestVersion (tag: ${targetRelease.tagName}, current: ${BuildConfig.VERSION_NAME})"
         )
 
         return@withContext if (compareVersions(latestVersion, BuildConfig.VERSION_NAME) > 0) {
-            val downloadUrl = getDownloadUrl(latestRelease, Build.SUPPORTED_ABIS.firstOrNull() ?: "arm64-v8a")
+            val downloadUrl = getDownloadUrl(targetRelease, Build.SUPPORTED_ABIS.firstOrNull() ?: "arm64-v8a")
             CheckUpdateResult(
                 hasUpdate = true,
-                latestVersion = latestRelease.tagName,
-                releaseNotes = latestRelease.body,
+                latestVersion = targetRelease.tagName,
+                releaseNotes = targetRelease.body,
                 downloadUrl = downloadUrl,
-                isPreRelease = latestRelease.prerelease
+                isPreRelease = targetRelease.prerelease
             )
         } else {
             CheckUpdateResult(hasUpdate = false)
         }
+    }
+
+    private fun isLegacyRelease(tagName: String): Boolean {
+        val tag = tagName.lowercase().removePrefix("v")
+        // Релизы 2.3.x были до перезапуска нумерации ПУЛЬС с 0.0.1
+        return tag.contains("pulse") || tag.startsWith("2.")
+    }
+
+    private fun parseVersionWeight(version: String): Long {
+        val parts = version.split(".").mapNotNull { it.toLongOrNull() }
+        var weight = 0L
+        for (p in parts) {
+            weight = weight * 1000L + p
+        }
+        return weight
     }
 
     private fun compareVersions(version1: String, version2: String): Int {
