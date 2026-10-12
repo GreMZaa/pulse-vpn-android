@@ -534,7 +534,7 @@ fun MainScreen(
                     onMenuClick = { scope.launch { drawerState.open() } },
                     onRefreshClick = {
                         if (uiState.isRunning) {
-                            onAction(MainAction.TestCurrentServerRealPing)
+                            onAction(MainAction.TestCurrentServer)
                         } else {
                             onAction(MainAction.TestRealAllServers)
                         }
@@ -624,7 +624,7 @@ fun MainScreen(
                                 androidx.compose.material3.OutlinedButton(
                                     onClick = {
                                         if (uiState.isRunning) {
-                                            onAction(MainAction.TestCurrentServerRealPing)
+                                            onAction(MainAction.TestCurrentServer)
                                         } else {
                                             onAction(MainAction.TestRealAllServers)
                                         }
