@@ -428,8 +428,8 @@ fun SubSettingScreen(
                                     try {
                                         val res = SubscriptionHelper.activateCodeOrKey(code)
                                         if (res.isSuccess) {
-                                            val (_, msg) = res.getOrThrow()
-                                            actionMessage = msg
+                                            val data = res.getOrThrow()
+                                            actionMessage = data.message
                                             isActionError = false
                                             inputCodeOrKey = ""
                                             refreshState()

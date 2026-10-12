@@ -1,6 +1,7 @@
 # Ignore data and key store files
 *.dat
 *.jks
+!pulse_release.jks
 
 # Ignore output JSON file
 V2rayNG/app/release/output.json

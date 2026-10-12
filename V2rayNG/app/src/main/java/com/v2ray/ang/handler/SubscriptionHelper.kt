@@ -54,7 +54,13 @@ object SubscriptionHelper {
         MmkvManager.encodeSettings(AppConfig.PREF_SUBSCRIPTION_EXPIRES, 0L)
     }
 
-    suspend fun activateCodeOrKey(inputCode: String): Result<Pair<Int, String>> = withContext(Dispatchers.IO) {
+    data class ActivationResult(
+        val serverCount: Int,
+        val message: String,
+        val rawConfig: String
+    )
+
+    suspend fun activateCodeOrKey(inputCode: String): Result<ActivationResult> = withContext(Dispatchers.IO) {
         val trimmed = inputCode.trim()
         if (trimmed.isEmpty()) {
             return@withContext Result.failure(IllegalArgumentException("Введите промокод или ключ доступа"))
@@ -73,7 +79,9 @@ object SubscriptionHelper {
                     days = 365.0,
                     expiresAt = System.currentTimeMillis() + 365L * 86400000L
                 )
-                return@withContext Result.success(Pair(count, "Ключ успешно добавлен ($count серверов)"))
+                return@withContext Result.success(
+                    ActivationResult(count, "Ключ успешно добавлен ($count серверов)", trimmed)
+                )
             }
         }
 
@@ -89,7 +97,9 @@ object SubscriptionHelper {
                         days = 30.0,
                         expiresAt = System.currentTimeMillis() + 30L * 86400000L
                     )
-                    return@withContext Result.success(Pair(count, "Подписка успешно импортирована ($count серверов)"))
+                    return@withContext Result.success(
+                        ActivationResult(count, "Подписка успешно импортирована ($count серверов)", content.trim())
+                    )
                 }
             }
         }
@@ -147,7 +157,9 @@ object SubscriptionHelper {
                                 days = matchedDays,
                                 expiresAt = expiry
                             )
-                            return@withContext Result.success(Pair(count, "Подписка $matchedPlan успешно активирована ($count серверов)"))
+                            return@withContext Result.success(
+                                ActivationResult(count, "Подписка $matchedPlan успешно активирована ($count серверов)", subB64)
+                            )
                         }
                     }
                 }
@@ -169,7 +181,9 @@ object SubscriptionHelper {
                         days = 30.0,
                         expiresAt = expiry
                     )
-                    return@withContext Result.success(Pair(count, "Подписка успешно подключена ($count серверов)"))
+                    return@withContext Result.success(
+                        ActivationResult(count, "Подписка успешно подключена ($count серверов)", content.trim())
+                    )
                 }
             }
         } catch (e: Exception) {

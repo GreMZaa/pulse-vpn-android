@@ -374,9 +374,10 @@ fun MainScreen(
                                 try {
                                     val res = com.v2ray.ang.handler.SubscriptionHelper.activateCodeOrKey(code)
                                     if (res.isSuccess) {
+                                        val data = res.getOrThrow()
+                                        onAction(MainAction.ImportBatchConfig(data.rawConfig))
                                         showPromoFullscreen = false
                                         enteredPromoCode = ""
-                                        onAction(MainAction.TestRealAllServers)
                                     } else {
                                         promoDialogError = res.exceptionOrNull()?.message ?: "Промокод не найден или срок действия истек"
                                     }
