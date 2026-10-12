@@ -121,6 +121,7 @@ class MainActivity : HelperBaseComponentActivity() {
             onAction = { action ->
                 when (action) {
                     MainAction.ToggleService -> handleFabAction()
+                    MainAction.SmartConnect -> handleSmartConnect()
                     MainAction.TestCurrentServer -> handleLayoutTestClick()
                     MainAction.ImportQRcode -> importQRcode()
                     MainAction.ImportClipboard -> importClipboard()
@@ -189,6 +190,38 @@ class MainActivity : HelperBaseComponentActivity() {
         }
         val intent = VpnService.prepare(this)
         if (intent == null) startV2Ray() else requestVpnPermission.launch(intent)
+    }
+
+    private fun handleSmartConnect() {
+        lifecycleScope.launch {
+            val subInfo = SubscriptionHelper.getActiveSubscription()
+            if (subInfo != null) {
+                val isValid = SubscriptionHelper.validateSubscriptionOnline()
+                if (!isValid) {
+                    toast("Подписка аннулирована или срок действия истек")
+                    mainViewModel.reloadServerList()
+                    return@launch
+                }
+            }
+
+            val bestGuid = mainViewModel.findSmartConnectBestServerGuid()
+            if (bestGuid.isNullOrEmpty()) {
+                toast("Серверы не найдены. Активируйте промокод для загрузки серверов.")
+                return@launch
+            }
+
+            val profile = MmkvManager.decodeServerConfig(bestGuid)
+            val serverName = profile?.remarks ?: "Сервер"
+
+            mainViewModel.updateSelectedGuid(bestGuid)
+            toastSuccess("⚡ Подключение к лучшему серверу: $serverName")
+
+            if (mainViewModel.uiState.value.isRunning) {
+                LauncherManager.restartService(this@MainActivity)
+            } else {
+                requestServiceStart()
+            }
+        }
     }
 
     private fun handleLayoutTestClick() {

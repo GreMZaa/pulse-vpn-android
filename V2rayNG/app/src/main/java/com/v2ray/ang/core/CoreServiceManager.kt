@@ -36,6 +36,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import libv2ray.CoreCallbackHandler
@@ -53,6 +54,8 @@ object CoreServiceManager {
     private var browserDialer: IDialerService? = null
     private var networkMonitor: NetworkMonitor? = null
     private val connectionTestScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var failoverJob: kotlinx.coroutines.Job? = null
+    private var consecutiveFailures = 0
 
     @Volatile
     private var isReloading = false
@@ -181,6 +184,7 @@ object CoreServiceManager {
             MessageHelper.sendMsg2UI(service, AppConfig.MSG_STATE_START_SUCCESS, "")
         }
         NotificationManager.startSpeedNotification()
+        startFailoverMonitor(service)
         LogUtil.i(AppConfig.TAG, "StartCore-Manager: Core started successfully")
     }
 
@@ -191,6 +195,9 @@ object CoreServiceManager {
      */
     fun stopCoreLoop(): Boolean {
         connectionTestScope.coroutineContext.cancelChildren()
+        failoverJob?.cancel()
+        failoverJob = null
+        consecutiveFailures = 0
         val service = getService() ?: return false
 
         networkMonitor?.unregister()
@@ -276,6 +283,84 @@ object CoreServiceManager {
             false
         } finally {
             isReloading = false
+        }
+    }
+
+    /**
+     * Фоновый монитор здоровья: проверяет отклик текущего сервера.
+     * При обрыве/блокировке узла автоматически переключает соединение на следующий лучший сервер из пула.
+     */
+    private fun startFailoverMonitor(service: Service) {
+        failoverJob?.cancel()
+        consecutiveFailures = 0
+
+        failoverJob = CoroutineScope(Dispatchers.IO).launch {
+            // Начальная задержка для стабилизации соединения
+            delay(15000L)
+            while (isActive && isRunning()) {
+                delay(25000L)
+                if (!isRunning() || isReloading) continue
+
+                var isHealthy = false
+                try {
+                    val delay = coreController.measureDelay(SettingsManager.getDelayTestUrl())
+                    if (delay >= 0) {
+                        isHealthy = true
+                    } else {
+                        val fallbackDelay = coreController.measureDelay(SettingsManager.getDelayTestUrl(true))
+                        if (fallbackDelay >= 0) {
+                            isHealthy = true
+                        }
+                    }
+                } catch (e: Exception) {
+                    LogUtil.w(AppConfig.TAG, "Failover health check error: ${e.message}")
+                }
+
+                if (isHealthy) {
+                    consecutiveFailures = 0
+                } else {
+                    consecutiveFailures++
+                    LogUtil.w(AppConfig.TAG, "Failover health check failed ($consecutiveFailures/2)")
+                    if (consecutiveFailures >= 2) {
+                        consecutiveFailures = 0
+                        triggerFailover(service)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun triggerFailover(service: Service) {
+        val currentGuid = MmkvManager.getSelectServer() ?: return
+        val allServers = MmkvManager.decodeAllServerList()
+        if (allServers.size <= 1) return
+
+        val candidates = allServers.filter { it != currentGuid }
+            .mapNotNull { guid ->
+                MmkvManager.decodeServerConfig(guid)?.let { profile ->
+                    guid to profile
+                }
+            }
+
+        if (candidates.isEmpty()) return
+
+        // Сортируем: сначала серверы белого списка (Reality + RU SNI) и резервные протоколы (Hysteria 2)
+        val nextBest = candidates.minByOrNull { (_, profile) ->
+            profile.getWhitelistPriority()
+        } ?: candidates.first()
+
+        LogUtil.i(AppConfig.TAG, "Auto-Failover: switching from $currentGuid to ${nextBest.second.remarks} (${nextBest.first})")
+
+        MmkvManager.setSelectServer(nextBest.first)
+        val reloadSuccess = reloadCore()
+
+        if (reloadSuccess) {
+            MessageHelper.sendMsg2UI(
+                service,
+                AppConfig.MSG_STATE_RESTART,
+                "⚡ Авто-переключение: сервер переподключен на ${nextBest.second.remarks}"
+            )
+            NotificationManager.showNotification(nextBest.second)
         }
     }
 

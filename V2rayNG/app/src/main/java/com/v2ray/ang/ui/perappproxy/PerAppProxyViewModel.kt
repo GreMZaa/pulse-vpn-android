@@ -164,6 +164,50 @@ class PerAppProxyViewModel(application: Application) : BaseViewModel(application
         enablePerAppProxyAndRestart()
     }
 
+    fun selectRussianServicesBypass(context: Context) {
+        val installedApps = appsAll ?: return
+        val ruPackages = setOf(
+            "ru.sberbankmobile",
+            "com.idamob.tinkoff.android",
+            "ru.alfabank.mobile.android",
+            "ru.vtb24.mobilebanking",
+            "ru.gosuslugi.layout",
+            "ru.yandex.searchplugin",
+            "ru.yandex.yandexmaps",
+            "ru.yandex.taxi",
+            "ru.ozon.app.android",
+            "com.wildberries.work",
+            "ru.aliexpress.buyer",
+            "com.vkontakte.android",
+            "ru.ok.android",
+            "ru.mail.mailapp",
+            "com.fins.raiffeisen",
+            "ru.gazprombank.android.mobilebank.app",
+            "ru.mkb.mobile",
+            "ru.sovcomcard.halva.v1",
+            "ru.psbank.mobile.android",
+            "com.avito.android",
+            "ru.dzen",
+            "ru.rutube.app",
+            "ru.mos.app",
+            "ru.fns.billchecker",
+            "com.mts.cellular",
+            "ru.megafon.ml",
+            "ru.beeline.services",
+            "ru.tele2.mytele2",
+            "ru.sravni.app",
+            "ru.banki.android"
+        )
+
+        val matched = installedApps.map { it.packageName }.filter { pkg ->
+            pkg in ruPackages || pkg.startsWith("ru.sberbank") || pkg.startsWith("ru.yandex") || pkg.contains("bank")
+        }.toSet()
+
+        setBypassAppsEnabled(true)
+        replaceBlacklist(matched)
+        enablePerAppProxyAndRestart()
+    }
+
     fun selectProxyAppAuto(context: Context) {
         val applicationContext = context.applicationContext
         launchLoading {

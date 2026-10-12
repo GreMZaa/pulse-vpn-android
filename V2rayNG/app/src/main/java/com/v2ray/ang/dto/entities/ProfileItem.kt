@@ -141,9 +141,16 @@ data class ProfileItem(
                 sniLower.endsWith(".ru") ||
                 sniLower.endsWith(".рф")
 
+        // Резервный протокол Hysteria 2 (UDP QUIC) - высший приоритет для пробива блокировок
+        if (configType == EConfigType.HYSTERIA2 || remarksLower.contains("hy2") || remarksLower.contains("hysteria")) return 0
         if (secLower == "reality" && isRussianSni) return 0
         if (remarksLower.contains("🇷🇺") || remarksLower.contains("russia") || remarksLower.contains("россия") || remarksLower.contains("бел") || remarksLower.contains("white")) return 1
         if (secLower == "reality") return 2
         return 3
     }
+
+    fun isHysteria2(): Boolean =
+        configType == EConfigType.HYSTERIA2 || remarks.lowercase().contains("hy2") || remarks.lowercase().contains("hysteria")
+
+    fun isWhitelistServer(): Boolean = getWhitelistPriority() == 0
 }

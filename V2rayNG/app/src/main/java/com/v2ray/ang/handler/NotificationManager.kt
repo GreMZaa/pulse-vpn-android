@@ -44,7 +44,7 @@ object NotificationManager {
      * @param currentConfig The current profile configuration.
      */
     fun startSpeedNotification() {
-        if (MmkvManager.decodeSettingsBool(AppConfig.PREF_SPEED_ENABLED) != true) return
+        if (MmkvManager.decodeSettingsBool(AppConfig.PREF_SPEED_ENABLED, true) != true) return
         if (speedNotificationJob != null || CoreServiceManager.isRunning() == false) return
 
         var lastZeroSpeed = false
@@ -91,9 +91,18 @@ object NotificationManager {
                 ""
             }
 
+        val remarks = currentConfig?.remarks ?: service.getString(R.string.app_name)
+        val prefix = when {
+            currentConfig?.isHysteria2() == true -> "⚡ [РЕЗЕРВ UDP] "
+            currentConfig?.isWhitelistServer() == true -> "⚡ [БЕЛЫЙ СПИСОК] "
+            else -> "🛡️ "
+        }
+        val formattedTitle = prefix + remarks
+
         mBuilder = NotificationCompat.Builder(service, channelId)
             .setSmallIcon(R.drawable.ic_stat_name)
-            .setContentTitle(currentConfig?.remarks ?: service.getString(R.string.app_name))
+            .setContentTitle(formattedTitle)
+            .setContentText("Соединение активно • Трафик защищен")
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .setShowWhen(false)
@@ -267,19 +276,10 @@ object NotificationManager {
         val directTotal = directUplink + directDownlink
         val zeroSpeed = proxyTotal + directTotal == 0L
         if (!zeroSpeed || !lastZeroSpeed) {
-            val text = StringBuilder()
-            appendSpeedString(
-                text, AppConfig.TAG_PROXY,
-                proxyUplink / sinceLastQueryInSeconds,
-                proxyDownlink / sinceLastQueryInSeconds
-            )
-
-            appendSpeedString(
-                text, AppConfig.TAG_DIRECT,
-                directUplink / sinceLastQueryInSeconds,
-                directDownlink / sinceLastQueryInSeconds
-            )
-            updateNotification(text.toString(), proxyTotal, directTotal)
+            val downSpeed = (proxyDownlink / sinceLastQueryInSeconds).toLong().toSpeedString()
+            val upSpeed = (proxyUplink / sinceLastQueryInSeconds).toLong().toSpeedString()
+            val text = "↓ $downSpeed   ↑ $upSpeed   •   Трафик защищен"
+            updateNotification(text, proxyTotal, directTotal)
         }
         lastQueryTime = queryTime
         return zeroSpeed

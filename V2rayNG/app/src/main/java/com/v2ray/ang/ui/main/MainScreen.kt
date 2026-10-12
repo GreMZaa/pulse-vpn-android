@@ -621,6 +621,25 @@ fun MainScreen(
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                androidx.compose.material3.Button(
+                                    onClick = { onAction(MainAction.SmartConnect) },
+                                    modifier = Modifier.height(32.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                        containerColor = if (isRunning) Color(0xFF282828) else Color.White,
+                                        contentColor = if (isRunning) Color.White else Color.Black
+                                    ),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                                ) {
+                                    Text(
+                                        "⚡ Быстрое подключение",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
                                 androidx.compose.material3.OutlinedButton(
                                     onClick = {
                                         if (uiState.isRunning) {
@@ -635,10 +654,10 @@ fun MainScreen(
                                     colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
                                         contentColor = Color.White
                                     ),
-                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
                                 ) {
                                     Text(
-                                        "Тест скорости",
+                                        "Тест",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Medium
                                     )
@@ -654,7 +673,7 @@ fun MainScreen(
                                     colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
                                         contentColor = Color(0xFFAAAAAA)
                                     ),
-                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
                                 ) {
                                     Text(
                                         "Промокод",

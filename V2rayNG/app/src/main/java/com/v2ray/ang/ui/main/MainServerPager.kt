@@ -369,7 +369,23 @@ private fun ServerListItem(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            if (row.isWhitelist) {
+            if (row.isHysteria) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Color(0xFF261D3B))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = "РЕЗЕРВ UDP",
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFBB86FC),
+                        letterSpacing = 0.5.sp
+                    )
+                }
+                Spacer(modifier = Modifier.width(6.dp))
+            } else if (row.isWhitelist) {
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))

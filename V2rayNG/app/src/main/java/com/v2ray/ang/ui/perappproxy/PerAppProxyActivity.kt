@@ -91,6 +91,10 @@ class PerAppProxyActivity : BaseComponentActivity() {
             onSearch = { viewModel.filterApps(it) },
             onSelectAll = { viewModel.selectAll() },
             onInvertSelection = { viewModel.invertSelection() },
+            onSelectRussianBypass = {
+                viewModel.selectRussianServicesBypass(this)
+                toastSuccess("Сервисы РФ добавлены в список обхода")
+            },
             onSelectProxyAuto = { viewModel.selectProxyAppAuto(this) },
             onImportProxyApp = {
                 val content = Utils.getClipboard(applicationContext)
@@ -119,6 +123,7 @@ fun PerAppProxyScreen(
     onSearch: (String) -> Unit,
     onSelectAll: () -> Unit,
     onInvertSelection: () -> Unit,
+    onSelectRussianBypass: () -> Unit,
     onSelectProxyAuto: () -> Unit,
     onImportProxyApp: () -> Unit,
     onExportProxyApp: () -> Unit
@@ -257,6 +262,22 @@ fun PerAppProxyScreen(
                 }
             }
             AppDivider()
+
+            if (perAppProxyEnabled) {
+                androidx.compose.material3.OutlinedButton(
+                    onClick = onSelectRussianBypass,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        "🇷🇺 Исключить банки и сервисы РФ (Обход)",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                AppDivider()
+            }
 
             LazyColumn(
                 state = listState,

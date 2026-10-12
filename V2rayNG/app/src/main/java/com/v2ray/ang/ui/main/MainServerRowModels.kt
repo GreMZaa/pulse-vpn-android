@@ -15,6 +15,7 @@ internal data class ServerRowUiModel(
     val testDelayMillis: Long,
     val subscriptionBadge: String,
     val isWhitelist: Boolean = false,
+    val isHysteria: Boolean = false,
 )
 
 internal data class ServerGroupUiState(
@@ -37,6 +38,7 @@ internal fun buildServerRowUiModel(
         testDelayMillis = server.testDelayMillis,
         subscriptionBadge = subscriptionRemarks.firstOrNull()?.toString().orEmpty(),
         isWhitelist = profile.getWhitelistPriority() == 0,
+        isHysteria = profile.isHysteria2(),
     )
 }
 

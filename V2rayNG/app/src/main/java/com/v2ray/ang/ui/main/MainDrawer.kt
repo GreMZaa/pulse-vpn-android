@@ -165,6 +165,36 @@ fun MainDrawerContent(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // КНОПКА — РАЗДЕЛЬНОЕ ТУННЕЛИРОВАНИЕ
+            Button(
+                onClick = { onNavigate(MainDestination.PerAppProxy) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF222222),
+                    contentColor = Color.White
+                )
+            ) {
+                Icon(
+                    painter = painterResource(com.v2ray.ang.R.drawable.ic_per_apps_24dp),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = Color.White
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Раздельное туннелирование",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             // КНОПКА — ПРОВЕРИТЬ ОБНОВЛЕНИЯ
             Button(
                 onClick = { onRefresh() },

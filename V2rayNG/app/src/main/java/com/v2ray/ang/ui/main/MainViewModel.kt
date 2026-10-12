@@ -319,6 +319,7 @@ class MainViewModel(
             is MainAction.ConfirmAppUpdate -> downloadAndInstallApp(action.downloadUrl)
 
             MainAction.ToggleService,
+            MainAction.SmartConnect,
             MainAction.TestCurrentServer,
             MainAction.ImportQRcode,
             MainAction.ImportClipboard,
@@ -1035,6 +1036,27 @@ class MainViewModel(
                 LogUtil.e(AppConfig.TAG, "Auto sort and select fastest server failed", e)
             }
         }
+    }
+
+    fun findSmartConnectBestServerGuid(): String? {
+        val selectedGroup = uiState.value.selectedGroupId
+        val cached = groupDataCache[selectedGroup] ?: emptyList()
+        val allList = if (cached.isNotEmpty()) cached else {
+            val guids = dataSource.getServerGuidList(selectedGroup).ifEmpty { dataSource.getAllServerList() }
+            guids.mapNotNull { guid -> dataSource.decodeServerConfig(guid)?.let { ServersCache(guid, it, 0L) } }
+        }
+        if (allList.isEmpty()) return null
+
+        val testedServers = allList.filter { it.testDelayMillis > 0L }
+        if (testedServers.isNotEmpty()) {
+            return testedServers.minByOrNull {
+                it.profile.getWhitelistPriority() * 100000L + it.testDelayMillis
+            }?.guid
+        }
+
+        return allList.minByOrNull {
+            it.profile.getWhitelistPriority()
+        }?.guid ?: allList.firstOrNull()?.guid
     }
 
     fun triggerLocateSelectedServer() {
