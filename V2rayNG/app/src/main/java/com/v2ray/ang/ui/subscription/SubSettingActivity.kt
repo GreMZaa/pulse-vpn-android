@@ -151,6 +151,13 @@ fun SubSettingScreen(
         viewModel.reload()
     }
 
+    LaunchedEffect(Unit) {
+        val isValid = SubscriptionHelper.validateSubscriptionOnline()
+        if (!isValid) {
+            refreshState()
+        }
+    }
+
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         containerColor = Color(0xFF121212),
@@ -447,7 +454,19 @@ fun SubSettingScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             OutlinedButton(
-                                onClick = { onSubUpdate() },
+                                onClick = {
+                                    scope.launch {
+                                        val isValid = SubscriptionHelper.validateSubscriptionOnline()
+                                        if (!isValid) {
+                                            actionMessage = "Подписка аннулирована или срок действия истек"
+                                            isActionError = true
+                                            refreshState()
+                                        } else {
+                                            onSubUpdate()
+                                            refreshState()
+                                        }
+                                    }
+                                },
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(40.dp),
@@ -462,6 +481,8 @@ fun SubSettingScreen(
                                 OutlinedButton(
                                     onClick = {
                                         SubscriptionHelper.clearSubscription()
+                                        val allGuids = MmkvManager.decodeAllServerList()
+                                        allGuids.forEach { MmkvManager.removeServer(it) }
                                         refreshState()
                                     },
                                     modifier = Modifier

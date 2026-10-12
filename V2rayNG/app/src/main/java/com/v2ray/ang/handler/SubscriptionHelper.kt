@@ -54,6 +54,74 @@ object SubscriptionHelper {
         MmkvManager.encodeSettings(AppConfig.PREF_SUBSCRIPTION_EXPIRES, 0L)
     }
 
+    suspend fun validateSubscriptionOnline(): Boolean = withContext(Dispatchers.IO) {
+        val code = MmkvManager.decodeSettingsString(AppConfig.PREF_SUBSCRIPTION_CODE)
+        if (code.isNullOrBlank()) {
+            return@withContext true
+        }
+
+        if (code == "Пользовательский ключ" || code.startsWith("http")) {
+            return@withContext true
+        }
+
+        try {
+            val cloudStateUrl = "https://greemzaa-pulsewl-vpn.static.hf.space/api/cloud_state.json?t=${System.currentTimeMillis()}"
+            val stateJsonStr = HttpUtil.getUrlContent(UrlContentRequest(url = cloudStateUrl, timeout = 6000))
+            if (stateJsonStr.isNullOrBlank()) {
+                return@withContext true
+            }
+
+            val json = JSONObject(stateJsonStr)
+            var found = false
+            var matchedDays = 0.0
+
+            val promos = json.optJSONArray("promos")
+            if (promos != null) {
+                for (i in 0 until promos.length()) {
+                    val p = promos.getJSONObject(i)
+                    if (p.optString("code").equals(code, ignoreCase = true)) {
+                        found = true
+                        matchedDays = p.optDouble("days", 30.0)
+                        break
+                    }
+                }
+            }
+
+            if (!found) {
+                val keys = json.optJSONArray("keys")
+                if (keys != null) {
+                    for (i in 0 until keys.length()) {
+                        val k = keys.getJSONObject(i)
+                        if (k.optString("key_code").equals(code, ignoreCase = true)) {
+                            val isActive = k.optBoolean("is_active", true)
+                            val daysLeft = k.optDouble("days_left", 0.0)
+                            if (isActive && daysLeft > 0) {
+                                found = true
+                                matchedDays = daysLeft
+                            }
+                            break
+                        }
+                    }
+                }
+            }
+
+            if (!found) {
+                clearSubscription()
+                val allGuids = MmkvManager.decodeAllServerList()
+                allGuids.forEach { MmkvManager.removeServer(it) }
+                return@withContext false
+            }
+
+            val expiresAt = MmkvManager.decodeSettingsLong(AppConfig.PREF_SUBSCRIPTION_EXPIRES, 0L)
+            if (expiresAt > 0L && matchedDays > 0) {
+                MmkvManager.encodeSettings(AppConfig.PREF_SUBSCRIPTION_DAYS, matchedDays.toFloat())
+            }
+            return@withContext true
+        } catch (_: Exception) {
+            return@withContext true
+        }
+    }
+
     data class ActivationResult(
         val serverCount: Int,
         val message: String,

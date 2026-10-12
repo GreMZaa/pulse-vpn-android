@@ -98,6 +98,19 @@ class MainActivity : HelperBaseComponentActivity() {
         checkAndRequestPermission(PermissionType.POST_NOTIFICATIONS) {}
     }
 
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch {
+            val isValid = SubscriptionHelper.validateSubscriptionOnline()
+            if (!isValid) {
+                if (mainViewModel.uiState.value.isRunning) {
+                    LauncherManager.stopService(this@MainActivity)
+                }
+                mainViewModel.reloadServerList()
+            }
+        }
+    }
+
     @Composable
     override fun ScreenContent() {
         BackHandler { moveTaskToBack(false) }
@@ -183,22 +196,33 @@ class MainActivity : HelperBaseComponentActivity() {
     }
 
     private fun startV2Ray() {
-        var guid = mainViewModel.uiState.value.selectedGuid
-        if (guid.isNullOrEmpty()) {
-            val allServers = MmkvManager.decodeAllServerList()
-            if (allServers.isNotEmpty()) {
-                guid = allServers.first()
-                mainViewModel.updateSelectedGuid(guid)
-            } else {
-                toast("Пожалуйста, активируйте промокод для подключения к серверу")
-                return
+        lifecycleScope.launch {
+            val subInfo = SubscriptionHelper.getActiveSubscription()
+            if (subInfo != null) {
+                val isValid = SubscriptionHelper.validateSubscriptionOnline()
+                if (!isValid) {
+                    toast("Подписка аннулирована или срок действия истек")
+                    mainViewModel.reloadServerList()
+                    return@launch
+                }
             }
+
+            var guid = mainViewModel.uiState.value.selectedGuid
+            if (guid.isNullOrEmpty()) {
+                val allServers = MmkvManager.decodeAllServerList()
+                if (allServers.isNotEmpty()) {
+                    guid = allServers.first()
+                    mainViewModel.updateSelectedGuid(guid)
+                } else {
+                    toast("Пожалуйста, активируйте промокод для подключения к серверу")
+                    return@launch
+                }
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN) {
+                checkAndRequestPermission(PermissionType.ACCESS_LOCAL_NETWORK) {}
+            }
+            LauncherManager.startService(this@MainActivity)
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN
-        ) {
-            checkAndRequestPermission(PermissionType.ACCESS_LOCAL_NETWORK) {}
-        }
-        LauncherManager.startService(this)
     }
 
     private fun importManually(createConfigType: Int) {
