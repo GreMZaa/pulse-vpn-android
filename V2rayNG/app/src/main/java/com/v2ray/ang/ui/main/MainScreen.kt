@@ -532,7 +532,13 @@ fun MainScreen(
                 MainTopBar(
                     isLoading = isLoading,
                     onMenuClick = { scope.launch { drawerState.open() } },
-                    onRefreshClick = { onAction(MainAction.TestRealAllServers) }
+                    onRefreshClick = {
+                        if (uiState.isRunning) {
+                            onAction(MainAction.TestCurrentServerRealPing)
+                        } else {
+                            onAction(MainAction.TestRealAllServers)
+                        }
+                    }
                 )
             },
             containerColor = Color(0xFF121212)
@@ -616,7 +622,13 @@ fun MainScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 androidx.compose.material3.OutlinedButton(
-                                    onClick = { onAction(MainAction.TestRealAllServers) },
+                                    onClick = {
+                                        if (uiState.isRunning) {
+                                            onAction(MainAction.TestCurrentServerRealPing)
+                                        } else {
+                                            onAction(MainAction.TestRealAllServers)
+                                        }
+                                    },
                                     modifier = Modifier.height(32.dp),
                                     shape = RoundedCornerShape(16.dp),
                                     border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF2A2A2A)),

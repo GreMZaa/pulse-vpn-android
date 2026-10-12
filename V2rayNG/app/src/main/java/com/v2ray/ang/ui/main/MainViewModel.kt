@@ -404,7 +404,9 @@ class MainViewModel(
                 checkForUpdateSilently()
                 delay(500)
                 withContext(Dispatchers.Main) {
-                    testAllRealPing()
+                    if (!uiState.value.isRunning) {
+                        testAllRealPing()
+                    }
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
