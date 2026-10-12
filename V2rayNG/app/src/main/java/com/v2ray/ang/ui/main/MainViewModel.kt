@@ -440,15 +440,18 @@ class MainViewModel(
             )
         }.sortedWith(
             compareBy(
-                { it.profile.getWhitelistPriority() },
+                // 1. Сначала ВСЕ живые серверы (delay > 0), потом непротестированные (delay == 0), и в самый конец мертвые (delay < 0)
                 {
-                    val delay = it.testDelayMillis
                     when {
-                        delay in 1L..999L -> delay
-                        delay >= 1000L -> 10_000L + delay
-                        else -> 500_000L
+                        it.testDelayMillis > 0L -> 0
+                        it.testDelayMillis == 0L -> 1
+                        else -> 2 // нет ответа (delay < 0) - всегда в самый низ!
                     }
-                }
+                },
+                // 2. Среди живых серверов — приоритет белых списков
+                { it.profile.getWhitelistPriority() },
+                // 3. Задержка в мс
+                { if (it.testDelayMillis > 0L) it.testDelayMillis else 99999L }
             )
         )
 
@@ -1054,7 +1057,8 @@ class MainViewModel(
             }?.guid
         }
 
-        return allList.minByOrNull {
+        val candidates = allList.filter { it.testDelayMillis >= 0L }.ifEmpty { allList }
+        return candidates.minByOrNull {
             it.profile.getWhitelistPriority()
         }?.guid ?: allList.firstOrNull()?.guid
     }
