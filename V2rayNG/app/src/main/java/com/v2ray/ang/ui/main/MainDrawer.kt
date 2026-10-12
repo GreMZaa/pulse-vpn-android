@@ -83,13 +83,15 @@ fun MainDrawerContent(
 ) {
     ModalDrawerSheet(
         drawerState = drawerState,
-        modifier = Modifier.fillMaxWidth(0.75f),
+        modifier = Modifier
+            .fillMaxWidth(0.85f)
+            .androidx.compose.foundation.layout.widthIn(max = 320.dp),
         drawerContainerColor = Color(0xFF141414)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(horizontal = 20.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(36.dp))
@@ -138,6 +140,7 @@ fun MainDrawerContent(
                     .fillMaxWidth()
                     .height(48.dp),
                 shape = RoundedCornerShape(12.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF222222),
                     contentColor = Color.White
@@ -146,26 +149,28 @@ fun MainDrawerContent(
                 Icon(
                     painter = painterResource(com.v2ray.ang.R.drawable.ic_subscriptions_24dp),
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(18.dp),
                     tint = Color.White
                 )
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Моя подписка",
                     fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
                 )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // КНОПКА — ПРОВЕРИТЬ ОБНОВЛЕНИЕ
+            // КНОПКА — ПРОВЕРИТЬ ОБНОВЛЕНИЯ
             Button(
                 onClick = { onRefresh() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
                 shape = RoundedCornerShape(12.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.White,
                     contentColor = Color.Black
@@ -174,14 +179,15 @@ fun MainDrawerContent(
                 Icon(
                     painter = painterResource(com.v2ray.ang.R.drawable.ic_check_update_24dp),
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(18.dp),
                     tint = Color.Black
                 )
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Проверить обновление",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
+                    text = "Проверить обновления",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
                 )
             }
 

@@ -82,12 +82,7 @@ import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
-private enum class SubscriptionShareAction(@StringRes val labelRes: Int) {
-    QRCode(R.string.share_subscription_qrcode),
-    Clipboard(R.string.share_subscription_clipboard)
-}
 
-private data class SubscriptionDeleteTarget(val guid: String, val name: String)
 
 class SubSettingActivity : BaseComponentActivity() {
     private val viewModel: SubscriptionsViewModel by viewModels()
@@ -149,17 +144,7 @@ fun SubSettingScreen(
     var actionMessage by remember { mutableStateOf<String?>(null) }
     var isActionError by remember { mutableStateOf(false) }
 
-    var showUpdateDialog by remember { mutableStateOf(false) }
-    var removeTarget by remember { mutableStateOf<SubscriptionDeleteTarget?>(null) }
-    val confirmRemove = MmkvManager.decodeSettingsBool(AppConfig.PREF_CONFIRM_REMOVE, false)
-
-    var shareTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
-    val qrCodeBitmap by viewModel.qrCode.collectAsStateWithLifecycle()
-
     val lazyListState = rememberLazyListState()
-    val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
-        viewModel.move(from.index, to.index)
-    }
 
     fun refreshState() {
         subscriptionInfo = SubscriptionHelper.getActiveSubscription()
@@ -173,23 +158,7 @@ fun SubSettingScreen(
             AppTopBar(
                 title = stringResource(R.string.title_my_subscription),
                 onBackClick = onBackClick,
-                isLoading = isLoading || isActivating,
-                actions = {
-                    IconButton(onClick = onAddClick) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_add_24dp),
-                            contentDescription = stringResource(R.string.acc_add_subscription),
-                            tint = Color.White
-                        )
-                    }
-                    IconButton(onClick = { showUpdateDialog = true }) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_restore_24dp),
-                            contentDescription = stringResource(R.string.acc_update_subscriptions),
-                            tint = Color.White
-                        )
-                    }
-                }
+                isLoading = isLoading || isActivating
             )
         }
     ) { innerPadding ->
@@ -347,7 +316,7 @@ fun SubSettingScreen(
                         Spacer(modifier = Modifier.height(6.dp))
 
                         Text(
-                            text = "Введите промокод (например TLT63) или ключ формата vless:// / ссылку подписки",
+                            text = "Введите ваш промокод или ключ доступа для активации",
                             fontSize = 12.sp,
                             color = Color(0xFF777777),
                             lineHeight = 16.sp
@@ -510,211 +479,6 @@ fun SubSettingScreen(
                 }
             }
 
-            // РАЗДЕЛ: ГРУППЫ И ИСТОЧНИКИ ПОДПИСОК
-            if (subscriptions.isNotEmpty()) {
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "ПОДКЛЮЧЕННЫЕ ИСТОЧНИКИ",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp,
-                        color = Color(0xFF777777),
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
-                    )
-                }
-
-                itemsIndexed(
-                    items = subscriptions,
-                    key = { _, item -> item.guid }
-                ) { _, subCache ->
-                    ReorderableItem(reorderableState, key = subCache.guid) { isDragging ->
-                        ReorderableListItem(
-                            scope = this,
-                            isDragging = isDragging
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(Color(0xFF181818))
-                                    .padding(14.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = subCache.subscription.remarks,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = Color.White,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    if (subCache.subscription.url.isNotEmpty()) {
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Text(
-                                            text = subCache.subscription.url,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = Color(0xFF777777),
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = Utils.formatTimestamp(subCache.subscription.lastUpdated),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color(0xFF555555)
-                                    )
-                                }
-
-                                Column(
-                                    horizontalAlignment = Alignment.End,
-                                    modifier = Modifier.padding(start = 8.dp)
-                                ) {
-                                    Row {
-                                        if (subCache.subscription.url.isNotEmpty()) {
-                                            IconButton(onClick = {
-                                                shareTarget = Pair(subCache.guid, subCache.subscription.url)
-                                            }) {
-                                                Icon(
-                                                    painter = painterResource(R.drawable.ic_share_24dp),
-                                                    contentDescription = stringResource(R.string.acc_share_subscription),
-                                                    tint = Color(0xFFAAAAAA)
-                                                )
-                                            }
-                                        }
-                                        IconButton(onClick = { onEditSub(subCache.guid) }) {
-                                            Icon(
-                                                painter = painterResource(R.drawable.ic_edit_24dp),
-                                                contentDescription = stringResource(R.string.acc_edit),
-                                                tint = Color(0xFFAAAAAA)
-                                            )
-                                        }
-                                        IconButton(onClick = {
-                                            if (confirmRemove) removeTarget = SubscriptionDeleteTarget(subCache.guid, subCache.subscription.remarks)
-                                            else onRemoveSub(subCache.guid)
-                                        }) {
-                                            Icon(
-                                                painter = painterResource(R.drawable.ic_delete_24dp),
-                                                contentDescription = stringResource(R.string.acc_delete),
-                                                tint = Color(0xFFEF5350)
-                                            )
-                                        }
-                                    }
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Switch(
-                                        checked = subCache.subscription.enabled,
-                                        onCheckedChange = { checked ->
-                                            val updated = subCache.subscription.copy()
-                                            updated.enabled = checked
-                                            viewModel.update(subCache.guid, updated)
-                                        },
-                                        modifier = Modifier.scale(0.7f),
-                                        colors = SwitchDefaults.colors(
-                                            checkedThumbColor = Color.White,
-                                            checkedTrackColor = Color(0xFF4CAF50),
-                                            uncheckedThumbColor = Color(0xFF777777),
-                                            uncheckedTrackColor = Color(0xFF2E2E2E)
-                                        )
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         }
-    }
-
-    if (shareTarget != null) {
-        val (_, url) = shareTarget!!
-        SelectListDialog(
-            options = SubscriptionShareAction.entries,
-            optionText = { stringResource(it.labelRes) },
-            onSelected = { action ->
-                shareTarget = null
-                when (action) {
-                    SubscriptionShareAction.QRCode -> onShareQRCode(url)
-                    SubscriptionShareAction.Clipboard -> onShareClipboard(url)
-                }
-            },
-            onDismiss = { shareTarget = null }
-        )
-    }
-
-    // QR Code Dialog
-    if (qrCodeBitmap != null) {
-        QRCodeDialog(
-            bitmap = qrCodeBitmap,
-            onDismiss = viewModel::dismissQRCode
-        )
-    }
-
-    removeTarget?.let { target ->
-        DeleteConfirmDialog(
-            message = stringResource(R.string.confirm_delete_subscription_group),
-            itemName = target.name,
-            onConfirm = {
-                removeTarget = null
-                onRemoveSub(target.guid)
-                refreshState()
-            },
-            onDismiss = { removeTarget = null }
-        )
-    }
-
-    if (showUpdateDialog) {
-        var updateSubscription by rememberMmkvBool(AppConfig.PREF_UPDATE_SUBSCRIPTION, false)
-        var autoTestAfterUpdateSubscription by rememberMmkvBool(AppConfig.PREF_AUTO_TEST_AFTER_UPDATE_SUBSCRIPTION, false)
-        var autoRemoveInvalidAfterTest by rememberMmkvBool(AppConfig.PREF_AUTO_REMOVE_INVALID_AFTER_TEST, false)
-        var autoSortAfterTest by rememberMmkvBool(AppConfig.PREF_AUTO_SORT_AFTER_TEST, false)
-
-        AlertDialog(
-            onDismissRequest = { showUpdateDialog = false },
-            text = {
-                Column {
-                    SettingsSwitchItem(
-                        title = stringResource(R.string.title_sub_update),
-                        checked = updateSubscription,
-                        onCheckedChange = { updateSubscription = it }
-                    )
-                    SettingsSwitchItem(
-                        title = stringResource(R.string.title_pref_auto_test_after_update_subscription),
-                        summary = stringResource(R.string.summary_pref_auto_test_after_update_subscription),
-                        checked = autoTestAfterUpdateSubscription,
-                        onCheckedChange = { autoTestAfterUpdateSubscription = it }
-                    )
-                    SettingsSwitchItem(
-                        title = stringResource(R.string.title_pref_auto_remove_invalid_after_test),
-                        summary = stringResource(R.string.summary_pref_auto_remove_invalid_after_test),
-                        checked = autoRemoveInvalidAfterTest,
-                        enabled = autoTestAfterUpdateSubscription,
-                        onCheckedChange = { autoRemoveInvalidAfterTest = it }
-                    )
-                    SettingsSwitchItem(
-                        title = stringResource(R.string.title_pref_auto_sort_after_test),
-                        summary = stringResource(R.string.summary_pref_auto_sort_after_test),
-                        checked = autoSortAfterTest,
-                        enabled = autoTestAfterUpdateSubscription,
-                        onCheckedChange = { autoSortAfterTest = it }
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    showUpdateDialog = false
-                    onSubUpdate()
-                    refreshState()
-                }) {
-                    Text(text = stringResource(R.string.action_ok))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showUpdateDialog = false }) {
-                    Text(text = stringResource(R.string.action_cancel))
-                }
-            }
-        )
     }
 }
