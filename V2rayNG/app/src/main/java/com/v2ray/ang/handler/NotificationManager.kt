@@ -6,10 +6,12 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.Color
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.core.CoreServiceManager
@@ -121,7 +123,7 @@ object NotificationManager {
 
         //mBuilder?.setDefaults(NotificationCompat.FLAG_ONLY_ALERT_ONCE)
 
-        service.startForeground(NOTIFICATION_ID, mBuilder?.build())
+        startForegroundCompat(service, mBuilder?.build())
     }
 
     /**
@@ -132,7 +134,37 @@ object NotificationManager {
     fun ensureForeground() {
         val service = getService() ?: return
         val notification = mBuilder?.build()
-        if (notification == null) showNotification(null) else service.startForeground(NOTIFICATION_ID, notification)
+        if (notification == null) showNotification(null) else startForegroundCompat(service, notification)
+    }
+
+    /**
+     * Calls startForeground with the explicit FOREGROUND_SERVICE_TYPE_SPECIAL_USE on
+     * Android 14+ (API 34+) via ServiceCompat, which prevents "Unable to launch app
+     * for service Intent" crashes on OEM ROMs (Xiaomi/MIUI, Samsung, Huawei) that
+     * aggressively enforce foreground service type declarations.
+     */
+    private fun startForegroundCompat(service: Service, notification: Notification?) {
+        val n = notification ?: return
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                ServiceCompat.startForeground(
+                    service,
+                    NOTIFICATION_ID,
+                    n,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                )
+            } else {
+                service.startForeground(NOTIFICATION_ID, n)
+            }
+        } catch (e: Exception) {
+            LogUtil.e(AppConfig.TAG, "startForegroundCompat failed", e)
+            // Fallback: try plain startForeground
+            try {
+                service.startForeground(NOTIFICATION_ID, n)
+            } catch (e2: Exception) {
+                LogUtil.e(AppConfig.TAG, "startForeground fallback also failed", e2)
+            }
+        }
     }
 
     /**
