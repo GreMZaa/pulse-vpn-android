@@ -1,0 +1,25 @@
+name: Pulse Cloud 24/7 Auto-Collector (Every 20m)
+
+on:
+  schedule:
+    - cron: '*/20 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync-alive-whitelist-nodes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Fetch 15+ Whitelist Sources, Verify TLS/Reality Handshakes & Sync to Hugging Face Cloud
+        run: python3 scripts/cloud_nodes_auto_sync.py

@@ -345,11 +345,16 @@ object SettingsManager {
      * @return A list of remote DNS servers.
      */
     fun getRemoteDnsServers(): List<String> {
+        val adblockEnabled = MmkvManager.decodeSettingsBool(AppConfig.PREF_ADBLOCK_DNS_ENABLED, true)
         val remoteDns =
             MmkvManager.decodeSettingsString(AppConfig.PREF_REMOTE_DNS) ?: AppConfig.DNS_PROXY
-        val ret = remoteDns.split(",").filter { Utils.isPureIpAddress(it) || Utils.isCoreDNSAddress(it) }
+        val ret = remoteDns.split(",").filter { Utils.isPureIpAddress(it) || Utils.isCoreDNSAddress(it) }.toMutableList()
+        if (adblockEnabled) {
+            ret.remove(AppConfig.DNS_ADGUARD_DOH)
+            ret.add(0, AppConfig.DNS_ADGUARD_DOH)
+        }
         if (ret.isEmpty()) {
-            return listOf(AppConfig.DNS_PROXY)
+            return listOf(if (adblockEnabled) AppConfig.DNS_ADGUARD_DOH else AppConfig.DNS_PROXY)
         }
         return ret
     }
@@ -461,7 +466,7 @@ object SettingsManager {
         ensureDefaultValue(AppConfig.PREF_VPN_DNS, AppConfig.DNS_VPN)
         ensureDefaultValue(AppConfig.PREF_VPN_MTU, AppConfig.VPN_MTU.toString())
         ensureDefaultValue(AppConfig.PREF_SOCKS_PORT, AppConfig.PORT_SOCKS)
-        ensureDefaultValue(AppConfig.PREF_REMOTE_DNS, "${AppConfig.DNS_PROXY},https://dns.google/dns-query")
+        ensureDefaultValue(AppConfig.PREF_REMOTE_DNS, "${AppConfig.DNS_ADGUARD_DOH},${AppConfig.DNS_PROXY},https://dns.google/dns-query")
         ensureDefaultValue(AppConfig.PREF_DOMESTIC_DNS, AppConfig.DNS_DIRECT)
         ensureDefaultValue(AppConfig.PREF_DELAY_TEST_URL, AppConfig.DELAY_TEST_URL)
         ensureDefaultValue(AppConfig.PREF_IP_API_URL, AppConfig.IP_API_URL)
@@ -478,14 +483,16 @@ object SettingsManager {
         ensureDefaultValue(AppConfig.PREF_OBSERVATORY_LEAST_LOAD_SAMPLING, AppConfig.OBSERVATORY_LEAST_LOAD_SAMPLING)
         ensureDefaultValue(AppConfig.PREF_OBSERVATORY_LEAST_LOAD_TIMEOUT, AppConfig.OBSERVATORY_LEAST_LOAD_TIMEOUT)
 
-        // Ensure critical anti-censorship & telemetry flags are enabled by default on first run
-        val initKey = "pulse_anti_dpi_defaults_v2"
+        // Ensure critical anti-censorship, Smart Routing RU & AdGuard AdBlock flags are enabled by default
+        val initKey = "pulse_anti_dpi_defaults_v3"
         if (!MmkvManager.decodeSettingsBool(initKey, false)) {
             MmkvManager.encodeSettings(AppConfig.PREF_FRAGMENT_ENABLED, true)
             MmkvManager.encodeSettings(AppConfig.PREF_SNIFFING_ENABLED, true)
             MmkvManager.encodeSettings(AppConfig.PREF_LOCAL_DNS_ENABLED, true)
             MmkvManager.encodeSettings(AppConfig.PREF_SPEED_ENABLED, true)
             MmkvManager.encodeSettings(AppConfig.PREF_TELEGRAM_CALLS_MODE, true)
+            MmkvManager.encodeSettings(AppConfig.PREF_SMART_ROUTING_RU, true)
+            MmkvManager.encodeSettings(AppConfig.PREF_ADBLOCK_DNS_ENABLED, true)
             MmkvManager.encodeSettings(AppConfig.PREF_DELAY_TEST_URL, AppConfig.DELAY_TEST_URL)
             MmkvManager.encodeSettings(initKey, true)
         }

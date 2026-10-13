@@ -964,6 +964,7 @@ object CoreConfigManager {
         hosts[AppConfig.DNS_QUAD9_DOMAIN] = AppConfig.DNS_QUAD9_ADDRESSES
         hosts[AppConfig.DNS_SB_DOMAIN] = AppConfig.DNS_SB_ADDRESSES
         hosts[AppConfig.DNS_YANDEX_DOMAIN] = AppConfig.DNS_YANDEX_ADDRESSES
+        hosts["dns.adguard-dns.com"] = arrayListOf("94.140.14.14", "94.140.15.15")
 
         val userHosts = MmkvManager.decodeSettingsString(AppConfig.PREF_DNS_HOSTS)
         if (userHosts.isNotNullEmpty()) {
@@ -1170,14 +1171,46 @@ object CoreConfigManager {
         policyGroupBalancerTags: Map<String, String>
     ) {
         val tgCallsMode = MmkvManager.decodeSettingsBool(AppConfig.PREF_TELEGRAM_CALLS_MODE, true)
+        val smartRoutingRu = MmkvManager.decodeSettingsBool(AppConfig.PREF_SMART_ROUTING_RU, true)
+        val adblockEnabled = MmkvManager.decodeSettingsBool(AppConfig.PREF_ADBLOCK_DNS_ENABLED, true)
+
         v2rayConfig.routing.domainStrategy =
             MmkvManager.decodeSettingsString(AppConfig.PREF_ROUTING_DOMAIN_STRATEGY)
-                ?: if (tgCallsMode) "IPIfNonMatch" else "AsIs"
+                ?: if (tgCallsMode || smartRoutingRu) "IPIfNonMatch" else "AsIs"
 
-        if (tgCallsMode) {
-            val balancerTag = policyGroupBalancerTags[AppConfig.TAG_PROXY]
-            val outTag = if (balancerTag == null) AppConfig.TAG_PROXY else null
-            // 1. Все домены Telegram, звонков, медиа и веб-ресурсов
+        val balancerTag = policyGroupBalancerTags[AppConfig.TAG_PROXY]
+        val outTag = if (balancerTag == null) AppConfig.TAG_PROXY else null
+
+        // 0. Встроенный блокировщик рекламы и трекеров (AdGuard / AdBlock на уровне ядра Xray)
+        if (adblockEnabled) {
+            v2rayConfig.routing.rules.add(
+                V2rayConfig.RoutingBean.RulesBean(
+                    domain = arrayListOf(
+                        "geosite:category-ads-all",
+                        "domain:doubleclick.net",
+                        "domain:googlesyndication.com",
+                        "domain:googleadservices.com",
+                        "domain:adservice.google.com",
+                        "domain:pagead2.googlesyndication.com",
+                        "domain:an.yandex.ru",
+                        "domain:ads.vk.com",
+                        "domain:target.my.com",
+                        "domain:ad.mail.ru",
+                        "domain:app-measurement.com",
+                        "domain:unityads.unity3d.com",
+                        "domain:applovin.com",
+                        "domain:vungle.com",
+                        "domain:ironsrc.com",
+                        "domain:popads.net",
+                        "domain:propellerads.com"
+                    ),
+                    outboundTag = AppConfig.TAG_BLOCKED
+                )
+            )
+        }
+
+        // 1. Принудительное туннелирование Telegram, звонков, YouTube, Instagram, Discord, ChatGPT/Claude, Netflix, Spotify
+        if (tgCallsMode || smartRoutingRu) {
             v2rayConfig.routing.rules.add(
                 V2rayConfig.RoutingBean.RulesBean(
                     domain = arrayListOf(
@@ -1188,14 +1221,47 @@ object CoreConfigManager {
                         "domain:telegra.ph",
                         "domain:stel.com",
                         "domain:telegram.me",
-                        "domain:cdn-telegram.org"
+                        "domain:cdn-telegram.org",
+                        "domain:youtube.com",
+                        "domain:youtu.be",
+                        "domain:googlevideo.com",
+                        "domain:ytimg.com",
+                        "domain:ggpht.com",
+                        "domain:instagram.com",
+                        "domain:cdninstagram.com",
+                        "domain:facebook.com",
+                        "domain:fbcdn.net",
+                        "domain:whatsapp.com",
+                        "domain:whatsapp.net",
+                        "domain:discord.com",
+                        "domain:discordapp.com",
+                        "domain:discordapp.net",
+                        "domain:discord.gg",
+                        "domain:openai.com",
+                        "domain:chatgpt.com",
+                        "domain:oaistatic.com",
+                        "domain:oaiusercontent.com",
+                        "domain:claude.ai",
+                        "domain:anthropic.com",
+                        "domain:gemini.google.com",
+                        "domain:spotify.com",
+                        "domain:scdn.co",
+                        "domain:netflix.com",
+                        "domain:nflxvideo.net",
+                        "domain:tiktok.com",
+                        "domain:tiktokcdn.com",
+                        "domain:x.com",
+                        "domain:twitter.com",
+                        "domain:twimg.com",
+                        "domain:rutracker.org",
+                        "domain:ntc.party"
                     ),
                     network = "tcp,udp",
                     outboundTag = outTag,
                     balancerTag = balancerTag
                 )
             )
-            // 2. Все официальные IP-подсети Telegram (MTProto DC1–DC5 + голосовые/видео звонки)
+            // Все официальные IP-подсети Telegram (MTProto DC1–DC5 + голосовые/видео звонки)
             v2rayConfig.routing.rules.add(
                 V2rayConfig.RoutingBean.RulesBean(
                     ip = arrayListOf(
@@ -1215,6 +1281,64 @@ object CoreConfigManager {
                     network = "tcp,udp",
                     outboundTag = outTag,
                     balancerTag = balancerTag
+                )
+            )
+        }
+
+        // 2. Умный роутинг РФ («Включил один раз и забыл»): Сбербанк, Т-Банк, Госуслуги, Озон, WB, Кинопоиск, .ru / .рф — напрямую без VPN!
+        if (smartRoutingRu) {
+            v2rayConfig.routing.rules.add(
+                V2rayConfig.RoutingBean.RulesBean(
+                    domain = arrayListOf(
+                        "geosite:category-ru",
+                        "domain:ru",
+                        "domain:xn--p1ai",
+                        "domain:su",
+                        "domain:sberbank.ru",
+                        "domain:online.sberbank.ru",
+                        "domain:sber.ru",
+                        "domain:tbank.ru",
+                        "domain:tinkoff.ru",
+                        "domain:vtb.ru",
+                        "domain:alfabank.ru",
+                        "domain:gazprombank.ru",
+                        "domain:raiffeisen.ru",
+                        "domain:gosuslugi.ru",
+                        "domain:nalog.ru",
+                        "domain:mos.ru",
+                        "domain:emiass.info",
+                        "domain:ozon.ru",
+                        "domain:ozone.ru",
+                        "domain:wildberries.ru",
+                        "domain:wb.ru",
+                        "domain:avito.ru",
+                        "domain:yandex.ru",
+                        "domain:ya.ru",
+                        "domain:yandex.net",
+                        "domain:yastatic.net",
+                        "domain:kinopoisk.ru",
+                        "domain:vk.com",
+                        "domain:vk.ru",
+                        "domain:userapi.com",
+                        "domain:ok.ru",
+                        "domain:mail.ru",
+                        "domain:dzen.ru",
+                        "domain:rutube.ru",
+                        "domain:2gis.ru",
+                        "domain:pochta.ru",
+                        "domain:rzd.ru",
+                        "domain:hh.ru"
+                    ),
+                    outboundTag = AppConfig.TAG_DIRECT
+                )
+            )
+            v2rayConfig.routing.rules.add(
+                V2rayConfig.RoutingBean.RulesBean(
+                    ip = arrayListOf(
+                        "geoip:private",
+                        "geoip:ru"
+                    ),
+                    outboundTag = AppConfig.TAG_DIRECT
                 )
             )
         }

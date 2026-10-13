@@ -95,6 +95,8 @@ object AppConfig {
     const val PREF_SUBSCRIPTION_DAYS = "pref_subscription_days"
     const val PREF_SUBSCRIPTION_MAX_DEVICES = "pref_subscription_max_devices"
     const val PREF_TELEGRAM_CALLS_MODE = "pref_telegram_calls_mode"
+    const val PREF_SMART_ROUTING_RU = "pref_smart_routing_ru"
+    const val PREF_ADBLOCK_DNS_ENABLED = "pref_adblock_dns_enabled"
     const val PREF_FAVORITE_SERVERS = "pref_favorite_servers"
     const val PREF_DEVICE_HWID = "pref_device_hwid"
 
@@ -156,7 +158,8 @@ object AppConfig {
 
     /** DNS server addresses. */
     const val DNS_PROXY = "https://cloudflare-dns.com/dns-query"
-    const val DNS_DIRECT = "223.5.5.5"
+    const val DNS_ADGUARD_DOH = "https://dns.adguard-dns.com/dns-query"
+    const val DNS_DIRECT = "77.88.8.8"
     const val DNS_VPN = "1.1.1.1"
     const val GEOSITE_PRIVATE = "geosite:private"
     const val GEOSITE_CN = "geosite:cn"

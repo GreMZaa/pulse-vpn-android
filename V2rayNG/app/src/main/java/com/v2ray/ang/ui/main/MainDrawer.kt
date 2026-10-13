@@ -82,6 +82,7 @@ fun MainDrawerContent(
     drawerState: DrawerState,
     onNavigate: (MainDestination) -> Unit,
     onOpenPromo: () -> Unit = {},
+    onOpenCrossPlatform: () -> Unit = {},
     onRefresh: () -> Unit = {}
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -157,7 +158,7 @@ fun MainDrawerContent(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // КНОПКА — МОЯ ПОДПИСКА
             Button(
@@ -204,6 +205,29 @@ fun MainDrawerContent(
             ) {
                 Text(
                     text = "🔑 Ввести промокод / ключ",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // КНОПКА — ПОДКЛЮЧИТЬ ПК / IPHONE / MAC (КРОССПЛАТФОРМЕННАЯ ПОДПИСКА)
+            Button(
+                onClick = { onOpenCrossPlatform() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(46.dp),
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF222222),
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "💻 Подключить ПК / iPhone",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1

@@ -517,10 +517,27 @@ fun MainScreen(
     }
 
     var showDiagnosticsDialog by remember { mutableStateOf(false) }
+    var showCrossPlatformDialog by remember { mutableStateOf(false) }
     var telegramCallsMode by remember {
         mutableStateOf(
             com.v2ray.ang.handler.MmkvManager.decodeSettingsBool(
                 com.v2ray.ang.AppConfig.PREF_TELEGRAM_CALLS_MODE,
+                true
+            )
+        )
+    }
+    var smartRoutingRu by remember {
+        mutableStateOf(
+            com.v2ray.ang.handler.MmkvManager.decodeSettingsBool(
+                com.v2ray.ang.AppConfig.PREF_SMART_ROUTING_RU,
+                true
+            )
+        )
+    }
+    var adblockDnsEnabled by remember {
+        mutableStateOf(
+            com.v2ray.ang.handler.MmkvManager.decodeSettingsBool(
+                com.v2ray.ang.AppConfig.PREF_ADBLOCK_DNS_ENABLED,
                 true
             )
         )
@@ -538,6 +555,10 @@ fun MainScreen(
                 onOpenPromo = {
                     scope.launch { drawerState.close() }
                     showPromoFullscreen = true
+                },
+                onOpenCrossPlatform = {
+                    scope.launch { drawerState.close() }
+                    showCrossPlatformDialog = true
                 },
                 onRefresh = {
                     scope.launch { drawerState.close() }
@@ -655,7 +676,7 @@ fun MainScreen(
                         Spacer(modifier = Modifier.height(2.dp))
 
                         Text(
-                            text = if (isRunning) "Защита активна • Anti-DPI + DoH" else "Нажмите для подключения",
+                            text = if (isRunning) "Защита активна • РФ напрямую + AdGuard DoH" else "Нажмите для подключения",
                             fontSize = 11.sp,
                             color = if (isRunning) Color(0xFF81C784) else Color(0xFF555555)
                         )
@@ -669,7 +690,7 @@ fun MainScreen(
                         }
 
                         if (hasServers) {
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.Center,
@@ -698,17 +719,93 @@ fun MainScreen(
                                                 onAction(MainAction.RestartService)
                                             }
                                         }
-                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                        .padding(horizontal = 10.dp, vertical = 5.dp)
                                 ) {
                                     Text(
-                                        text = if (telegramCallsMode) "✈️ Telegram + Звонки: ВКЛ" else "✈️ Telegram + Звонки: ВЫКЛ",
-                                        fontSize = 11.sp,
+                                        text = if (telegramCallsMode) "✈️ Telegram: ВКЛ" else "✈️ Telegram: ВЫКЛ",
+                                        fontSize = 10.5.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = if (telegramCallsMode) Color(0xFF4FC3F7) else Color(0xFF888888)
                                     )
                                 }
 
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+
+                                // Умный роутинг РФ (Банки, Госуслуги, .ru напрямую без выключения VPN)
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(
+                                            if (smartRoutingRu) Color(0xFF162C1E) else Color(0xFF202020)
+                                        )
+                                        .border(
+                                            width = 1.dp,
+                                            color = if (smartRoutingRu) Color(0xFF4CAF50) else Color(0xFF2E2E2E),
+                                            shape = RoundedCornerShape(14.dp)
+                                        )
+                                        .clickable {
+                                            val next = !smartRoutingRu
+                                            smartRoutingRu = next
+                                            com.v2ray.ang.handler.MmkvManager.encodeSettings(
+                                                com.v2ray.ang.AppConfig.PREF_SMART_ROUTING_RU,
+                                                next
+                                            )
+                                            if (isRunning) {
+                                                onAction(MainAction.RestartService)
+                                            }
+                                        }
+                                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                                ) {
+                                    Text(
+                                        text = if (smartRoutingRu) "🏦 Банки РФ: Напрямую" else "🏦 Банки РФ: В туннель",
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (smartRoutingRu) Color(0xFF81C784) else Color(0xFF888888)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Блокировщик рекламы и трекеров AdGuard DNS
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(
+                                            if (adblockDnsEnabled) Color(0xFF2A1D33) else Color(0xFF202020)
+                                        )
+                                        .border(
+                                            width = 1.dp,
+                                            color = if (adblockDnsEnabled) Color(0xFFAB47BC) else Color(0xFF2E2E2E),
+                                            shape = RoundedCornerShape(14.dp)
+                                        )
+                                        .clickable {
+                                            val next = !adblockDnsEnabled
+                                            adblockDnsEnabled = next
+                                            com.v2ray.ang.handler.MmkvManager.encodeSettings(
+                                                com.v2ray.ang.AppConfig.PREF_ADBLOCK_DNS_ENABLED,
+                                                next
+                                            )
+                                            if (isRunning) {
+                                                onAction(MainAction.RestartService)
+                                            }
+                                        }
+                                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                                ) {
+                                    Text(
+                                        text = if (adblockDnsEnabled) "🚫 Блок рекламы: ВКЛ" else "🚫 Блок рекламы: ВЫКЛ",
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (adblockDnsEnabled) Color(0xFFCE93D8) else Color(0xFF888888)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(6.dp))
 
                                 // Диагностика и починка в 1 клик
                                 Box(
@@ -721,11 +818,11 @@ fun MainScreen(
                                             shape = RoundedCornerShape(14.dp)
                                         )
                                         .clickable { showDiagnosticsDialog = true }
-                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                        .padding(horizontal = 10.dp, vertical = 5.dp)
                                 ) {
                                     Text(
                                         text = "🛠 Диагностика",
-                                        fontSize = 11.sp,
+                                        fontSize = 10.5.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = Color(0xFFCCCCCC)
                                     )
@@ -802,10 +899,20 @@ fun MainScreen(
                 com.v2ray.ang.handler.MmkvManager.encodeSettings(com.v2ray.ang.AppConfig.PREF_FRAGMENT_ENABLED, true)
                 com.v2ray.ang.handler.MmkvManager.encodeSettings(com.v2ray.ang.AppConfig.PREF_LOCAL_DNS_ENABLED, true)
                 com.v2ray.ang.handler.MmkvManager.encodeSettings(com.v2ray.ang.AppConfig.PREF_TELEGRAM_CALLS_MODE, true)
+                com.v2ray.ang.handler.MmkvManager.encodeSettings(com.v2ray.ang.AppConfig.PREF_SMART_ROUTING_RU, true)
+                com.v2ray.ang.handler.MmkvManager.encodeSettings(com.v2ray.ang.AppConfig.PREF_ADBLOCK_DNS_ENABLED, true)
                 telegramCallsMode = true
+                smartRoutingRu = true
+                adblockDnsEnabled = true
                 showDiagnosticsDialog = false
                 onAction(MainAction.SmartConnect)
             }
+        )
+    }
+
+    if (showCrossPlatformDialog) {
+        CrossPlatformSubscriptionDialog(
+            onDismiss = { showCrossPlatformDialog = false }
         )
     }
 }
@@ -903,6 +1010,8 @@ private fun ConnectionDiagnosticsDialog(
 ) {
     var stepTunnel by remember { mutableStateOf("Проверка...") }
     var stepDpiDns by remember { mutableStateOf("Проверка...") }
+    var stepSmartRu by remember { mutableStateOf("Проверка...") }
+    var stepAdblock by remember { mutableStateOf("Проверка...") }
     var stepHttp204 by remember { mutableStateOf("Проверка...") }
     var stepTelegram by remember { mutableStateOf("Проверка...") }
     var isChecking by remember { mutableStateOf(true) }
@@ -912,7 +1021,12 @@ private fun ConnectionDiagnosticsDialog(
         withContext(Dispatchers.IO) {
             val fragOn = com.v2ray.ang.handler.MmkvManager.decodeSettingsBool(com.v2ray.ang.AppConfig.PREF_FRAGMENT_ENABLED, true)
             val dohOn = com.v2ray.ang.handler.MmkvManager.decodeSettingsBool(com.v2ray.ang.AppConfig.PREF_LOCAL_DNS_ENABLED, true)
+            val smartRuOn = com.v2ray.ang.handler.MmkvManager.decodeSettingsBool(com.v2ray.ang.AppConfig.PREF_SMART_ROUTING_RU, true)
+            val adblockOn = com.v2ray.ang.handler.MmkvManager.decodeSettingsBool(com.v2ray.ang.AppConfig.PREF_ADBLOCK_DNS_ENABLED, true)
+
             stepDpiDns = if (fragOn && dohOn) "✅ Активны (Fragment + DoH)" else "⚠️ Частично отключены"
+            stepSmartRu = if (smartRuOn) "✅ Банки и .ru напрямую" else "🌐 Весь трафик в VPN"
+            stepAdblock = if (adblockOn) "✅ AdGuard DNS + Фильтр" else "⏸ Отключен"
 
             if (!isRunning) {
                 stepTunnel = "❌ VPN отключен"
@@ -955,6 +1069,8 @@ private fun ConnectionDiagnosticsDialog(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 DiagnosticRow("VPN Туннель", stepTunnel)
                 DiagnosticRow("Анти-DPI и DoH DNS", stepDpiDns)
+                DiagnosticRow("Умный роутинг РФ", stepSmartRu)
+                DiagnosticRow("Блокировщик рекламы", stepAdblock)
                 DiagnosticRow("Интернет (HTTP-204)", stepHttp204)
                 DiagnosticRow("Telegram и Звонки", stepTelegram)
             }
@@ -973,6 +1089,120 @@ private fun ConnectionDiagnosticsDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("Закрыть", color = Color(0xFFAAAAAA))
+            }
+        }
+    )
+}
+
+@Composable
+private fun CrossPlatformSubscriptionDialog(
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val subInfo = remember { com.v2ray.ang.handler.SubscriptionHelper.getActiveSubscription() }
+    val activeCode = remember(subInfo) {
+        val raw = subInfo?.code ?: ""
+        if (raw.isNotBlank() && raw != "Импортированные узлы" && raw != "Пользовательский ключ" && !raw.startsWith("http")) {
+            raw
+        } else {
+            "DEMO"
+        }
+    }
+    val universalSubUrl = "https://greemzaa-pulsewl-vpn.static.hf.space/sub/$activeCode"
+    val singboxSubUrl = "https://greemzaa-pulsewl-vpn.static.hf.space/sub/${activeCode}_singbox.json"
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1A1A1A),
+        title = {
+            Text(
+                text = "💻 Подключить ПК / iPhone",
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "Ваш ключ работает одновременно на Android, iPhone/iPad, Windows и macOS:",
+                    fontSize = 12.sp,
+                    color = Color(0xFFBBBBBB)
+                )
+                DiagnosticRow("Ваш ключ", activeCode)
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0xFF121212))
+                        .border(1.dp, Color(0xFF2C2C2C), RoundedCornerShape(10.dp))
+                        .padding(10.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = "🍎 iPhone / iPad (Streisand, V2Box, Happ)",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = "Скопируйте универсальную ссылку подписки и добавьте из буфера обмена:",
+                            fontSize = 11.sp,
+                            color = Color(0xFF999999)
+                        )
+                        Button(
+                            onClick = {
+                                com.v2ray.ang.util.Utils.setClipboard(context, universalSubUrl)
+                                android.widget.Toast.makeText(context, "Ссылка подписки скопирована!", android.widget.Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.fillMaxWidth().height(36.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF29B6F6), contentColor = Color.Black)
+                        ) {
+                            Text("📋 Скопировать ссылку подписки", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0xFF121212))
+                        .border(1.dp, Color(0xFF2C2C2C), RoundedCornerShape(10.dp))
+                        .padding(10.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = "💻 Windows / macOS (Hiddify, Karing, Throne)",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = "Готовый профиль с Умным роутингом РФ (Сбербанк и .ru напрямую) + AdGuard DNS:",
+                            fontSize = 11.sp,
+                            color = Color(0xFF999999)
+                        )
+                        Button(
+                            onClick = {
+                                com.v2ray.ang.util.Utils.setClipboard(context, singboxSubUrl)
+                                android.widget.Toast.makeText(context, "Ссылка Sing-box профиля скопирована!", android.widget.Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.fillMaxWidth().height(36.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF81C784), contentColor = Color.Black)
+                        ) {
+                            Text("📋 Скопировать Smart-профиль для ПК", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Готово", color = Color.White, fontWeight = FontWeight.Bold)
             }
         }
     )
