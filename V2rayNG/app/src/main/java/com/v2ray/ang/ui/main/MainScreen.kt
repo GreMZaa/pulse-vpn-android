@@ -152,7 +152,16 @@ fun MainScreen(
         if (!hasServers) {
             showPromoFullscreen = true
         } else {
-            // Тестируем пинг один раз при запуске
+            // Автоматически обновляем пул живых серверов из облака при запуске и проверяем реальный пинг
+            try {
+                val valid = SubscriptionHelper.validateSubscriptionOnline()
+                if (!valid) {
+                    mainViewModel.setupGroupTab(forceRefresh = true).join()
+                    showPromoFullscreen = true
+                    return@LaunchedEffect
+                }
+                mainViewModel.setupGroupTab(forceRefresh = true).join()
+            } catch (_: Exception) {}
             if (!isLoading) {
                 onAction(MainAction.TestRealAllServers)
             }
@@ -577,7 +586,13 @@ fun MainScreen(
                         if (uiState.isRunning) {
                             onAction(MainAction.TestCurrentServer)
                         } else {
-                            onAction(MainAction.TestRealAllServers)
+                            scope.launch {
+                                try {
+                                    SubscriptionHelper.validateSubscriptionOnline()
+                                    mainViewModel.setupGroupTab(forceRefresh = true).join()
+                                } catch (_: Exception) {}
+                                onAction(MainAction.TestRealAllServers)
+                            }
                         }
                     }
                 )

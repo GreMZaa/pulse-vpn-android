@@ -21,7 +21,14 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Fetch 15+ Whitelist Sources, Verify TLS/Reality Handshakes & Sync to Hugging Face Cloud
+      - name: Install Xray-core for Real Tunnel & Telegram Verification
+        run: |
+          mkdir -p scripts/bin
+          curl -sSL https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip -o /tmp/xray.zip
+          unzip -q -o /tmp/xray.zip -d scripts/bin
+          chmod +x scripts/bin/xray
+
+      - name: Fetch 15+ Whitelist Sources, Verify Real Xray Tunnels & Sync to Hugging Face Cloud
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: python3 scripts/cloud_nodes_auto_sync.py

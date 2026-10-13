@@ -139,23 +139,29 @@ object SubscriptionHelper {
 
     suspend fun validateSubscriptionOnline(): Boolean = withContext(Dispatchers.IO) {
         val code = MmkvManager.decodeSettingsString(AppConfig.PREF_SUBSCRIPTION_CODE)
-        if (code.isNullOrBlank()) {
-            return@withContext true
-        }
-
-        if (code == "Пользовательский ключ" || code.startsWith("http")) {
+        if (code == "Пользовательский ключ" || (!code.isNullOrBlank() && code.startsWith("http"))) {
             return@withContext true
         }
 
         try {
             val currentHwid = getDeviceHwid()
             val cloudStateUrl = "https://greemzaa-pulsewl-vpn.static.hf.space/api/cloud_state.json?t=${System.currentTimeMillis()}"
-            val stateJsonStr = HttpUtil.getUrlContent(UrlContentRequest(url = cloudStateUrl, timeout = 6000))
+            val stateJsonStr = HttpUtil.getUrlContent(UrlContentRequest(url = cloudStateUrl, timeout = 7000))
             if (stateJsonStr.isNullOrBlank()) {
                 return@withContext true
             }
 
             val json = JSONObject(stateJsonStr)
+
+            // Если код не задан (старая активация), но серверы есть — просто обновляем список живых серверов из облака
+            if (code.isNullOrBlank()) {
+                val subB64 = json.optJSONObject("subscriptions_b64")?.optString("all")
+                if (!subB64.isNullOrBlank()) {
+                    AngConfigManager.importBatchConfig(subB64, "", false)
+                }
+                return@withContext true
+            }
+
             var found = false
             var matchedDays = 0.0
             var hwidAllowed = true
@@ -202,6 +208,12 @@ object SubscriptionHelper {
                 val allGuids = MmkvManager.decodeAllServerList()
                 allGuids.forEach { MmkvManager.removeServer(it) }
                 return@withContext false
+            }
+
+            // Автоматически обновляем пул живых серверов из облака Hugging Face (чтобы мёртвые старые серверы заменялись свежими)
+            val subB64 = json.optJSONObject("subscriptions_b64")?.optString("all")
+            if (!subB64.isNullOrBlank()) {
+                AngConfigManager.importBatchConfig(subB64, "", false)
             }
 
             MmkvManager.encodeSettings(AppConfig.PREF_SUBSCRIPTION_MAX_DEVICES, maxDev)

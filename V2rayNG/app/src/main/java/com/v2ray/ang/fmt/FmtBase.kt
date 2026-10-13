@@ -73,11 +73,11 @@ open class FmtBase {
         if (config.security != AppConfig.TLS && config.security != AppConfig.REALITY) {
             config.security = null
         }
-        // Support multiple possible query keys for allowInsecure like the C# implementation
+        // In Xray 26.3+, allowInsecure is removed unless pinnedPeerCertSha256 (pcs) is provided
         val allowInsecureKeys = arrayOf("insecure", "allowInsecure", "allow_insecure")
+        val hasPinnedCert = !queryParam["pcs"].isNullOrEmpty()
         config.insecure = when {
-            allowInsecureKeys.any { queryParam[it] == "1" } -> true
-            allowInsecureKeys.any { queryParam[it] == "0" } -> false
+            hasPinnedCert && allowInsecureKeys.any { queryParam[it] == "1" } -> true
             else -> false
         }
         config.sni = queryParam["sni"]

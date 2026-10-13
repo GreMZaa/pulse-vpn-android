@@ -1,13 +1,16 @@
 import base64
 import ipaddress
 import json
+import os
 import re
 import socket
 import ssl
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 # 1. Специализированные источники под Белые списки РФ (Мобильные операторы, Кабель, Белые CIDR РФ, Reality SNI)
@@ -223,11 +226,11 @@ def is_safe_public_host(host: str, resolve_dns: bool = False) -> bool:
 
 def _clean_node_remark(raw_remark: str, index: int, proto_label: str = "Server") -> str:
     remark = urllib.parse.unquote(raw_remark or f"{proto_label} #{index + 1}").strip()
-    # Очищаем чужие рекламные приписки телеграм-каналов, сохраняя флаг страны и локацию
-    remark = re.sub(r"(@[A-Za-z0-9_]+|https?://\S+|t\.me/\S+)", "", remark).strip()
-    remark = re.sub(r"\s{2,}", " ", remark).strip(" -|•")
-    if not remark:
-        remark = f"{proto_label} #{index + 1}"
+    # Очищаем чужие рекламные приписки телеграм-каналов и агрегаторов, сохраняя флаг страны и локацию
+    remark = re.sub(r"(@[A-Za-z0-9_]+|https?://\S+|t\.me/\S+|b2n\.ir/\S+|epodonios|v2ray-configs)", "", remark, flags=re.IGNORECASE).strip()
+    remark = re.sub(r"\s{2,}", " ", remark).strip(" -|•⚡:")
+    if not remark or remark.isdigit():
+        remark = f"🛡️ ПУЛЬС {proto_label} #{index + 1}"
     return remark[:65]
 
 
@@ -293,9 +296,19 @@ def parse_vless_uri(uri: str, index: int = 0) -> Optional[Dict[str, Any]]:
         service_name = get_param("serviceName", get_param("path", ""))
         extra_raw = get_param("extra", "")
 
-        # Для Reality обязательно наличие pbk (Public Key)
-        if security == "reality" and not pbk:
-            return None
+        # Для Reality обязательно наличие валидного pbk (32-байтный Curve25519 ключ в Base64) и hex sid
+        if security == "reality":
+            if not pbk:
+                return None
+            try:
+                padded_pbk = pbk.replace("-", "+").replace("_", "/") + "=" * ((4 - len(pbk) % 4) % 4)
+                raw_pbk = base64.b64decode(padded_pbk)
+                if len(raw_pbk) != 32:
+                    return None
+            except Exception:
+                return None
+            if sid and (len(sid) > 16 or not re.match(r"^[0-9a-fA-F]+$", sid)):
+                sid = ""
 
         is_ru = (
             "🇷🇺" in remark
@@ -303,8 +316,12 @@ def parse_vless_uri(uri: str, index: int = 0) -> Optional[Dict[str, Any]]:
         )
         is_cascade = any(k in remark.lower() for k in ["каскад", "cascade", "relay", "мост", "vip"])
 
+        # Убираем устаревшие параметры allowInsecure/insecure (вызывают ошибку в Xray 26.3+)
+        base_uri_no_frag = uri.split("#")[0]
+        base_uri_no_frag = re.sub(r"([?&])(allowInsecure|insecure)=[^&]*&?", r"\1", base_uri_no_frag)
+        base_uri_no_frag = base_uri_no_frag.rstrip("?&")
         # Пересобираем чистый raw_uri с аккуратным именем
-        clean_uri = uri.split("#")[0] + "#" + urllib.parse.quote(remark)
+        clean_uri = base_uri_no_frag + "#" + urllib.parse.quote(remark)
 
         return {
             "id": f"node_{index}",
@@ -603,6 +620,179 @@ def check_node_tcp_latency(node: Dict[str, Any], timeout: float = 2.0) -> Option
         return None
 
 
+def _find_xray_binary() -> Optional[str]:
+    import shutil
+    env_bin = os.environ.get("XRAY_BIN", "").strip()
+    if env_bin and os.path.isfile(env_bin):
+        return env_bin
+    base_dir = Path(__file__).resolve().parent
+    candidates = [
+        base_dir / "bin" / "xray.exe",
+        base_dir / "bin" / "xray",
+        base_dir.parent / "backend" / "bin" / "xray.exe",
+        base_dir.parent / "backend" / "bin" / "xray",
+    ]
+    for c in candidates:
+        if c.is_file():
+            return str(c)
+    return shutil.which("xray")
+
+
+def _probe_single_xray_proxy_port(proxy_port: int, timeout: float = 4.5) -> Optional[int]:
+    proxy_url = f"http://127.0.0.1:{proxy_port}"
+    opener = urllib.request.build_opener(
+        urllib.request.ProxyHandler({"http": proxy_url, "https": proxy_url})
+    )
+    start = time.perf_counter()
+    try:
+        req = urllib.request.Request(
+            "http://cp.cloudflare.com/generate_204",
+            headers={"User-Agent": "Mozilla/5.0", "Connection": "close"},
+        )
+        with opener.open(req, timeout=timeout) as resp:
+            if resp.status not in (200, 204):
+                return None
+    except Exception:
+        try:
+            req2 = urllib.request.Request(
+                "http://www.gstatic.com/generate_204",
+                headers={"User-Agent": "Mozilla/5.0", "Connection": "close"},
+            )
+            with opener.open(req2, timeout=timeout) as resp2:
+                if resp2.status not in (200, 204):
+                    return None
+        except Exception:
+            return None
+
+    rtt_ms = max(1, int((time.perf_counter() - start) * 1000))
+
+    # Проверяем, что выходной сервер реально открывает Telegram (не заблокирован РКН на выходе в РФ)
+    try:
+        tg_req = urllib.request.Request(
+            "https://api.telegram.org",
+            headers={"User-Agent": "Mozilla/5.0", "Connection": "close"},
+        )
+        with opener.open(tg_req, timeout=timeout) as tg_resp:
+            if tg_resp.status in (200, 301, 302, 404):
+                return rtt_ms
+    except urllib.error.HTTPError as he:
+        # api.telegram.org корень возвращает 302 или 404 — значит соединение до Telegram установлено!
+        if he.code in (200, 301, 302, 400, 401, 404):
+            return rtt_ms
+        return None
+    except Exception:
+        return None
+    return rtt_ms
+
+
+def _verify_vless_nodes_via_xray(
+    alive_nodes: List[Dict[str, Any]],
+    xray_bin: str,
+    batch_size: int = 55,
+    timeout: float = 4.5,
+) -> List[Dict[str, Any]]:
+    import subprocess
+    import tempfile
+
+    vless_nodes = [n for n in alive_nodes if n.get("protocol", "vless").lower() == "vless"]
+    other_nodes = [n for n in alive_nodes if n.get("protocol", "vless").lower() != "vless"]
+    if not vless_nodes:
+        return alive_nodes
+
+    verified_vless: List[Dict[str, Any]] = []
+    base_port = 24100
+
+    for batch_start in range(0, len(vless_nodes), batch_size):
+        batch = vless_nodes[batch_start:batch_start + batch_size]
+        inbounds = []
+        outbounds = []
+        rules = []
+
+        for idx, node in enumerate(batch):
+            in_tag = f"in_{idx}"
+            out_tag = f"out_{idx}"
+            port = base_port + idx
+            inbounds.append({
+                "tag": in_tag,
+                "port": port,
+                "listen": "127.0.0.1",
+                "protocol": "http",
+                "settings": {"timeout": 5},
+            })
+            outbounds.append(node_to_xray_outbound(node, tag=out_tag, enable_fragment=True))
+            rules.append({
+                "type": "field",
+                "inboundTag": [in_tag],
+                "outboundTag": out_tag,
+            })
+
+        outbounds.append({
+            "tag": "fragment",
+            "protocol": "freedom",
+            "settings": {
+                "fragment": {
+                    "packets": "tlshello",
+                    "length": "10-20",
+                    "interval": "10-20",
+                }
+            },
+            "streamSettings": {"sockopt": {"tcpNoDelay": True}},
+        })
+
+        cfg = {
+            "log": {"loglevel": "none"},
+            "inbounds": inbounds,
+            "outbounds": outbounds,
+            "routing": {"domainStrategy": "AsIs", "rules": rules},
+        }
+
+        tmp_fd, tmp_path = tempfile.mkstemp(suffix=".json", prefix="pulse_xray_verify_")
+        proc = None
+        try:
+            with os.fdopen(tmp_fd, "w", encoding="utf-8") as f:
+                json.dump(cfg, f)
+
+            proc = subprocess.Popen(
+                [xray_bin, "run", "-c", tmp_path],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            time.sleep(0.65)
+
+            with ThreadPoolExecutor(max_workers=len(batch)) as ex:
+                fut_map = {
+                    ex.submit(_probe_single_xray_proxy_port, base_port + idx, timeout): batch[idx]
+                    for idx in range(len(batch))
+                }
+                for fut in as_completed(fut_map):
+                    node = dict(fut_map[fut])
+                    try:
+                        real_rtt = fut.result()
+                    except Exception:
+                        real_rtt = None
+                    if real_rtt is not None:
+                        node["latency_ms"] = real_rtt
+                        verified_vless.append(node)
+        except Exception:
+            pass
+        finally:
+            if proc is not None:
+                try:
+                    proc.terminate()
+                    proc.wait(timeout=2)
+                except Exception:
+                    try:
+                        proc.kill()
+                    except Exception:
+                        pass
+            try:
+                os.remove(tmp_path)
+            except Exception:
+                pass
+
+    return verified_vless if verified_vless else (verified_vless + other_nodes)
+
+
 def probe_nodes_concurrently(
     nodes: List[Dict[str, Any]],
     timeout: float = 2.0,
@@ -610,8 +800,8 @@ def probe_nodes_concurrently(
     only_alive: bool = False,
 ) -> List[Dict[str, Any]]:
     """
-    Параллельно проверяет реальное TLS/Reality рукопожатие и задержку до всех серверов.
-    Ставит серверы под белые списки (VIP Каскад, Reality + РФ SNI, XHTTP, Hysteria 2) строго в самый верх.
+    Параллельно проверяет реальное TLS/Reality рукопожатие, а при наличии ядра Xray —
+    настоящую прокачку трафика HTTP-204 и доступность Telegram (api.telegram.org) через туннель!
     """
     if not nodes:
         return []
@@ -629,6 +819,13 @@ def probe_nodes_concurrently(
             if only_alive and ping is None:
                 continue
             results.append(node)
+
+    # Если включён режим only_alive и доступно ядро Xray — проверяем реальный туннель (HTTP-204 + Telegram)
+    xray_bin = _find_xray_binary()
+    if only_alive and xray_bin and results:
+        real_verified = _verify_vless_nodes_via_xray(results, xray_bin)
+        if real_verified:
+            results = real_verified
 
     results.sort(key=lambda x: (
         x["latency_ms"] is None,
@@ -668,7 +865,7 @@ def _decode_subscription_text(raw_text: str) -> List[str]:
 
 def _fetch_single_source(url: str, timeout: float = 7.0, is_primary_wl: bool = True) -> Tuple[List[str], str]:
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PulseVPN/0.1.3 Karing/1.0",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PulseVPN/0.1.5 Karing/1.0",
         "Cache-Control": "no-cache",
     }
     try:
@@ -677,24 +874,21 @@ def _fetch_single_source(url: str, timeout: float = 7.0, is_primary_wl: bool = T
             raw_text = resp.read().decode("utf-8", errors="ignore")
             lines = _decode_subscription_text(raw_text)
             if not is_primary_wl:
-                # Из глобальных агрегаторов берём только Hysteria2 / TUIC и VLESS с Reality или XHTTP + White SNI
+                # Из глобальных агрегаторов берём VLESS с Reality или XHTTP
                 filtered_lines = []
                 for ln in lines:
                     low = ln.lower()
-                    if low.startswith(("hy2://", "hysteria2://", "tuic://")):
+                    if "security=reality" in low or "type=xhttp" in low or "type=splithttp" in low:
                         filtered_lines.append(ln)
-                    elif "security=reality" in low or "type=xhttp" in low or "type=splithttp" in low:
-                        if any(w in low for w in WHITE_SNI_DOMAINS):
-                            filtered_lines.append(ln)
-                lines = filtered_lines[:80]
+                lines = filtered_lines[:180]
             else:
-                lines = lines[:150]
+                lines = lines[:300]
             return lines, url
     except Exception:
         return [], url
 
 
-def fetch_raw_subscription_from_mirrors(timeout: float = 8.0, max_candidates: int = 260) -> Tuple[List[str], str]:
+def fetch_raw_subscription_from_mirrors(timeout: float = 8.0, max_candidates: int = 600) -> Tuple[List[str], str]:
     """
     Параллельно скачивает списки серверов из ВСЕХ проверенных источников Белых списков РФ
     (igareck Mobile/Cable/CIDR, zieng2/wl, LowiKLive, AvenCores, Hysteria2 пулы),
@@ -793,7 +987,6 @@ def node_to_xray_outbound(node: Dict[str, Any], tag: str, enable_fragment: bool 
                 "network": "udp",
                 "security": "tls",
                 "tlsSettings": {
-                    "allowInsecure": True,
                     "serverName": node.get("sni") or node["address"],
                 },
             },
@@ -809,7 +1002,7 @@ def node_to_xray_outbound(node: Dict[str, Any], tag: str, enable_fragment: bool 
         "id": node["uuid"],
         "encryption": "none",
     }
-    if node.get("flow"):
+    if node.get("flow") and xray_net in ("tcp", "raw"):
         user_obj["flow"] = node["flow"]
 
     stream_settings: Dict[str, Any] = {
@@ -826,7 +1019,6 @@ def node_to_xray_outbound(node: Dict[str, Any], tag: str, enable_fragment: bool 
 
     if node["security"] == "tls":
         tls_settings: Dict[str, Any] = {
-            "allowInsecure": True,
             "fingerprint": node.get("fp") or "chrome",
         }
         if node.get("sni"):

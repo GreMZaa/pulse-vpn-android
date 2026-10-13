@@ -1176,7 +1176,7 @@ object CoreConfigManager {
 
         v2rayConfig.routing.domainStrategy =
             MmkvManager.decodeSettingsString(AppConfig.PREF_ROUTING_DOMAIN_STRATEGY)
-                ?: if (tgCallsMode || smartRoutingRu) "IPIfNonMatch" else "AsIs"
+                ?: "AsIs"
 
         val balancerTag = policyGroupBalancerTags[AppConfig.TAG_PROXY]
         val outTag = if (balancerTag == null) AppConfig.TAG_PROXY else null
@@ -1209,7 +1209,7 @@ object CoreConfigManager {
             )
         }
 
-        // 1. Принудительное туннелирование Telegram, звонков, YouTube, Instagram, Discord, ChatGPT/Claude, Netflix, Spotify
+        // 1. Принудительное туннелирование Telegram, звонков, YouTube, Instagram, Discord, ChatGPT/Claude и проверки IP (2ip.ru)
         if (tgCallsMode || smartRoutingRu) {
             v2rayConfig.routing.rules.add(
                 V2rayConfig.RoutingBean.RulesBean(
@@ -1222,6 +1222,12 @@ object CoreConfigManager {
                         "domain:stel.com",
                         "domain:telegram.me",
                         "domain:cdn-telegram.org",
+                        "domain:2ip.ru",
+                        "domain:2ip.io",
+                        "domain:whoer.net",
+                        "domain:ipinfo.io",
+                        "domain:speedtest.net",
+                        "domain:fast.com",
                         "domain:youtube.com",
                         "domain:youtu.be",
                         "domain:googlevideo.com",
@@ -1285,15 +1291,12 @@ object CoreConfigManager {
             )
         }
 
-        // 2. Умный роутинг РФ («Включил один раз и забыл»): Сбербанк, Т-Банк, Госуслуги, Озон, WB, Кинопоиск, .ru / .рф — напрямую без VPN!
+        // 2. Умный роутинг РФ («Включил один раз и забыл»): российские банки, Госуслуги, маркетплейсы и сервисы напрямую без VPN!
         if (smartRoutingRu) {
             v2rayConfig.routing.rules.add(
                 V2rayConfig.RoutingBean.RulesBean(
                     domain = arrayListOf(
-                        "geosite:category-ru",
-                        "domain:ru",
                         "domain:xn--p1ai",
-                        "domain:su",
                         "domain:sberbank.ru",
                         "domain:online.sberbank.ru",
                         "domain:sber.ru",
@@ -1335,8 +1338,7 @@ object CoreConfigManager {
             v2rayConfig.routing.rules.add(
                 V2rayConfig.RoutingBean.RulesBean(
                     ip = arrayListOf(
-                        "geoip:private",
-                        "geoip:ru"
+                        "geoip:private"
                     ),
                     outboundTag = AppConfig.TAG_DIRECT
                 )
