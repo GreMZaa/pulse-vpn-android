@@ -23,7 +23,7 @@ enum class NotificationChannelType(
         notificationId = 12
     ),
     APP_UPDATE(
-        channelId = "pulse_app_update_channel",
+        channelId = "pulse_app_updates_v2",
         channelNameRes = R.string.notification_channel_app_updates,
         notificationId = 1001
     )

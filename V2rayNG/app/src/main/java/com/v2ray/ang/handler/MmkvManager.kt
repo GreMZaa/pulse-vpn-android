@@ -1061,41 +1061,69 @@ object MmkvManager {
     }
 
     fun getFavoriteServerSet(): MutableSet<String> {
-        val json = settingsStorage.decodeString(com.v2ray.ang.AppConfig.PREF_FAVORITE_SERVERS)
-        if (!json.isNullOrBlank()) {
-            val array = JsonUtil.fromJson(json, Array<String>::class.java)
-            if (array != null && array.isNotEmpty()) {
-                return array.toMutableSet()
+        return try {
+            // 1. Приоритетно пробуем стандартный StringSet из MMKV
+            val set = try {
+                settingsStorage.decodeStringSet(com.v2ray.ang.AppConfig.PREF_FAVORITE_SERVERS)
+            } catch (_: Throwable) {
+                null
             }
+            if (!set.isNullOrEmpty()) {
+                return set.toMutableSet()
+            }
+
+            // 2. Безопасная проверка: если в ключе случайно лежит строка JSON (начинается с "[")
+            val raw = try {
+                settingsStorage.decodeString(com.v2ray.ang.AppConfig.PREF_FAVORITE_SERVERS)
+            } catch (_: Throwable) {
+                null
+            }
+            if (!raw.isNullOrBlank() && raw.trim().startsWith("[")) {
+                val array = JsonUtil.fromJsonSafe(raw.trim(), Array<String>::class.java)
+                if (array != null && array.isNotEmpty()) {
+                    return array.toMutableSet()
+                }
+            }
+            mutableSetOf()
+        } catch (_: Throwable) {
+            mutableSetOf()
         }
-        return settingsStorage.decodeStringSet(com.v2ray.ang.AppConfig.PREF_FAVORITE_SERVERS)?.toMutableSet() ?: mutableSetOf()
     }
 
     fun isFavoriteServer(guid: String, profile: ProfileItem? = null): Boolean {
         if (guid.isBlank()) return false
-        val set = getFavoriteServerSet()
-        if (guid in set) return true
-        val p = profile ?: decodeServerConfig(guid)
-        val id = favoriteIdentity(p)
-        return id != null && id in set
+        return try {
+            val set = getFavoriteServerSet()
+            if (guid in set) return true
+            val p = profile ?: decodeServerConfig(guid)
+            val id = favoriteIdentity(p)
+            id != null && id in set
+        } catch (_: Throwable) {
+            false
+        }
     }
 
     fun toggleFavoriteServer(guid: String, profile: ProfileItem? = null): Boolean {
         if (guid.isBlank()) return false
-        val set = getFavoriteServerSet().toMutableSet()
-        val p = profile ?: decodeServerConfig(guid)
-        val id = favoriteIdentity(p)
-        val currentlyFav = (guid in set) || (id != null && id in set)
-        if (currentlyFav) {
-            set.remove(guid)
-            if (id != null) set.remove(id)
-        } else {
-            set.add(guid)
-            if (id != null) set.add(id)
+        return try {
+            val set = getFavoriteServerSet().toMutableSet()
+            val p = profile ?: decodeServerConfig(guid)
+            val id = favoriteIdentity(p)
+            val currentlyFav = (guid in set) || (id != null && id in set)
+            if (currentlyFav) {
+                set.remove(guid)
+                if (id != null) set.remove(id)
+            } else {
+                set.add(guid)
+                if (id != null) set.add(id)
+            }
+            // Сохраняем ТОЛЬКО как StringSet для чистоты типов MMKV
+            settingsStorage.encode(com.v2ray.ang.AppConfig.PREF_FAVORITE_SERVERS, set)
+            !currentlyFav
+        } catch (e: Throwable) {
+            LogUtil.e(AppConfig.TAG, "toggleFavoriteServer failed: ${e.message}", e)
+            false
         }
-        settingsStorage.encode(com.v2ray.ang.AppConfig.PREF_FAVORITE_SERVERS, JsonUtil.toJson(set.toList()))
-        settingsStorage.encode(com.v2ray.ang.AppConfig.PREF_FAVORITE_SERVERS, set)
-        return !currentlyFav
     }
 
     //endregion

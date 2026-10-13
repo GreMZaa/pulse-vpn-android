@@ -53,14 +53,19 @@ object NotificationHelper {
             channelId = channelType.channelId,
             channelNameRes = channelType.channelNameRes,
             importance = importance
-        )
+        ) {
+            if (highPriority) {
+                enableVibration(true)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            }
+        }
         val notificationManager = getNotificationManager(context)
         val builder = buildNotificationBuilder(channelType, context, title, content, action).apply {
             if (contentIntent != null) {
                 setContentIntent(contentIntent)
             }
             if (highPriority) {
-                setPriority(NotificationCompat.PRIORITY_HIGH)
+                setPriority(NotificationCompat.PRIORITY_MAX)
                 setAutoCancel(true)
                 setDefaults(NotificationCompat.DEFAULT_ALL)
             }

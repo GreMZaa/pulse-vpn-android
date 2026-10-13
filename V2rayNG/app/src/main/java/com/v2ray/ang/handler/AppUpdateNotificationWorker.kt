@@ -59,10 +59,20 @@ class AppUpdateNotificationWorker(
 
                 WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                     WORK_NAME,
-                    ExistingPeriodicWorkPolicy.KEEP,
+                    ExistingPeriodicWorkPolicy.UPDATE,
                     workRequest
                 )
-                LogUtil.i(AppConfig.TAG, "AppUpdateNotificationWorker: Enqueued periodic check")
+
+                val oneTimeRequest = androidx.work.OneTimeWorkRequestBuilder<AppUpdateNotificationWorker>()
+                    .setConstraints(constraints)
+                    .setInitialDelay(15, TimeUnit.MINUTES)
+                    .build()
+                WorkManager.getInstance(context).enqueueUniqueWork(
+                    "pulse_onetime_app_update_check",
+                    androidx.work.ExistingWorkPolicy.REPLACE,
+                    oneTimeRequest
+                )
+                LogUtil.i(AppConfig.TAG, "AppUpdateNotificationWorker: Enqueued periodic and one-time checks")
             } catch (e: Exception) {
                 LogUtil.e(AppConfig.TAG, "AppUpdateNotificationWorker: Failed to schedule", e)
             }
