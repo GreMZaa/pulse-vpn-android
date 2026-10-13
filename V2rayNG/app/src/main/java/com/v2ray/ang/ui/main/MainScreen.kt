@@ -853,25 +853,39 @@ fun MainScreen(
                                         color = Color(0xFFCCCCCC)
                                     )
                                 }
+                            }
 
-                                Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
 
-                                // ПУЛЬС Связь (Звонки родным)
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(14.dp))
-                                        .background(Color(0xFF1B3821))
-                                        .border(
-                                            width = 1.dp,
-                                            color = Color(0xFF4CAF50),
-                                            shape = RoundedCornerShape(14.dp)
-                                        )
-                                        .clickable { showCallRoomsDialog = true }
-                                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                            // ПУЛЬС Связь: Звонки родным (выделенная полоса на всю ширину)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(Color(0xFF142B18))
+                                    .border(
+                                        width = 1.dp,
+                                        color = Color(0xFF2E7D32),
+                                        shape = RoundedCornerShape(14.dp)
+                                    )
+                                    .clickable { showCallRoomsDialog = true }
+                                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
                                 ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_call_24dp),
+                                        contentDescription = null,
+                                        tint = Color(0xFF81C784),
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "📞 Звонки",
-                                        fontSize = 10.5.sp,
+                                        text = "📞 Звонки родным (ПУЛЬС Связь)",
+                                        fontSize = 11.5.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = Color(0xFF81C784)
                                     )

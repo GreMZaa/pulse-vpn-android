@@ -3,7 +3,6 @@ package com.v2ray.ang.handler
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.tencent.mmkv.MMKV
-import java.util.UUID
 
 data class CallRoom(
     val id: String,
@@ -24,9 +23,9 @@ object CallRoomManager {
             val shortCode = generateShortNum()
             val defaultList = listOf(
                 CallRoom(
-                    id = "pulse-call-family-$shortCode",
+                    id = "PulseFamily$shortCode",
                     name = "Семья (Дом)",
-                    code = "FAM-$shortCode",
+                    code = "FAM$shortCode",
                     isDefault = true
                 )
             )
@@ -35,7 +34,17 @@ object CallRoomManager {
         }
         return try {
             val type = object : TypeToken<List<CallRoom>>() {}.type
-            gson.fromJson<List<CallRoom>>(json, type) ?: emptyList()
+            val rawList: List<CallRoom> = gson.fromJson(json, type) ?: emptyList()
+            // Автоматическая санитария: убираем дефисы и спецсимволы из старых комнат для 100% AlphaNumeric в VDO.Ninja
+            val sanitized = rawList.map { room ->
+                val cleanId = room.id.replace(Regex("[^a-zA-Z0-9]"), "").ifEmpty { "PulseRoom" }
+                val cleanCode = room.code.replace(Regex("[^a-zA-Z0-9]"), "").ifEmpty { "ROOM" }
+                room.copy(id = cleanId, code = cleanCode)
+            }
+            if (sanitized != rawList) {
+                saveRooms(sanitized)
+            }
+            sanitized
         } catch (_: Exception) {
             emptyList()
         }
@@ -49,13 +58,14 @@ object CallRoomManager {
     fun createRoom(name: String): CallRoom {
         val cleanName = name.trim().ifEmpty { "Комната" }
         val shortNum = generateShortNum()
-        // Преобразуем русские буквы в транслит для чистого URL слага
-        val slug = transliterate(cleanName).lowercase()
-            .replace(Regex("[^a-z0-9]"), "")
-            .take(12)
-            .ifEmpty { "room" }
-        val id = "pulse-call-$slug-$shortNum"
-        val code = "$slug-$shortNum".uppercase()
+        // Транслит в чистый алфавитно-цифровой идентификатор (только латиница и цифры)
+        val slug = transliterate(cleanName)
+            .replace(Regex("[^a-zA-Z0-9]"), "")
+            .take(10)
+            .ifEmpty { "Room" }
+        val capitalizedSlug = slug.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+        val id = "Pulse$capitalizedSlug$shortNum"
+        val code = "$slug$shortNum".uppercase()
         val room = CallRoom(id = id, name = cleanName, code = code)
         val list = getRooms().toMutableList()
         list.add(0, room)
@@ -64,18 +74,14 @@ object CallRoomManager {
     }
 
     fun addExistingRoom(codeOrId: String, customName: String = ""): CallRoom {
-        val trimmed = codeOrId.trim().replace(Regex("[^a-zA-Z0-9_-]"), "")
-        val rawLower = trimmed.lowercase()
-        val id = if (rawLower.startsWith("pulse-call-")) rawLower else "pulse-call-$rawLower"
-        val code = if (trimmed.startsWith("pulse-call-", ignoreCase = true)) {
-            trimmed.substring("pulse-call-".length).uppercase()
-        } else {
-            trimmed.uppercase()
-        }
+        // Очищаем от любых спецсимволов и дефисов
+        val clean = codeOrId.trim().replace(Regex("[^a-zA-Z0-9]"), "")
+        val id = if (clean.startsWith("Pulse", ignoreCase = true)) clean else "Pulse$clean"
+        val code = clean.uppercase()
         val name = if (customName.isNotBlank()) customName.trim() else "Комната $code"
         val room = CallRoom(id = id, name = name, code = code)
         val list = getRooms().toMutableList()
-        list.removeAll { it.id == id || it.code.equals(code, ignoreCase = true) }
+        list.removeAll { it.id.equals(id, ignoreCase = true) || it.code.equals(code, ignoreCase = true) }
         list.add(0, room)
         saveRooms(list)
         return room
@@ -87,8 +93,12 @@ object CallRoomManager {
         saveRooms(list)
     }
 
+    /**
+     * Формирует чистую ссылку без видеокамеры, без всплывающих предупреждений и с автоподключением звука
+     */
     fun getWebCallUrl(room: CallRoom): String {
-        return "https://vdo.ninja/?room=${room.id}&audioonly&autostart&darkmode&webcam=0&chat=0"
+        val cleanId = room.id.replace(Regex("[^a-zA-Z0-9]"), "")
+        return "https://vdo.ninja/?room=$cleanId&miconly&autostart&darkmode&clean"
     }
 
     fun getShareText(room: CallRoom): String {
@@ -100,7 +110,7 @@ object CallRoomManager {
 
 Как созвониться:
 1️⃣ В приложении «ПУЛЬС VPN»:
-   Открой «📞 ПУЛЬС Связь» ➔ введи код ${room.code}
+   Открой «📞 Звонки» ➔ введи код ${room.code}
 2️⃣ Либо просто нажми на ссылку в любом браузере (на iPhone, Android или ПК):
 $webUrl
 

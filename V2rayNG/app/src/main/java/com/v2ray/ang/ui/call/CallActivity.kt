@@ -54,6 +54,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
@@ -119,11 +120,12 @@ class CallActivity : ComponentActivity() {
             }
         } catch (_: Exception) {}
 
-        val roomId = intent.getStringExtra(EXTRA_ROOM_ID) ?: "pulse-call-family"
+        val rawRoomId = intent.getStringExtra(EXTRA_ROOM_ID) ?: "PulseFamily"
+        val cleanRoomId = rawRoomId.replace(Regex("[^a-zA-Z0-9]"), "").ifEmpty { "PulseFamily" }
         val roomName = intent.getStringExtra(EXTRA_ROOM_NAME) ?: "Семья"
-        val roomCode = intent.getStringExtra(EXTRA_ROOM_CODE) ?: ""
+        val roomCode = (intent.getStringExtra(EXTRA_ROOM_CODE) ?: "").replace(Regex("[^a-zA-Z0-9]"), "")
 
-        val callUrl = "https://vdo.ninja/?room=$roomId&audioonly&autostart&darkmode&webcam=0&chat=0"
+        val callUrl = "https://vdo.ninja/?room=$cleanRoomId&miconly&autostart&darkmode&clean"
 
         setContent {
             CallScreenContent(
@@ -385,22 +387,42 @@ class CallActivity : ComponentActivity() {
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // ВСТРОЕННЫЙ WEBVIEW (WebRTC ЗВУКОВОЙ ДВИЖОК + ЖИВОЙ VU-МЕТР)
+                // НАЦИОНАЛЬНЫЙ СТАТУС ВЫЗОВА БЕЗ ВЕБ-МУСОРА
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(80.dp)
+                        .fillMaxWidth(0.9f)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF141414))
-                        .border(1.dp, Color(0xFF222222), RoundedCornerShape(12.dp))
+                        .background(Color(0xFF161616))
+                        .border(1.dp, Color(0xFF242424), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "🟢 Канал связи активен",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF81C784)
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Говорите • Трафик идёт через ПУЛЬС",
+                            fontSize = 11.5.sp,
+                            color = Color(0xFF888888)
+                        )
+                    }
+                }
+
+                // НЕВИДИМЫЙ ФОНОВЫЙ WebRTC АУДИОДВИЖОК
+                Box(
+                    modifier = Modifier
+                        .size(1.dp)
+                        .alpha(0.01f)
                 ) {
                     AndroidView(
                         factory = { ctx ->
                             WebView(ctx).apply {
-                                layoutParams = ViewGroup.LayoutParams(
-                                    ViewGroup.LayoutParams.MATCH_PARENT,
-                                    ViewGroup.LayoutParams.MATCH_PARENT
-                                )
+                                layoutParams = ViewGroup.LayoutParams(1, 1)
                                 settings.apply {
                                     javaScriptEnabled = true
                                     domStorageEnabled = true
