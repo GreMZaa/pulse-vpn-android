@@ -5,9 +5,11 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
+import android.content.pm.ServiceInfo
 import android.os.Build
 import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
 import com.v2ray.ang.R
 import com.v2ray.ang.enums.NotificationChannelType
 import com.v2ray.ang.handler.AppLocaleManager
@@ -91,7 +93,24 @@ object NotificationHelper {
         ensureChannelCreated(channelType, service)
         val builder = buildNotificationBuilder(channelType, service, title, content, action)
         builderCache[channelType.notificationId] = builder
-        service.startForeground(channelType.notificationId, builder.build())
+        val notification = builder.build()
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                ServiceCompat.startForeground(
+                    service,
+                    channelType.notificationId,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                )
+            } else {
+                service.startForeground(channelType.notificationId, notification)
+            }
+        } catch (_: Exception) {
+            try {
+                service.startForeground(channelType.notificationId, notification)
+            } catch (_: Exception) {
+            }
+        }
     }
 
     /**
@@ -100,7 +119,10 @@ object NotificationHelper {
      * @param service The service to stop foreground on
      */
     fun stopForeground(service: Service) {
-        service.stopForeground(Service.STOP_FOREGROUND_REMOVE)
+        try {
+            service.stopForeground(Service.STOP_FOREGROUND_REMOVE)
+        } catch (_: Exception) {
+        }
     }
 
     /**

@@ -150,6 +150,10 @@ private fun ServerListPage(
     onMoveServer: (Int, Int) -> Unit,
     contentPadding: PaddingValues
 ) {
+    val topOrderSignature = remember(rows) {
+        rows.take(5).joinToString("|") { it.guid }
+    }
+
     if (doubleColumnDisplay) {
         val gridState = remember(groupId) {
             lazyGridStates.getOrPut(groupId) { LazyGridState() }
@@ -159,6 +163,12 @@ private fun ServerListPage(
                 onMoveServer(from.index, to.index)
             }
         } else null
+
+        LaunchedEffect(topOrderSignature) {
+            if (rows.isNotEmpty() && !gridState.isScrollInProgress) {
+                gridState.scrollToItem(0)
+            }
+        }
 
         LocateTargetEffect(locateTarget, rows, gridState, onLocateHandled)
 
@@ -204,6 +214,12 @@ private fun ServerListPage(
                 onMoveServer(from.index, to.index)
             }
         } else null
+
+        LaunchedEffect(topOrderSignature) {
+            if (rows.isNotEmpty() && !listState.isScrollInProgress) {
+                listState.scrollToItem(0)
+            }
+        }
 
         LocateTargetEffect(locateTarget, rows, listState, onLocateHandled)
 

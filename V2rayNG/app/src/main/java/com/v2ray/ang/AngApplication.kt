@@ -37,15 +37,29 @@ class AngApplication : Application() {
 
         MmkvManager.initialize(this)
 
-        AppLocaleManager.initialize(this)
+        try {
+            AppLocaleManager.initialize(this)
+        } catch (_: Exception) {
+        }
 
-        // Initialize WorkManager with the custom configuration
-        WorkManager.initialize(this, workManagerConfiguration)
+        // Initialize WorkManager with the custom configuration safely across processes
+        try {
+            if (!WorkManager.isInitialized()) {
+                WorkManager.initialize(this, workManagerConfiguration)
+            }
+        } catch (_: Exception) {
+        }
 
         // Ensure critical preference defaults are present in MMKV early
-        SettingsManager.initApp(this)
+        try {
+            SettingsManager.initApp(this)
+        } catch (_: Exception) {
+        }
 
         // Initialize theme state from MMKV
-        ThemeManager.refresh()
+        try {
+            ThemeManager.refresh()
+        } catch (_: Exception) {
+        }
     }
 }
