@@ -940,7 +940,7 @@ fun MainScreen(
     if (showTelegramProxyDialog) {
         TelegramSocksDialog(
             isRunning = isRunning,
-            onStartVpn = { onAction(MainAction.StartStopService) },
+            onStartVpn = { onAction(MainAction.ToggleService) },
             onDismiss = { showTelegramProxyDialog = false }
         )
     }
