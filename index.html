@@ -553,9 +553,10 @@
 
     function buildNinjaUrl(withVideo) {
       const myPushId = 'web_' + Date.now().toString().slice(-6) + Math.floor(Math.random() * 900 + 100);
-      // clean скрывает все OBS-панели и лишние кнопки VDO.Ninja
-      // videomute гарантирует запуск аудио без запроса камеры, если видео отключено
-      let base = `https://vdo.ninja/?room=${cleanRoom}&push=${myPushId}&autostart&darkmode&clean&label=Web`;
+      // &webcam сообщает VDO.Ninja инициализировать устройства и пропускает экран выбора "Join Room with Camera / Screenshare"
+      // &autostart автоматически подключает сразу при готовности
+      // &cleanish убирает лишние панели, сохраняя правильную отрисовку видеопотоков без чёрного экрана
+      let base = `https://vdo.ninja/?room=${cleanRoom}&push=${myPushId}&webcam&autostart&darkmode&cleanish&label=Web`;
       if (!withVideo) {
         base += '&videomute';
       }
@@ -574,7 +575,7 @@
 
     function openDirectSafari() {
       const directUrl = buildNinjaUrl(false);
-      window.location.href = directUrl;
+      window.open(directUrl, '_blank') || (window.location.href = directUrl);
     }
 
     // УПРАВЛЕНИЕ ЧЕРЕЗ DOCK (POSTMESSAGE)
