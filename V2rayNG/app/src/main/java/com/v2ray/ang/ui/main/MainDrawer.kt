@@ -84,6 +84,7 @@ fun MainDrawerContent(
     onOpenPromo: () -> Unit = {},
     onOpenCrossPlatform: () -> Unit = {},
     onOpenTelegramProxy: () -> Unit = {},
+    onOpenCallRooms: () -> Unit = {},
     onRefresh: () -> Unit = {}
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -252,6 +253,36 @@ fun MainDrawerContent(
             ) {
                 Text(
                     text = "✈️ Telegram без рекламы (SOCKS5)",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // КНОПКА — ПУЛЬС СВЯЗЬ (ЗАЩИЩЁННЫЕ АУДИОЗВОНКИ)
+            Button(
+                onClick = { onOpenCallRooms() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(46.dp),
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF2E7D32),
+                    contentColor = Color.White
+                )
+            ) {
+                Icon(
+                    painter = painterResource(com.v2ray.ang.R.drawable.ic_call_24dp),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = Color.White
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "📞 ПУЛЬС Связь (Звонки родным)",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1

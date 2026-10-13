@@ -529,6 +529,7 @@ fun MainScreen(
     var showDiagnosticsDialog by remember { mutableStateOf(false) }
     var showCrossPlatformDialog by remember { mutableStateOf(false) }
     var showTelegramProxyDialog by remember { mutableStateOf(false) }
+    var showCallRoomsDialog by remember { mutableStateOf(false) }
     var telegramCallsMode by remember {
         mutableStateOf(
             com.v2ray.ang.handler.MmkvManager.decodeSettingsBool(
@@ -574,6 +575,10 @@ fun MainScreen(
                 onOpenTelegramProxy = {
                     scope.launch { drawerState.close() }
                     showTelegramProxyDialog = true
+                },
+                onOpenCallRooms = {
+                    scope.launch { drawerState.close() }
+                    showCallRoomsDialog = true
                 },
                 onRefresh = {
                     scope.launch { drawerState.close() }
@@ -848,6 +853,29 @@ fun MainScreen(
                                         color = Color(0xFFCCCCCC)
                                     )
                                 }
+
+                                Spacer(modifier = Modifier.width(6.dp))
+
+                                // ПУЛЬС Связь (Звонки родным)
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(Color(0xFF1B3821))
+                                        .border(
+                                            width = 1.dp,
+                                            color = Color(0xFF4CAF50),
+                                            shape = RoundedCornerShape(14.dp)
+                                        )
+                                        .clickable { showCallRoomsDialog = true }
+                                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                                ) {
+                                    Text(
+                                        text = "📞 Звонки",
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(0xFF81C784)
+                                    )
+                                }
                             }
                         }
                     }
@@ -942,6 +970,13 @@ fun MainScreen(
             isRunning = isRunning,
             onStartVpn = { onAction(MainAction.ToggleService) },
             onDismiss = { showTelegramProxyDialog = false }
+        )
+    }
+
+    if (showCallRoomsDialog) {
+        com.v2ray.ang.ui.call.CallRoomsDialog(
+            isRunning = isRunning,
+            onDismiss = { showCallRoomsDialog = false }
         )
     }
 }
