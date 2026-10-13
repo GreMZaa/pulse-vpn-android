@@ -39,7 +39,7 @@ object LauncherManager {
     fun startService(context: Context, guid: String? = null) {
         LogUtil.i(AppConfig.TAG, "LauncherManager: startService from ${context::class.java.simpleName}")
 
-        if (guid != null) {
+        if (guid != null && MmkvManager.decodeServerConfig(guid) != null) {
             MmkvManager.setSelectServer(guid)
         }
 
@@ -73,24 +73,51 @@ object LauncherManager {
         // Note: isRunning check is removed here to avoid loading Native libraries in the UI process.
         // The check is performed in CoreServiceManager when the service starts in the daemon process.
 
-        val guid = MmkvManager.getSelectServer()
-            ?: run {
-                LogUtil.e(AppConfig.TAG, "LauncherManager: No server selected")
-                error(context.getString(R.string.app_tile_first_use))
-            }
+        var guid = MmkvManager.getSelectServer()
+        var config = guid?.let { MmkvManager.decodeServerConfig(it) }
 
-        val config = MmkvManager.decodeServerConfig(guid)
-            ?: run {
-                LogUtil.e(AppConfig.TAG, "LauncherManager: Failed to decode server config")
-                error(context.getString(R.string.toast_config_file_invalid))
+        // Если сохраненный guid не существует или удален — автоматически восстанавливаем рабочий сервер из базы!
+        if (config == null) {
+            val allGuids = MmkvManager.decodeAllServerList()
+            for (candidateGuid in allGuids) {
+                val candidateConfig = MmkvManager.decodeServerConfig(candidateGuid)
+                if (candidateConfig != null && !candidateConfig.server.isNullOrBlank()) {
+                    guid = candidateGuid
+                    config = candidateConfig
+                    MmkvManager.setSelectServer(candidateGuid)
+                    LogUtil.i(AppConfig.TAG, "LauncherManager: Auto-recovered active server to $candidateGuid (${candidateConfig.remarks})")
+                    break
+                }
             }
+        }
 
+        if (guid == null || config == null) {
+            LogUtil.e(AppConfig.TAG, "LauncherManager: No server available")
+            error(context.getString(R.string.app_tile_first_use))
+        }
+
+        // Если хост сервера пустой или невалидный — пробуем найти рабочий сервер из пула
         if (!config.configType.isComplexType()
             && !Utils.isValidUrl(config.server)
             && !Utils.isPureIpAddress(config.server.orEmpty())
         ) {
-            LogUtil.e(AppConfig.TAG, "LauncherManager: Invalid server configuration")
-            error(context.getString(R.string.toast_config_file_invalid))
+            val allGuids = MmkvManager.decodeAllServerList()
+            var recovered = false
+            for (candidateGuid in allGuids) {
+                val candidateConfig = MmkvManager.decodeServerConfig(candidateGuid)
+                if (candidateConfig != null && !candidateConfig.server.isNullOrBlank() && (Utils.isValidUrl(candidateConfig.server) || Utils.isPureIpAddress(candidateConfig.server.orEmpty()))) {
+                    guid = candidateGuid
+                    config = candidateConfig
+                    MmkvManager.setSelectServer(candidateGuid)
+                    recovered = true
+                    LogUtil.i(AppConfig.TAG, "LauncherManager: Recovered to valid server $candidateGuid")
+                    break
+                }
+            }
+            if (!recovered && config.server.isNullOrBlank()) {
+                LogUtil.e(AppConfig.TAG, "LauncherManager: Invalid server configuration")
+                error(context.getString(R.string.toast_config_file_invalid))
+            }
         }
 
         SettingsManager.refreshRuntimeSocksPort()

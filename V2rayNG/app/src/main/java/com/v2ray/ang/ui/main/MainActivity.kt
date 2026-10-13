@@ -211,6 +211,7 @@ class MainActivity : HelperBaseComponentActivity() {
             }
 
             val bestGuid = mainViewModel.findSmartConnectBestServerGuid()
+                ?: MmkvManager.decodeAllServerList().firstOrNull { MmkvManager.decodeServerConfig(it) != null }
             if (bestGuid.isNullOrEmpty()) {
                 toast("Серверы не найдены. Активируйте промокод для загрузки серверов.")
                 return@launch
@@ -220,6 +221,7 @@ class MainActivity : HelperBaseComponentActivity() {
             val serverName = profile?.remarks ?: "Сервер"
 
             mainViewModel.updateSelectedGuid(bestGuid)
+            MmkvManager.setSelectServer(bestGuid)
             toastSuccess("⚡ Подключение к лучшему серверу: $serverName")
 
             if (mainViewModel.uiState.value.isRunning) {
@@ -249,13 +251,15 @@ class MainActivity : HelperBaseComponentActivity() {
             }
 
             var guid = mainViewModel.uiState.value.selectedGuid
+            val currentConfig = guid?.let { MmkvManager.decodeServerConfig(it) }
             val currentAff = guid?.let { MmkvManager.decodeServerAffiliationInfo(it) }
-            if (guid.isNullOrEmpty() || (currentAff != null && currentAff.testDelayMillis < 0L)) {
+            if (guid.isNullOrEmpty() || currentConfig == null || (currentAff != null && currentAff.testDelayMillis < 0L)) {
                 val bestGuid = mainViewModel.findSmartConnectBestServerGuid()
-                    ?: MmkvManager.decodeAllServerList().firstOrNull()
-                if (!bestGuid.isNullOrEmpty()) {
+                    ?: MmkvManager.decodeAllServerList().firstOrNull { MmkvManager.decodeServerConfig(it) != null }
+                if (!bestGuid.isNullOrEmpty() && MmkvManager.decodeServerConfig(bestGuid) != null) {
                     guid = bestGuid
                     mainViewModel.updateSelectedGuid(guid)
+                    MmkvManager.setSelectServer(guid)
                 } else {
                     toast("Пожалуйста, активируйте промокод для подключения к серверу")
                     return@launch

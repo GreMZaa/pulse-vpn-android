@@ -329,13 +329,18 @@ fun MainScreen(
                                     val res = com.v2ray.ang.handler.SubscriptionHelper.activateCodeOrKey(code)
                                     if (res.isSuccess) {
                                         val data = res.getOrThrow()
-                                        onAction(MainAction.ImportBatchConfig(data.rawConfig))
                                         showPromoFullscreen = false
                                         enteredPromoCode = ""
-                                        kotlinx.coroutines.delay(600)
+                                        mainViewModel.setupGroupTab(forceRefresh = true).join()
+                                        val validGuid = MmkvManager.getSelectServer()
+                                            ?: MmkvManager.decodeAllServerList().firstOrNull { MmkvManager.decodeServerConfig(it) != null }
+                                        if (validGuid != null) {
+                                            mainViewModel.updateSelectedGuid(validGuid)
+                                            MmkvManager.setSelectServer(validGuid)
+                                        }
                                         onAction(MainAction.TestRealAllServers)
                                         if (!uiState.isRunning) {
-                                            kotlinx.coroutines.delay(300)
+                                            kotlinx.coroutines.delay(400)
                                             onAction(MainAction.ToggleService)
                                         }
                                     } else {

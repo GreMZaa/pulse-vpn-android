@@ -177,11 +177,21 @@ object SubscriptionHelper {
         return cAlnum.isNotEmpty() && cAlnum.equals(tAlnum, ignoreCase = true)
     }
 
+    private fun ensureSelectedServerValid() {
+        val currentGuid = MmkvManager.getSelectServer()
+        if (currentGuid.isNullOrEmpty() || MmkvManager.decodeServerConfig(currentGuid) == null) {
+            val valid = MmkvManager.decodeAllServerList().firstOrNull { MmkvManager.decodeServerConfig(it) != null }
+            if (valid != null) {
+                MmkvManager.setSelectServer(valid)
+            }
+        }
+    }
+
     private suspend fun fetchCloudStateJson(): JSONObject? = withContext(Dispatchers.IO) {
         val mirrors = listOf(
             "https://greemzaa-pulsewl-vpn.static.hf.space/api/cloud_state.json?t=${System.currentTimeMillis()}",
             "https://raw.githubusercontent.com/GreMZaa/pulse-vpn-android/gh-pages/api/cloud_state.json?t=${System.currentTimeMillis()}",
-            "https://greemzaa.github.io/pulse-vpn-android/api/cloud_state.json?t=${System.currentTimeMillis()}"
+            "https://gremzaa.github.io/pulse-vpn-android/api/cloud_state.json?t=${System.currentTimeMillis()}"
         )
         for (url in mirrors) {
             try {
@@ -197,6 +207,7 @@ object SubscriptionHelper {
     suspend fun validateSubscriptionOnline(): Boolean = withContext(Dispatchers.IO) {
         val code = MmkvManager.decodeSettingsString(AppConfig.PREF_SUBSCRIPTION_CODE)
         if (code == "Пользовательский ключ" || (!code.isNullOrBlank() && code.startsWith("http"))) {
+            ensureSelectedServerValid()
             return@withContext true
         }
 
@@ -205,6 +216,7 @@ object SubscriptionHelper {
             val json = fetchCloudStateJson()
             if (json == null) {
                 // Если облако недоступно прямо сейчас — не сбрасываем конфигурацию пользователя
+                ensureSelectedServerValid()
                 return@withContext true
             }
 
@@ -213,6 +225,7 @@ object SubscriptionHelper {
                 val subB64 = json.optJSONObject("subscriptions_b64")?.optString("all")
                 if (!subB64.isNullOrBlank()) {
                     AngConfigManager.importBatchConfig(subB64, "", false)
+                    ensureSelectedServerValid()
                 }
                 return@withContext true
             }
@@ -273,6 +286,7 @@ object SubscriptionHelper {
             val subB64 = json.optJSONObject("subscriptions_b64")?.optString("all")
             if (!subB64.isNullOrBlank()) {
                 AngConfigManager.importBatchConfig(subB64, "", false)
+                ensureSelectedServerValid()
             }
 
             MmkvManager.encodeSettings(AppConfig.PREF_SUBSCRIPTION_MAX_DEVICES, maxDev)
@@ -305,6 +319,7 @@ object SubscriptionHelper {
         ) {
             val (count, _) = AngConfigManager.importBatchConfig(trimmed, "", false)
             if (count > 0) {
+                ensureSelectedServerValid()
                 saveSubscription(
                     code = "Пользовательский ключ",
                     plan = "Прямой ключ доступа",
@@ -323,6 +338,7 @@ object SubscriptionHelper {
             if (!content.isNullOrBlank()) {
                 val (count, _) = AngConfigManager.importBatchConfig(content.trim(), "", false)
                 if (count > 0) {
+                    ensureSelectedServerValid()
                     saveSubscription(
                         code = trimmed.take(28) + "...",
                         plan = "Внешняя подписка",
@@ -390,6 +406,7 @@ object SubscriptionHelper {
                     if (!subB64.isNullOrBlank()) {
                         val (count, _) = AngConfigManager.importBatchConfig(subB64, "", false)
                         if (count > 0) {
+                            ensureSelectedServerValid()
                             val expiry = System.currentTimeMillis() + (matchedDays * 86400000L).toLong()
                             saveSubscription(
                                 code = trimmed.uppercase(),
@@ -412,7 +429,7 @@ object SubscriptionHelper {
         val subMirrors = listOf(
             "https://greemzaa-pulsewl-vpn.static.hf.space/sub/$trimmed",
             "https://raw.githubusercontent.com/GreMZaa/pulse-vpn-android/gh-pages/sub/$trimmed",
-            "https://greemzaa.github.io/pulse-vpn-android/sub/$trimmed"
+            "https://gremzaa.github.io/pulse-vpn-android/sub/$trimmed"
         )
         for (subUrl in subMirrors) {
             try {
@@ -420,6 +437,7 @@ object SubscriptionHelper {
                 if (!content.isNullOrBlank() && !content.contains("Entry not found") && !content.contains("404")) {
                     val (count, _) = AngConfigManager.importBatchConfig(content.trim(), "", false)
                     if (count > 0) {
+                        ensureSelectedServerValid()
                         val expiry = System.currentTimeMillis() + 30L * 86400000L
                         saveSubscription(
                             code = trimmed.uppercase(),
