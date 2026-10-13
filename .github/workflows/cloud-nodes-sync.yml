@@ -22,4 +22,6 @@ jobs:
           python-version: '3.11'
 
       - name: Fetch 15+ Whitelist Sources, Verify TLS/Reality Handshakes & Sync to Hugging Face Cloud
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: python3 scripts/cloud_nodes_auto_sync.py
