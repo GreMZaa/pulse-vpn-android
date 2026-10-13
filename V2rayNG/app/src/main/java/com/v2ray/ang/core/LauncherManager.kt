@@ -91,15 +91,17 @@ object LauncherManager {
             }
         }
 
-        if (guid == null || config == null) {
+        val finalConfig = config
+        if (guid == null || finalConfig == null) {
             LogUtil.e(AppConfig.TAG, "LauncherManager: No server available")
             error(context.getString(R.string.app_tile_first_use))
         }
 
+        var activeConfig = finalConfig
         // Если хост сервера пустой или невалидный — пробуем найти рабочий сервер из пула
-        if (!config.configType.isComplexType()
-            && !Utils.isValidUrl(config.server)
-            && !Utils.isPureIpAddress(config.server.orEmpty())
+        if (!activeConfig.configType.isComplexType()
+            && !Utils.isValidUrl(activeConfig.server)
+            && !Utils.isPureIpAddress(activeConfig.server.orEmpty())
         ) {
             val allGuids = MmkvManager.decodeAllServerList()
             var recovered = false
@@ -107,14 +109,14 @@ object LauncherManager {
                 val candidateConfig = MmkvManager.decodeServerConfig(candidateGuid)
                 if (candidateConfig != null && !candidateConfig.server.isNullOrBlank() && (Utils.isValidUrl(candidateConfig.server) || Utils.isPureIpAddress(candidateConfig.server.orEmpty()))) {
                     guid = candidateGuid
-                    config = candidateConfig
+                    activeConfig = candidateConfig
                     MmkvManager.setSelectServer(candidateGuid)
                     recovered = true
                     LogUtil.i(AppConfig.TAG, "LauncherManager: Recovered to valid server $candidateGuid")
                     break
                 }
             }
-            if (!recovered && config.server.isNullOrBlank()) {
+            if (!recovered && activeConfig.server.isNullOrBlank()) {
                 LogUtil.e(AppConfig.TAG, "LauncherManager: Invalid server configuration")
                 error(context.getString(R.string.toast_config_file_invalid))
             }
@@ -122,7 +124,7 @@ object LauncherManager {
 
         SettingsManager.refreshRuntimeSocksPort()
 
-        if (config.insecure == true && config.pinnedCA256.isNullOrEmpty()) {
+        if (activeConfig.insecure == true && activeConfig.pinnedCA256.isNullOrEmpty()) {
             context.toastError(R.string.toast_allow_insecure_deprecated)
             Utils.setClipboard(context, context.getString(R.string.toast_allow_insecure_deprecated))
         }
