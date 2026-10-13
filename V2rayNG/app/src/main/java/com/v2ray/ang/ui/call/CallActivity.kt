@@ -140,8 +140,8 @@ class CallActivity : ComponentActivity() {
         // Уникальный ID стрима для этого участника (БЕЗ этого VDO.Ninja останавливается на экране выбора)
         val myPushId = "pulse_app_" + System.currentTimeMillis().toString().takeLast(6) + (100..999).random()
 
-        // &push + &autostart МГНОВЕННО входит в комнату и начинает вещание звука без ожидания нажатия кнопок!
-        val callUrl = "https://vdo.ninja/?room=$cleanRoomId&push=$myPushId&videodevice=0&autostart&darkmode&clean"
+        // &push + &autostart + &videomute МГНОВЕННО входит в комнату и начинает вещание звука с выключенной камерой
+        val callUrl = "https://vdo.ninja/?room=$cleanRoomId&push=$myPushId&autostart&videomute&darkmode&clean&label=Android"
 
         setContent {
             CallScreenContent(
@@ -206,21 +206,8 @@ class CallActivity : ComponentActivity() {
         isMicMuted = next
         try {
             audioManager?.isMicrophoneMute = next
-            val js = """
-                (function() {
-                    try { window.postMessage({ action: 'mic', value: ${!next} }, '*'); } catch(e){}
-                    try {
-                        var btns = document.querySelectorAll('button');
-                        for (var i = 0; i < btns.length; i++) {
-                            var t = (btns[i].getAttribute('title') || '') + (btns[i].getAttribute('aria-label') || '');
-                            if (t.toLowerCase().indexOf('mute') !== -1 || t.toLowerCase().indexOf('microphone') !== -1) {
-                                btns[i].click();
-                                break;
-                            }
-                        }
-                    } catch(e){}
-                })();
-            """.trimIndent()
+            // Официальный postMessage API VDO.Ninja (не трогает посторонние кнопки)
+            val js = "try { window.postMessage({ action: 'mic', value: ${!next} }, '*'); } catch(e){}"
             webViewInstance?.evaluateJavascript(js, null)
         } catch (_: Exception) {}
     }
@@ -240,21 +227,8 @@ class CallActivity : ComponentActivity() {
     private fun setCameraState(enabled: Boolean) {
         isCameraOn = enabled
         try {
-            val js = """
-                (function() {
-                    try { window.postMessage({ action: 'camera', value: $enabled }, '*'); } catch(e){}
-                    try {
-                        var btns = document.querySelectorAll('button');
-                        for (var i = 0; i < btns.length; i++) {
-                            var t = (btns[i].getAttribute('title') || '') + (btns[i].getAttribute('aria-label') || '');
-                            if (t.toLowerCase().indexOf('camera') !== -1 || t.toLowerCase().indexOf('video') !== -1) {
-                                btns[i].click();
-                                break;
-                            }
-                        }
-                    } catch(e){}
-                })();
-            """.trimIndent()
+            // Официальный postMessage API VDO.Ninja (не трогает кнопки записи)
+            val js = "try { window.postMessage({ action: 'camera', value: $enabled }, '*'); } catch(e){}"
             webViewInstance?.evaluateJavascript(js, null)
         } catch (_: Exception) {}
     }
@@ -555,32 +529,7 @@ class CallActivity : ComponentActivity() {
                                         }
                                     }
                                 }
-                                webViewClient = object : WebViewClient() {
-                                    override fun onPageFinished(view: WebView?, url: String?) {
-                                        super.onPageFinished(view, url)
-                                        // Автоматически нажимаем кнопки входа/микрофона, если VDO.Ninja их покажет
-                                        val autoClickJs = """
-                                            (function() {
-                                                function autoClick() {
-                                                    var btns = document.querySelectorAll('button, div[role="button"], a');
-                                                    for (var i = 0; i < btns.length; i++) {
-                                                        var txt = (btns[i].innerText || btns[i].textContent || '').toLowerCase();
-                                                        if (txt.indexOf('join room with microphone') !== -1 || 
-                                                            txt.indexOf('join room with camera') !== -1 ||
-                                                            txt.indexOf('join room') !== -1 ||
-                                                            txt.indexOf('start') !== -1) {
-                                                            btns[i].click();
-                                                        }
-                                                    }
-                                                }
-                                                autoClick();
-                                                var interval = setInterval(autoClick, 400);
-                                                setTimeout(function() { clearInterval(interval); }, 8000);
-                                            })();
-                                        """.trimIndent()
-                                        view?.evaluateJavascript(autoClickJs, null)
-                                    }
-                                }
+                                webViewClient = WebViewClient()
                                 loadUrl(callUrl)
                                 webViewInstance = this
                             }
