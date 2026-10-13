@@ -269,16 +269,15 @@ class MainActivity : HelperBaseComponentActivity() {
 
             var guid = mainViewModel.uiState.value.selectedGuid
             val currentConfig = guid?.let { MmkvManager.decodeServerConfig(it) }
-            val currentAff = guid?.let { MmkvManager.decodeServerAffiliationInfo(it) }
-            if (guid.isNullOrEmpty() || currentConfig == null || (currentAff != null && currentAff.testDelayMillis < 0L)) {
-                val bestGuid = mainViewModel.findSmartConnectBestServerGuid()
+            if (guid.isNullOrEmpty() || currentConfig == null) {
+                val fallbackGuid = mainViewModel.findSmartConnectBestServerGuid()
                     ?: MmkvManager.decodeAllServerList().firstOrNull { MmkvManager.decodeServerConfig(it) != null }
-                if (!bestGuid.isNullOrEmpty() && MmkvManager.decodeServerConfig(bestGuid) != null) {
-                    guid = bestGuid
+                if (!fallbackGuid.isNullOrEmpty() && MmkvManager.decodeServerConfig(fallbackGuid) != null) {
+                    guid = fallbackGuid
                     mainViewModel.updateSelectedGuid(guid)
                     MmkvManager.setSelectServer(guid)
                 } else {
-                    toast("Пожалуйста, активируйте промокод для подключения к серверу")
+                    toast("Серверы не найдены. Пожалуйста, введите промокод или выберите сервер.")
                     return@launch
                 }
             }

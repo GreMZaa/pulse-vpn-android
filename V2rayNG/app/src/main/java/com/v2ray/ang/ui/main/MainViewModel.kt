@@ -18,9 +18,11 @@ import com.v2ray.ang.extension.delay
 import com.v2ray.ang.extension.isComplexType
 import com.v2ray.ang.extension.matchesPattern
 import com.v2ray.ang.extension.moveItem
+import com.v2ray.ang.handler.AngConfigManager
 import com.v2ray.ang.handler.AppUpdateInstaller
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.UpdateCheckerManager
+import org.json.JSONObject
 import com.v2ray.ang.ui.base.BaseViewModel
 import com.v2ray.ang.util.LogUtil
 import kotlinx.coroutines.CancellationException
@@ -413,6 +415,26 @@ class MainViewModel(
                 delay(300)
                 dataSource.initAssets()
                 dataSource.syncSubscriptions()
+
+                // Если список серверов пуст — гарантированно загружаем предустановленные узлы из assets
+                if (MmkvManager.decodeAllServerList().isEmpty()) {
+                    try {
+                        val stream = getApplication<Application>().assets.open("cloud_state.json")
+                        val jsonStr = stream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                        val json = JSONObject(jsonStr)
+                        val b64 = json.optJSONObject("subscriptions_b64")?.optString("all")
+                        if (!b64.isNullOrBlank()) {
+                            AngConfigManager.importBatchConfig(b64, "", false)
+                            val best = MmkvManager.decodeAllServerList().firstOrNull()
+                            if (best != null) {
+                                MmkvManager.setSelectServer(best)
+                                updateSelectedGuid(best)
+                            }
+                            setupGroupTab(forceRefresh = true)
+                        }
+                    } catch (_: Exception) {}
+                }
+
                 checkForUpdateSilently()
                 delay(500)
                 withContext(Dispatchers.Main) {

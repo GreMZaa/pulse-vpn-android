@@ -232,10 +232,8 @@ fun MainScreen(
     if (showPromoFullscreen) {
         Dialog(
             onDismissRequest = {
-                if (hasServers) {
-                    showPromoFullscreen = false
-                    promoDialogError = null
-                }
+                showPromoFullscreen = false
+                promoDialogError = null
             },
             properties = DialogProperties(
                 usePlatformDefaultWidth = false,
@@ -251,24 +249,22 @@ fun MainScreen(
                     .statusBarsPadding()
                     .navigationBarsPadding()
             ) {
-                // Если сервера уже есть — лаконичный крестик в углу
-                if (hasServers) {
-                    IconButton(
-                        onClick = {
-                            showPromoFullscreen = false
-                            promoDialogError = null
-                        },
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(16.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_close_24dp),
-                            contentDescription = "Закрыть",
-                            tint = Color(0xFF757575),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
+                // Лаконичный крестик в углу доступен всегда
+                IconButton(
+                    onClick = {
+                        showPromoFullscreen = false
+                        promoDialogError = null
+                    },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_close_24dp),
+                        contentDescription = "Закрыть",
+                        tint = Color(0xFF757575),
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
 
                 Column(
@@ -464,6 +460,46 @@ fun MainScreen(
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    TextButton(
+                        onClick = {
+                            if (!isActivatingPromo) {
+                                isActivatingPromo = true
+                                promoDialogError = null
+                                scope.launch {
+                                    try {
+                                        val res = com.v2ray.ang.handler.SubscriptionHelper.activateCodeOrKey("TEST")
+                                        if (res.isSuccess) {
+                                            showPromoFullscreen = false
+                                            mainViewModel.setupGroupTab(forceRefresh = true).join()
+                                            val validGuid = MmkvManager.getSelectServer()
+                                                ?: MmkvManager.decodeAllServerList().firstOrNull { MmkvManager.decodeServerConfig(it) != null }
+                                            if (validGuid != null) {
+                                                mainViewModel.updateSelectedGuid(validGuid)
+                                                MmkvManager.setSelectServer(validGuid)
+                                            }
+                                            onAction(MainAction.TestRealAllServers)
+                                        } else {
+                                            promoDialogError = res.exceptionOrNull()?.message
+                                        }
+                                    } catch (e: Exception) {
+                                        promoDialogError = "Ошибка: ${e.message}"
+                                    } finally {
+                                        isActivatingPromo = false
+                                    }
+                                }
+                            }
+                        },
+                        enabled = !isActivatingPromo
+                    ) {
+                        Text(
+                            text = "Попробовать бесплатно (Тестовый доступ)",
+                            color = Color(0xFFAAAAAA),
+                            fontSize = 13.sp
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
