@@ -3,6 +3,7 @@ package com.v2ray.ang.handler
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.tencent.mmkv.MMKV
+import java.net.URLEncoder
 
 data class CallRoom(
     val id: String,
@@ -20,27 +21,19 @@ object CallRoomManager {
     fun getRooms(): List<CallRoom> {
         val json = mmkv.decodeString(KEY_CALL_ROOMS)
         if (json.isNullOrEmpty()) {
-            val shortCode = generateShortNum()
-            val defaultList = listOf(
-                CallRoom(
-                    id = "PulseFamily$shortCode",
-                    name = "Семья (Дом)",
-                    code = "FAM$shortCode",
-                    isDefault = true
-                )
-            )
-            saveRooms(defaultList)
-            return defaultList
+            return emptyList()
         }
         return try {
             val type = object : TypeToken<List<CallRoom>>() {}.type
             val rawList: List<CallRoom> = gson.fromJson(json, type) ?: emptyList()
-            // Автоматическая санитария: убираем дефисы и спецсимволы из старых комнат для 100% AlphaNumeric в VDO.Ninja
-            val sanitized = rawList.map { room ->
-                val cleanId = room.id.replace(Regex("[^a-zA-Z0-9]"), "").ifEmpty { "PulseRoom" }
-                val cleanCode = room.code.replace(Regex("[^a-zA-Z0-9]"), "").ifEmpty { "ROOM" }
-                room.copy(id = cleanId, code = cleanCode)
-            }
+            // Убираем дефолтную комнату "Семья" и чистим старые ID для 100% совместимости
+            val sanitized = rawList
+                .filter { !it.isDefault && !it.name.contains("Семья (Дом)", ignoreCase = true) }
+                .map { room ->
+                    val cleanId = room.id.replace(Regex("[^a-zA-Z0-9]"), "").ifEmpty { "PulseRoom" }
+                    val cleanCode = room.code.replace(Regex("[^a-zA-Z0-9]"), "").ifEmpty { "ROOM" }
+                    room.copy(id = cleanId, code = cleanCode)
+                }
             if (sanitized != rawList) {
                 saveRooms(sanitized)
             }
@@ -58,7 +51,6 @@ object CallRoomManager {
     fun createRoom(name: String): CallRoom {
         val cleanName = name.trim().ifEmpty { "Комната" }
         val shortNum = generateShortNum()
-        // Транслит в чистый алфавитно-цифровой идентификатор (только латиница и цифры)
         val slug = transliterate(cleanName)
             .replace(Regex("[^a-zA-Z0-9]"), "")
             .take(10)
@@ -74,7 +66,6 @@ object CallRoomManager {
     }
 
     fun addExistingRoom(codeOrId: String, customName: String = ""): CallRoom {
-        // Очищаем от любых спецсимволов и дефисов
         val clean = codeOrId.trim().replace(Regex("[^a-zA-Z0-9]"), "")
         val id = if (clean.startsWith("Pulse", ignoreCase = true)) clean else "Pulse$clean"
         val code = clean.uppercase()
@@ -94,27 +85,33 @@ object CallRoomManager {
     }
 
     /**
-     * Формирует чистую ссылку без видеокамеры, без всплывающих предупреждений и с автоподключением звука
+     * Ссылка открывает НАШ ОФИЦИАЛЬНЫЙ САЙТ ПУЛЬС:
+     * https://gremzaa.github.io/pulse-vpn-android/
      */
     fun getWebCallUrl(room: CallRoom): String {
         val cleanId = room.id.replace(Regex("[^a-zA-Z0-9]"), "")
-        return "https://vdo.ninja/?room=$cleanId&miconly&autostart&darkmode&clean"
+        val encodedName = try {
+            URLEncoder.encode(room.name, "UTF-8")
+        } catch (_: Exception) {
+            cleanId
+        }
+        return "https://gremzaa.github.io/pulse-vpn-android/?room=$cleanId&name=$encodedName"
     }
 
     fun getShareText(room: CallRoom): String {
         val webUrl = getWebCallUrl(room)
         return """
-📞 Защищённый аудиозвонок в «ПУЛЬС Связь»
+📞 Защищённый звонок в «ПУЛЬС Связь»
 Постоянная комната: ${room.name}
 Код комнаты: ${room.code}
 
 Как созвониться:
 1️⃣ В приложении «ПУЛЬС VPN»:
    Открой «📞 Звонки» ➔ введи код ${room.code}
-2️⃣ Либо просто нажми на ссылку в любом браузере (на iPhone, Android или ПК):
+2️⃣ Либо просто нажми на ссылку нашего сайта (на iPhone, Android или ПК):
 $webUrl
 
-🔒 Сквозное шифрование (WebRTC Opus). Без регистрации и блокировок!
+🔒 Сквозное шифрование. Поддерживает звук и видеокамеру! Без регистрации.
         """.trimIndent()
     }
 

@@ -92,6 +92,7 @@ class CallActivity : ComponentActivity() {
     private var webViewInstance: WebView? = null
     private var isMicMuted by mutableStateOf(false)
     private var isSpeakerOn by mutableStateOf(true)
+    private var isCameraOn by mutableStateOf(false)
 
     private val requestRecordAudioPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -100,6 +101,15 @@ class CallActivity : ComponentActivity() {
             } else {
                 Toast.makeText(this, "Для звонков необходим доступ к микрофону", Toast.LENGTH_LONG).show()
                 finish()
+            }
+        }
+
+    private val requestCameraPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                setCameraState(true)
+            } else {
+                Toast.makeText(this, "Для видеосвязи необходим доступ к камере", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -120,20 +130,25 @@ class CallActivity : ComponentActivity() {
             }
         } catch (_: Exception) {}
 
-        val rawRoomId = intent.getStringExtra(EXTRA_ROOM_ID) ?: "PulseFamily"
-        val cleanRoomId = rawRoomId.replace(Regex("[^a-zA-Z0-9]"), "").ifEmpty { "PulseFamily" }
-        val roomName = intent.getStringExtra(EXTRA_ROOM_NAME) ?: "Семья"
+        val rawRoomId = intent.getStringExtra(EXTRA_ROOM_ID) ?: "PulseCall"
+        val cleanRoomId = rawRoomId.replace(Regex("[^a-zA-Z0-9]"), "").ifEmpty { "PulseCall" }
+        val roomName = intent.getStringExtra(EXTRA_ROOM_NAME) ?: "Защищённая комната"
         val roomCode = (intent.getStringExtra(EXTRA_ROOM_CODE) ?: "").replace(Regex("[^a-zA-Z0-9]"), "")
 
-        val callUrl = "https://vdo.ninja/?room=$cleanRoomId&miconly&autostart&darkmode&clean"
+        // Запуск с videodevice=0 (камера изначально выключена, но может быть включена в 1 клик)
+        val callUrl = "https://vdo.ninja/?room=$cleanRoomId&videodevice=0&autostart&darkmode&clean"
 
         setContent {
             CallScreenContent(
                 roomName = roomName,
                 roomCode = roomCode,
                 callUrl = callUrl,
+                isMicMuted = isMicMuted,
+                isSpeakerOn = isSpeakerOn,
+                isCameraOn = isCameraOn,
                 onEndCall = { endCall() },
                 onToggleMic = { toggleMic() },
+                onToggleCamera = { toggleCamera() },
                 onToggleSpeaker = { toggleSpeaker() },
                 onShare = { shareRoom(roomName, roomCode, cleanRoomId) }
             )
@@ -164,11 +179,56 @@ class CallActivity : ComponentActivity() {
         isMicMuted = next
         try {
             audioManager?.isMicrophoneMute = next
-            // Также отправляем команду глушения в WebRTC внутри WebView
-            webViewInstance?.evaluateJavascript(
-                "try { document.querySelector('button[title*=\"Mute\"], button[title*=\"Microphone\"], .mute-button')?.click(); } catch(e){}",
-                null
-            )
+            val js = """
+                (function() {
+                    try { window.postMessage({ action: 'mic', value: ${!next} }, '*'); } catch(e){}
+                    try {
+                        var btns = document.querySelectorAll('button');
+                        for (var i = 0; i < btns.length; i++) {
+                            var t = (btns[i].getAttribute('title') || '') + (btns[i].getAttribute('aria-label') || '');
+                            if (t.toLowerCase().indexOf('mute') !== -1 || t.toLowerCase().indexOf('microphone') !== -1) {
+                                btns[i].click();
+                                break;
+                            }
+                        }
+                    } catch(e){}
+                })();
+            """.trimIndent()
+            webViewInstance?.evaluateJavascript(js, null)
+        } catch (_: Exception) {}
+    }
+
+    private fun toggleCamera() {
+        if (!isCameraOn) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                setCameraState(true)
+            } else {
+                requestCameraPermission.launch(Manifest.permission.CAMERA)
+            }
+        } else {
+            setCameraState(false)
+        }
+    }
+
+    private fun setCameraState(enabled: Boolean) {
+        isCameraOn = enabled
+        try {
+            val js = """
+                (function() {
+                    try { window.postMessage({ action: 'camera', value: $enabled }, '*'); } catch(e){}
+                    try {
+                        var btns = document.querySelectorAll('button');
+                        for (var i = 0; i < btns.length; i++) {
+                            var t = (btns[i].getAttribute('title') || '') + (btns[i].getAttribute('aria-label') || '');
+                            if (t.toLowerCase().indexOf('camera') !== -1 || t.toLowerCase().indexOf('video') !== -1) {
+                                btns[i].click();
+                                break;
+                            }
+                        }
+                    } catch(e){}
+                })();
+            """.trimIndent()
+            webViewInstance?.evaluateJavascript(js, null)
         } catch (_: Exception) {}
     }
 
@@ -223,8 +283,12 @@ class CallActivity : ComponentActivity() {
         roomName: String,
         roomCode: String,
         callUrl: String,
+        isMicMuted: Boolean,
+        isSpeakerOn: Boolean,
+        isCameraOn: Boolean,
         onEndCall: () -> Unit,
         onToggleMic: () -> Unit,
+        onToggleCamera: () -> Unit,
         onToggleSpeaker: () -> Unit,
         onShare: () -> Unit
     ) {
@@ -348,81 +412,105 @@ class CallActivity : ComponentActivity() {
                 )
             }
 
-            // ЦЕНТР: ПУЛЬСИРУЮЩИЙ АВАТАР И СЕССИЯ
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth()
+            // ЦЕНТР: РЕЖИМ АУДИО ИЛИ РЕЖИМ ВИДЕОСВЯЗИ
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(140.dp)
-                        .scale(pulseScale)
-                        .clip(CircleShape)
-                        .background(Color(0xFF1E3A24)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(110.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF2E7D32)),
-                        contentAlignment = Alignment.Center
+                // Если камера выключена - показываем стильный пульсирующий голосовой аватар
+                if (!isCameraOn) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_call_24dp),
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(54.dp)
-                        )
-                    }
-                }
+                        Box(
+                            modifier = Modifier
+                                .size(130.dp)
+                                .scale(pulseScale)
+                                .clip(CircleShape)
+                                .background(Color(0xFF1E3A24)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF2E7D32)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_call_24dp),
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(50.dp)
+                                )
+                            }
+                        }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
 
-                Text(
-                    text = "Постоянная защищённая комната",
-                    fontSize = 13.sp,
-                    color = Color(0xFF999999)
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // НАЦИОНАЛЬНЫЙ СТАТУС ВЫЗОВА БЕЗ ВЕБ-МУСОРА
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.9f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF161616))
-                        .border(1.dp, Color(0xFF242424), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "🟢 Канал связи активен",
+                            text = "Постоянная защищённая комната",
                             fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF81C784)
+                            color = Color(0xFF999999)
                         )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Говорите • Трафик идёт через ПУЛЬС",
-                            fontSize = 11.5.sp,
-                            color = Color(0xFF888888)
-                        )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(0.9f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFF161616))
+                                .border(1.dp, Color(0xFF242424), RoundedCornerShape(12.dp))
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "🟢 Канал связи активен",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF81C784)
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Говорите • Трафик идёт через ПУЛЬС",
+                                    fontSize = 11.5.sp,
+                                    color = Color(0xFF888888)
+                                )
+                            }
+                        }
                     }
                 }
 
-                // НЕВИДИМЫЙ ФОНОВЫЙ WebRTC АУДИОДВИЖОК
+                // КОНТЕЙНЕР WEBVIEW ДЛЯ WebRTC (АУДИО + ВИДЕО)
+                // Если камера ВКЛЮЧЕНА: раскрывается на весь экран и показывает видеопотоки
+                // Если камера ВЫКЛЮЧЕНА: свернут в 1dp (непрерывно передает голос без сброса соединения)
                 Box(
-                    modifier = Modifier
-                        .size(1.dp)
-                        .alpha(0.01f)
+                    modifier = if (isCameraOn) {
+                        Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color.Black)
+                            .border(1.5.dp, Color(0xFF2E7D32), RoundedCornerShape(16.dp))
+                    } else {
+                        Modifier
+                            .size(1.dp)
+                            .alpha(0.01f)
+                    }
                 ) {
                     AndroidView(
                         factory = { ctx ->
                             WebView(ctx).apply {
-                                layoutParams = ViewGroup.LayoutParams(1, 1)
+                                layoutParams = ViewGroup.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                    ViewGroup.LayoutParams.MATCH_PARENT
+                                )
                                 settings.apply {
                                     javaScriptEnabled = true
                                     domStorageEnabled = true
@@ -438,11 +526,7 @@ class CallActivity : ComponentActivity() {
                                         }
                                     }
                                 }
-                                webViewClient = object : WebViewClient() {
-                                    override fun onPageFinished(view: WebView?, url: String?) {
-                                        super.onPageFinished(view, url)
-                                    }
-                                }
+                                webViewClient = object : WebViewClient()
                                 loadUrl(callUrl)
                                 webViewInstance = this
                             }
@@ -452,11 +536,11 @@ class CallActivity : ComponentActivity() {
                 }
             }
 
-            // НИЖНЯЯ ПАНЕЛЬ: УПРАВЛЕНИЕ ВЫЗОВОМ
+            // НИЖНЯЯ ПАНЕЛЬ: УПРАВЛЕНИЕ ВЫЗОВОМ (МИКРОФОН, КАМЕРА, ДИНАМИК, СБРОС)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 24.dp),
+                    .padding(bottom = 20.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -467,7 +551,7 @@ class CallActivity : ComponentActivity() {
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(58.dp)
+                            .size(54.dp)
                             .clip(CircleShape)
                             .background(if (isMicMuted) Color(0xFFD32F2F) else Color(0xFF242424))
                             .border(1.dp, Color(0xFF333333), CircleShape),
@@ -475,7 +559,7 @@ class CallActivity : ComponentActivity() {
                     ) {
                         Text(
                             text = if (isMicMuted) "🔇" else "🎙️",
-                            fontSize = 24.sp
+                            fontSize = 22.sp
                         )
                     }
                     Spacer(modifier = Modifier.height(6.dp))
@@ -486,31 +570,29 @@ class CallActivity : ComponentActivity() {
                     )
                 }
 
-                // КРАСНАЯ КНОПКА ЗАВЕРШИТЬ ВЫЗОВ
+                // КНОПКА КАМЕРЫ
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable { onEndCall() }
+                    modifier = Modifier.clickable { onToggleCamera() }
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(72.dp)
+                            .size(54.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFE53935)),
+                            .background(if (isCameraOn) Color(0xFF2E7D32) else Color(0xFF242424))
+                            .border(1.dp, if (isCameraOn) Color(0xFF4CAF50) else Color(0xFF333333), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_call_end_24dp),
-                            contentDescription = "Завершить",
-                            tint = Color.White,
-                            modifier = Modifier.size(34.dp)
+                        Text(
+                            text = if (isCameraOn) "📹" else "📷",
+                            fontSize = 22.sp
                         )
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Завершить",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        text = if (isCameraOn) "Камера вкл" else "Камера",
+                        fontSize = 11.sp,
+                        color = if (isCameraOn) Color(0xFF81C784) else Color(0xFFCCCCCC)
                     )
                 }
 
@@ -521,7 +603,7 @@ class CallActivity : ComponentActivity() {
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(58.dp)
+                            .size(54.dp)
                             .clip(CircleShape)
                             .background(if (isSpeakerOn) Color(0xFF2E7D32) else Color(0xFF242424))
                             .border(1.dp, Color(0xFF333333), CircleShape),
@@ -529,7 +611,7 @@ class CallActivity : ComponentActivity() {
                     ) {
                         Text(
                             text = if (isSpeakerOn) "📢" else "👂",
-                            fontSize = 24.sp
+                            fontSize = 22.sp
                         )
                     }
                     Spacer(modifier = Modifier.height(6.dp))
@@ -537,6 +619,34 @@ class CallActivity : ComponentActivity() {
                         text = if (isSpeakerOn) "Динамик" else "В ухо",
                         fontSize = 11.sp,
                         color = if (isSpeakerOn) Color(0xFF81C784) else Color(0xFFCCCCCC)
+                    )
+                }
+
+                // КРАСНАЯ КНОПКА ЗАВЕРШИТЬ ВЫЗОВ
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clickable { onEndCall() }
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFE53935)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_call_end_24dp),
+                            contentDescription = "Завершить",
+                            tint = Color.White,
+                            modifier = Modifier.size(30.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Сброс",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
                 }
             }

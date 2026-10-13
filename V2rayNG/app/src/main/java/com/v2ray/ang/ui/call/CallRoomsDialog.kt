@@ -121,27 +121,51 @@ fun CallRoomsDialog(
                 )
 
                 // СПИСОК КОМНАТ
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(rooms, key = { it.id }) { room ->
-                        CallRoomItemCard(
-                            room = room,
-                            canDelete = rooms.size > 1,
-                            onCall = {
-                                CallActivity.start(context, room)
-                            },
-                            onShare = {
-                                shareRoomText(context, room)
-                            },
-                            onDelete = {
-                                CallRoomManager.deleteRoom(room.id)
-                                rooms = CallRoomManager.getRooms()
-                            }
-                        )
+                if (rooms.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color(0xFF1B1B1B))
+                            .border(1.dp, Color(0xFF262626), RoundedCornerShape(10.dp))
+                            .padding(14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("📭 У вас пока нет комнат", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFCCCCCC))
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "Нажмите «➕ Создать», чтобы добавить постоянную комнату для родных (например: Мама, Брат, Семья).",
+                                fontSize = 11.sp,
+                                color = Color(0xFF888888),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(rooms, key = { it.id }) { room ->
+                            CallRoomItemCard(
+                                room = room,
+                                canDelete = true,
+                                onCall = {
+                                    CallActivity.start(context, room)
+                                },
+                                onShare = {
+                                    shareRoomText(context, room)
+                                },
+                                onDelete = {
+                                    CallRoomManager.deleteRoom(room.id)
+                                    rooms = CallRoomManager.getRooms()
+                                }
+                            )
+                        }
                     }
                 }
 
