@@ -334,6 +334,10 @@ fun MainScreen(
                                         enteredPromoCode = ""
                                         kotlinx.coroutines.delay(600)
                                         onAction(MainAction.TestRealAllServers)
+                                        if (!uiState.isRunning) {
+                                            kotlinx.coroutines.delay(300)
+                                            onAction(MainAction.ToggleService)
+                                        }
                                     } else {
                                         promoDialogError = res.exceptionOrNull()?.message ?: "Промокод не найден или срок действия истек"
                                     }

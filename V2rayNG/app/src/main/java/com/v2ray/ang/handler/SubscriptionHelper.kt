@@ -137,6 +137,63 @@ object SubscriptionHelper {
         MmkvManager.encodeSettings(AppConfig.PREF_SUBSCRIPTION_EXPIRES, 0L)
     }
 
+    fun normalizeKey(input: String): String {
+        var s = input.trim()
+            .replace("«", "")
+            .replace("»", "")
+            .replace("\"", "")
+            .replace("'", "")
+            .replace("`", "")
+            .trimEnd('.')
+            .trim()
+
+        val cyrToLat = mapOf(
+            'А' to 'A', 'а' to 'a',
+            'В' to 'B', 'в' to 'b',
+            'С' to 'C', 'с' to 'c',
+            'Е' to 'E', 'е' to 'e',
+            'Н' to 'H', 'н' to 'h',
+            'К' to 'K', 'к' to 'k',
+            'М' to 'M', 'м' to 'm',
+            'О' to 'O', 'о' to 'o',
+            'Р' to 'P', 'р' to 'p',
+            'Т' to 'T', 'т' to 't',
+            'Х' to 'X', 'х' to 'x',
+            'У' to 'Y', 'у' to 'y'
+        )
+        val sb = StringBuilder()
+        for (ch in s) {
+            sb.append(cyrToLat[ch] ?: ch)
+        }
+        return sb.toString().trim()
+    }
+
+    private fun isKeyMatch(candidate: String, target: String): Boolean {
+        val cNorm = normalizeKey(candidate)
+        val tNorm = normalizeKey(target)
+        if (cNorm.equals(tNorm, ignoreCase = true)) return true
+        val cAlnum = cNorm.filter { it.isLetterOrDigit() }
+        val tAlnum = tNorm.filter { it.isLetterOrDigit() }
+        return cAlnum.isNotEmpty() && cAlnum.equals(tAlnum, ignoreCase = true)
+    }
+
+    private suspend fun fetchCloudStateJson(): JSONObject? = withContext(Dispatchers.IO) {
+        val mirrors = listOf(
+            "https://greemzaa-pulsewl-vpn.static.hf.space/api/cloud_state.json?t=${System.currentTimeMillis()}",
+            "https://raw.githubusercontent.com/GreMZaa/pulse-vpn-android/gh-pages/api/cloud_state.json?t=${System.currentTimeMillis()}",
+            "https://greemzaa.github.io/pulse-vpn-android/api/cloud_state.json?t=${System.currentTimeMillis()}"
+        )
+        for (url in mirrors) {
+            try {
+                val resp = HttpUtil.getUrlContent(UrlContentRequest(url = url, timeout = 7000))
+                if (!resp.isNullOrBlank() && resp.contains("subscriptions_b64")) {
+                    return@withContext JSONObject(resp)
+                }
+            } catch (_: Exception) {}
+        }
+        null
+    }
+
     suspend fun validateSubscriptionOnline(): Boolean = withContext(Dispatchers.IO) {
         val code = MmkvManager.decodeSettingsString(AppConfig.PREF_SUBSCRIPTION_CODE)
         if (code == "Пользовательский ключ" || (!code.isNullOrBlank() && code.startsWith("http"))) {
@@ -145,13 +202,11 @@ object SubscriptionHelper {
 
         try {
             val currentHwid = getDeviceHwid()
-            val cloudStateUrl = "https://greemzaa-pulsewl-vpn.static.hf.space/api/cloud_state.json?t=${System.currentTimeMillis()}"
-            val stateJsonStr = HttpUtil.getUrlContent(UrlContentRequest(url = cloudStateUrl, timeout = 7000))
-            if (stateJsonStr.isNullOrBlank()) {
+            val json = fetchCloudStateJson()
+            if (json == null) {
+                // Если облако недоступно прямо сейчас — не сбрасываем конфигурацию пользователя
                 return@withContext true
             }
-
-            val json = JSONObject(stateJsonStr)
 
             // Если код не задан (старая активация), но серверы есть — просто обновляем список живых серверов из облака
             if (code.isNullOrBlank()) {
@@ -166,12 +221,13 @@ object SubscriptionHelper {
             var matchedDays = 0.0
             var hwidAllowed = true
             var maxDev = 2
+            var isExplicitlyDisabled = false
 
             val promos = json.optJSONArray("promos")
             if (promos != null) {
                 for (i in 0 until promos.length()) {
                     val p = promos.getJSONObject(i)
-                    if (p.optString("code").equals(code, ignoreCase = true)) {
+                    if (isKeyMatch(p.optString("code"), code)) {
                         found = true
                         matchedDays = p.optDouble("days", 30.0)
                         val (allowed, limit) = isHwidAllowed(p, currentHwid)
@@ -187,11 +243,13 @@ object SubscriptionHelper {
                 if (keys != null) {
                     for (i in 0 until keys.length()) {
                         val k = keys.getJSONObject(i)
-                        if (k.optString("key_code").equals(code, ignoreCase = true)) {
+                        if (isKeyMatch(k.optString("key_code"), code)) {
+                            found = true
                             val isActive = k.optBoolean("is_active", true)
                             val daysLeft = k.optDouble("days_left", 0.0)
-                            if (isActive && daysLeft > 0) {
-                                found = true
+                            if (!isActive || daysLeft <= 0) {
+                                isExplicitlyDisabled = true
+                            } else {
                                 matchedDays = daysLeft
                                 val (allowed, limit) = isHwidAllowed(k, currentHwid)
                                 hwidAllowed = allowed
@@ -203,14 +261,15 @@ object SubscriptionHelper {
                 }
             }
 
-            if (!found || !hwidAllowed) {
+            // Аннулируем серверы ТОЛЬКО если ключ найден и явно отключен / превышен лимит
+            if (found && (isExplicitlyDisabled || !hwidAllowed)) {
                 clearSubscription()
                 val allGuids = MmkvManager.decodeAllServerList()
                 allGuids.forEach { MmkvManager.removeServer(it) }
                 return@withContext false
             }
 
-            // Автоматически обновляем пул живых серверов из облака Hugging Face (чтобы мёртвые старые серверы заменялись свежими)
+            // Автоматически обновляем пул живых серверов из облака
             val subB64 = json.optJSONObject("subscriptions_b64")?.optString("all")
             if (!subB64.isNullOrBlank()) {
                 AngConfigManager.importBatchConfig(subB64, "", false)
@@ -234,7 +293,7 @@ object SubscriptionHelper {
     )
 
     suspend fun activateCodeOrKey(inputCode: String): Result<ActivationResult> = withContext(Dispatchers.IO) {
-        val trimmed = inputCode.trim()
+        val trimmed = normalizeKey(inputCode)
         if (trimmed.isEmpty()) {
             return@withContext Result.failure(IllegalArgumentException("Введите промокод или ключ доступа"))
         }
@@ -277,12 +336,10 @@ object SubscriptionHelper {
             }
         }
 
-        // 3. Промокод или ключ через Cloud State (https://greemzaa-pulsewl-vpn.static.hf.space/api/cloud_state.json)
+        // 3. Промокод или ключ через Cloud State
         try {
-            val cloudStateUrl = "https://greemzaa-pulsewl-vpn.static.hf.space/api/cloud_state.json?t=${System.currentTimeMillis()}"
-            val stateJsonStr = HttpUtil.getUrlContent(UrlContentRequest(url = cloudStateUrl, timeout = 8000))
-            if (!stateJsonStr.isNullOrBlank()) {
-                val json = JSONObject(stateJsonStr)
+            val json = fetchCloudStateJson()
+            if (json != null) {
                 var matchedDays = 30.0
                 var matchedPlan = "Тариф ПУЛЬС"
                 var matchedMaxDevices = 2
@@ -294,7 +351,7 @@ object SubscriptionHelper {
                 if (promos != null) {
                     for (i in 0 until promos.length()) {
                         val p = promos.getJSONObject(i)
-                        if (p.optString("code").equals(trimmed, ignoreCase = true)) {
+                        if (isKeyMatch(p.optString("code"), trimmed)) {
                             found = true
                             matchedDays = p.optDouble("days", 30.0)
                             matchedPlan = "Промокод: ${p.optString("code")}"
@@ -310,7 +367,7 @@ object SubscriptionHelper {
                     if (keys != null) {
                         for (i in 0 until keys.length()) {
                             val k = keys.getJSONObject(i)
-                            if (k.optString("key_code").equals(trimmed, ignoreCase = true)) {
+                            if (isKeyMatch(k.optString("key_code"), trimmed)) {
                                 val (hwidAllowed, maxDev) = isHwidAllowed(k, myHwid)
                                 if (!hwidAllowed) {
                                     return@withContext Result.failure(
@@ -351,27 +408,31 @@ object SubscriptionHelper {
         } catch (_: Exception) {
         }
 
-        // 4. Попытка запроса эндпоинта подписки /sub/<code-or-key>
-        try {
-            val subUrl = "https://greemzaa-pulsewl-vpn.static.hf.space/sub/$trimmed"
-            val content = HttpUtil.getUrlContent(UrlContentRequest(url = subUrl, timeout = 10000))
-            if (!content.isNullOrBlank() && !content.contains("Entry not found") && !content.contains("404")) {
-                val (count, _) = AngConfigManager.importBatchConfig(content.trim(), "", false)
-                if (count > 0) {
-                    val expiry = System.currentTimeMillis() + 30L * 86400000L
-                    saveSubscription(
-                        code = trimmed.uppercase(),
-                        plan = "Активная подписка",
-                        days = 30.0,
-                        expiresAt = expiry
-                    )
-                    return@withContext Result.success(
-                        ActivationResult(count, "Подписка успешно подключена ($count серверов)", content.trim())
-                    )
+        // 4. Попытка запроса эндпоинта подписки /sub/<code-or-key> с зеркал
+        val subMirrors = listOf(
+            "https://greemzaa-pulsewl-vpn.static.hf.space/sub/$trimmed",
+            "https://raw.githubusercontent.com/GreMZaa/pulse-vpn-android/gh-pages/sub/$trimmed",
+            "https://greemzaa.github.io/pulse-vpn-android/sub/$trimmed"
+        )
+        for (subUrl in subMirrors) {
+            try {
+                val content = HttpUtil.getUrlContent(UrlContentRequest(url = subUrl, timeout = 7000))
+                if (!content.isNullOrBlank() && !content.contains("Entry not found") && !content.contains("404")) {
+                    val (count, _) = AngConfigManager.importBatchConfig(content.trim(), "", false)
+                    if (count > 0) {
+                        val expiry = System.currentTimeMillis() + 30L * 86400000L
+                        saveSubscription(
+                            code = trimmed.uppercase(),
+                            plan = "Активная подписка",
+                            days = 30.0,
+                            expiresAt = expiry
+                        )
+                        return@withContext Result.success(
+                            ActivationResult(count, "Подписка успешно подключена ($count серверов)", content.trim())
+                        )
+                    }
                 }
-            }
-        } catch (e: Exception) {
-            return@withContext Result.failure(Exception("Ошибка соединения: ${e.message}"))
+            } catch (_: Exception) {}
         }
 
         return@withContext Result.failure(IllegalArgumentException("Промокод или ключ не найден или срок действия истек"))

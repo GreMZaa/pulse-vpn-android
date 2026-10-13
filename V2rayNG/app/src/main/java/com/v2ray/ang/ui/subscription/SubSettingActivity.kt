@@ -376,7 +376,7 @@ fun SubSettingScreen(
                                         val res = SubscriptionHelper.activateCodeOrKey(code)
                                         if (res.isSuccess) {
                                             val data = res.getOrThrow()
-                                            actionMessage = data.message
+                                            actionMessage = "${data.message}. Вернитесь на главный экран и нажмите круглую кнопку для подключения!"
                                             isActionError = false
                                             inputCodeOrKey = ""
                                             refreshState()
