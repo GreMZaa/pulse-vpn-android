@@ -91,13 +91,12 @@ object LauncherManager {
             }
         }
 
-        val finalConfig = config
-        if (guid == null || finalConfig == null) {
+        if (guid == null || config == null) {
             LogUtil.e(AppConfig.TAG, "LauncherManager: No server available")
             error(context.getString(R.string.app_tile_first_use))
         }
 
-        var activeConfig = finalConfig
+        var activeConfig = config!!
         // Если хост сервера пустой или невалидный — пробуем найти рабочий сервер из пула
         if (!activeConfig.configType.isComplexType()
             && !Utils.isValidUrl(activeConfig.server)
