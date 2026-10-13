@@ -452,6 +452,7 @@ fun MainScreen(
 
     if (uiState.appUpdateResult != null) {
         val update = uiState.appUpdateResult!!
+        val isDownloaded = uiState.appUpdateProgress >= 100 && !uiState.isUpdatingApp
         AlertDialog(
             onDismissRequest = {
                 if (!uiState.isUpdatingApp) {
@@ -477,6 +478,11 @@ fun MainScreen(
                             progress = { uiState.appUpdateProgress / 100f },
                             modifier = Modifier.fillMaxWidth()
                         )
+                    } else if (isDownloaded) {
+                        Text(
+                            text = "Загрузка завершена (100%). Нажмите «Установить», чтобы завершить обновление ПУЛЬС.",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     } else {
                         Text(
                             text = update.releaseNotes.orEmpty().ifBlank { "Доступно новое обновление приложения ПУЛЬС." },
@@ -496,15 +502,13 @@ fun MainScreen(
                             }
                         }
                     ) {
-                        Text(stringResource(R.string.update_now))
+                        Text(if (isDownloaded) "Установить" else stringResource(R.string.update_now))
                     }
                 }
             },
             dismissButton = {
-                if (!uiState.isUpdatingApp) {
-                    TextButton(onClick = { onAction(MainAction.DismissUpdateDialog) }) {
-                        Text(stringResource(R.string.action_cancel))
-                    }
+                TextButton(onClick = { onAction(MainAction.DismissUpdateDialog) }) {
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )

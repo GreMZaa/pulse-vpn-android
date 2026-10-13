@@ -372,10 +372,14 @@ class MainViewModel(
 
     private fun downloadAndInstallApp(url: String) {
         if (_uiState.value.isUpdatingApp) return
+        val context: android.content.Context = getApplication()
+        if (_uiState.value.appUpdateProgress == 100 && AppUpdateInstaller.hasDownloadedApk(context)) {
+            AppUpdateInstaller.installDownloadedApk(context)
+            return
+        }
         _uiState.update { it.copy(isUpdatingApp = true, appUpdateProgress = 0) }
         viewModelScope.launch {
             try {
-                val context: android.content.Context = getApplication()
                 val success = AppUpdateInstaller.downloadAndInstallApk(
                     context = context,
                     downloadUrl = url,
@@ -383,14 +387,16 @@ class MainViewModel(
                         _uiState.update { it.copy(appUpdateProgress = progress) }
                     }
                 )
-                if (!success) {
+                if (success) {
+                    _uiState.update { it.copy(isUpdatingApp = false, appUpdateProgress = 100) }
+                } else {
                     toastError(R.string.update_download_failed)
-                    _uiState.update { it.copy(isUpdatingApp = false) }
+                    _uiState.update { it.copy(isUpdatingApp = false, appUpdateProgress = 0) }
                 }
             } catch (e: Exception) {
                 LogUtil.e(AppConfig.TAG, "Update download failed", e)
                 toastError(R.string.update_download_failed)
-                _uiState.update { it.copy(isUpdatingApp = false) }
+                _uiState.update { it.copy(isUpdatingApp = false, appUpdateProgress = 0) }
             }
         }
     }

@@ -102,6 +102,12 @@ class MainActivity : HelperBaseComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (com.v2ray.ang.handler.AppUpdateInstaller.waitingForInstallPermission) {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && packageManager.canRequestPackageInstalls()) {
+                com.v2ray.ang.handler.AppUpdateInstaller.waitingForInstallPermission = false
+                com.v2ray.ang.handler.AppUpdateInstaller.installDownloadedApk(this)
+            }
+        }
         lifecycleScope.launch {
             val isValid = SubscriptionHelper.validateSubscriptionOnline()
             if (!isValid) {
