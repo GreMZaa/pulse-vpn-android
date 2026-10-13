@@ -1121,7 +1121,7 @@ object MmkvManager {
             settingsStorage.encode(com.v2ray.ang.AppConfig.PREF_FAVORITE_SERVERS, set)
             !currentlyFav
         } catch (e: Throwable) {
-            LogUtil.e(AppConfig.TAG, "toggleFavoriteServer failed: ${e.message}", e)
+            Log.e(TAG, "toggleFavoriteServer failed: ${e.message}", e)
             false
         }
     }
