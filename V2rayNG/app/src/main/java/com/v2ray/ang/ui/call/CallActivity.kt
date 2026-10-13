@@ -140,8 +140,8 @@ class CallActivity : ComponentActivity() {
         // Уникальный ID стрима для этого участника (БЕЗ этого VDO.Ninja останавливается на экране выбора)
         val myPushId = "pulse_app_" + System.currentTimeMillis().toString().takeLast(6) + (100..999).random()
 
-        // &push + &autostart + &videomute МГНОВЕННО входит в комнату и начинает вещание звука с выключенной камерой
-        val callUrl = "https://vdo.ninja/?room=$cleanRoomId&push=$myPushId&autostart&videomute&darkmode&clean&label=Android"
+        // &webcam + &push + &autostart + &videomute + &cleanish МГНОВЕННО входит в комнату и начинает вещание звука без черного экрана
+        val callUrl = "https://vdo.ninja/?room=$cleanRoomId&push=$myPushId&webcam&autostart&videomute&darkmode&cleanish&label=Android"
 
         setContent {
             CallScreenContent(
