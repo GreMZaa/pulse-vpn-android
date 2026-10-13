@@ -435,18 +435,19 @@ object SubscriptionHelper {
                 }
 
                 if (found) {
-                    var subB64 = json.optJSONObject("subscriptions_b64")?.optString("all")
-                    if (subB64.isNullOrBlank()) {
+                    var rawSubB64 = json.optJSONObject("subscriptions_b64")?.optString("all")
+                    if (rawSubB64.isNullOrBlank()) {
                         try {
                             val context = com.v2ray.ang.AngApplication.application
                             context.assets.open("cloud_state.json").use { stream ->
                                 val fallbackJson = JSONObject(stream.bufferedReader(Charsets.UTF_8).readText())
-                                subB64 = fallbackJson.optJSONObject("subscriptions_b64")?.optString("all")
+                                rawSubB64 = fallbackJson.optJSONObject("subscriptions_b64")?.optString("all")
                             }
                         } catch (_: Exception) {}
                     }
-                    if (!subB64.isNullOrBlank()) {
-                        val (count, _) = AngConfigManager.importBatchConfig(subB64, "", false)
+                    val validSubB64 = rawSubB64
+                    if (!validSubB64.isNullOrBlank()) {
+                        val (count, _) = AngConfigManager.importBatchConfig(validSubB64, "", false)
                         if (count > 0) {
                             ensureSelectedServerValid()
                             val expiry = System.currentTimeMillis() + (matchedDays * 86400000L).toLong()
@@ -458,7 +459,7 @@ object SubscriptionHelper {
                                 maxDevices = matchedMaxDevices
                             )
                             return@withContext Result.success(
-                                ActivationResult(count, "Подписка $matchedPlan активирована ($count серверов, HWID: $myHwid)", subB64)
+                                ActivationResult(count, "Подписка $matchedPlan активирована ($count серверов, HWID: $myHwid)", validSubB64)
                             )
                         }
                     }
