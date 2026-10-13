@@ -922,14 +922,18 @@ private fun ConnectionDiagnosticsDialog(
                 val httpPort = com.v2ray.ang.handler.SettingsManager.getHttpPort()
                 stepTunnel = "✅ Туннель активен (порт $httpPort)"
 
-                val delay204 = HttpUtil.measureUrlDelay(
+                val t1 = System.currentTimeMillis()
+                val resp204 = HttpUtil.getUrlContent(
                     UrlContentRequest(url = com.v2ray.ang.AppConfig.DELAY_TEST_URL, timeout = 3500, httpPort = httpPort)
                 )
+                val delay204 = if (resp204 != null) (System.currentTimeMillis() - t1).coerceAtLeast(1L) else -1L
                 stepHttp204 = if (delay204 > 0L) "✅ Доступен ($delay204 мс)" else "❌ Нет ответа (HTTP-204)"
 
-                val delayTg = HttpUtil.measureUrlDelay(
+                val t2 = System.currentTimeMillis()
+                val respTg = HttpUtil.getUrlContent(
                     UrlContentRequest(url = com.v2ray.ang.AppConfig.DELAY_TEST_URL2, timeout = 3500, httpPort = httpPort)
                 )
+                val delayTg = if (respTg != null) (System.currentTimeMillis() - t2).coerceAtLeast(1L) else -1L
                 stepTelegram = if (delayTg > 0L) "✅ Доступен ($delayTg мс)" else "❌ Блокировка / Таймаут"
             }
         }

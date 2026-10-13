@@ -299,8 +299,8 @@ object SubscriptionHelper {
                         for (i in 0 until keys.length()) {
                             val k = keys.getJSONObject(i)
                             if (k.optString("key_code").equals(trimmed, ignoreCase = true)) {
-                                if (!isHwidAllowed(k, myHwid)) {
-                                    val maxDev = k.optInt("max_devices", 2)
+                                val (hwidAllowed, maxDev) = isHwidAllowed(k, myHwid)
+                                if (!hwidAllowed) {
                                     return@withContext Result.failure(
                                         IllegalArgumentException("Лимит устройств ($maxDev) исчерпан для этого ключа. Ваш HWID: $myHwid")
                                     )
@@ -308,7 +308,7 @@ object SubscriptionHelper {
                                 found = true
                                 matchedDays = k.optDouble("days_left", 30.0)
                                 matchedPlan = k.optString("plan_name", "Ключ доступа")
-                                matchedMaxDevices = k.optInt("max_devices", 2)
+                                matchedMaxDevices = maxDev
                                 break
                             }
                         }
