@@ -526,7 +526,7 @@ class CallActivity : ComponentActivity() {
                                         }
                                     }
                                 }
-                                webViewClient = object : WebViewClient()
+                                webViewClient = WebViewClient()
                                 loadUrl(callUrl)
                                 webViewInstance = this
                             }
