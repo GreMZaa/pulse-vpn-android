@@ -172,10 +172,13 @@
       const container = document.getElementById('call-container');
       container.style.display = 'block';
 
-      // Формируем чистый URL без блокирующего флага cleanoutput (кнопки микрофона и камеры будут видны!)
-      let ninjaUrl = `https://vdo.ninja/?room=${cleanRoom}&autostart&darkmode`;
+      // Уникальный ID стрима для веб-участника (БЕЗ этого VDO.Ninja зависает на экране выбора "Join Room with Microphone")
+      const webPushId = 'pulse_web_' + Date.now().toString().slice(-6) + Math.floor(Math.random() * 900 + 100);
+
+      // &room + &push + &autostart мгновенно подключает микрофон в комнату и начинает вещание
+      let ninjaUrl = `https://vdo.ninja/?room=${cleanRoom}&push=${webPushId}&autostart&darkmode`;
       if (!withVideo) {
-        ninjaUrl += '&videodevice=0'; // стартует с микрофоном, но камеру можно включить кнопкой в любой момент
+        ninjaUrl += '&videodevice=0'; // стартует со звуком, камеру можно включить в любой момент
       }
 
       document.getElementById('call-frame').src = ninjaUrl;

@@ -5,7 +5,9 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.AudioDeviceInfo
 import android.media.AudioManager
+import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.view.ViewGroup
@@ -135,8 +137,11 @@ class CallActivity : ComponentActivity() {
         val roomName = intent.getStringExtra(EXTRA_ROOM_NAME) ?: "Защищённая комната"
         val roomCode = (intent.getStringExtra(EXTRA_ROOM_CODE) ?: "").replace(Regex("[^a-zA-Z0-9]"), "")
 
-        // Запуск с videodevice=0 (камера изначально выключена, но может быть включена в 1 клик)
-        val callUrl = "https://vdo.ninja/?room=$cleanRoomId&videodevice=0&autostart&darkmode&clean"
+        // Уникальный ID стрима для этого участника (БЕЗ этого VDO.Ninja останавливается на экране выбора)
+        val myPushId = "pulse_app_" + System.currentTimeMillis().toString().takeLast(6) + (100..999).random()
+
+        // &push + &autostart МГНОВЕННО входит в комнату и начинает вещание звука без ожидания нажатия кнопок!
+        val callUrl = "https://vdo.ninja/?room=$cleanRoomId&push=$myPushId&videodevice=0&autostart&darkmode&clean"
 
         setContent {
             CallScreenContent(
@@ -165,10 +170,32 @@ class CallActivity : ComponentActivity() {
         }
     }
 
+    private fun applySpeakerRouting(speakerOn: Boolean) {
+        val am = audioManager ?: return
+        try {
+            am.mode = AudioManager.MODE_IN_COMMUNICATION
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (speakerOn) {
+                    val speaker = am.availableCommunicationDevices.firstOrNull {
+                        it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
+                    }
+                    if (speaker != null) {
+                        am.setCommunicationDevice(speaker)
+                    }
+                } else {
+                    am.clearCommunicationDevice()
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                am.isSpeakerphoneOn = speakerOn
+            }
+        } catch (_: Exception) {}
+    }
+
     private fun initAudioAndLoad() {
         try {
-            audioManager?.mode = AudioManager.MODE_IN_COMMUNICATION
-            audioManager?.isSpeakerphoneOn = isSpeakerOn
+            volumeControlStream = AudioManager.STREAM_VOICE_CALL
+            applySpeakerRouting(isSpeakerOn)
             audioManager?.isMicrophoneMute = false
             wakeLock?.acquire(60 * 60 * 1000L) // 60 минут
         } catch (_: Exception) {}
@@ -235,9 +262,7 @@ class CallActivity : ComponentActivity() {
     private fun toggleSpeaker() {
         val next = !isSpeakerOn
         isSpeakerOn = next
-        try {
-            audioManager?.isSpeakerphoneOn = next
-        } catch (_: Exception) {}
+        applySpeakerRouting(next)
     }
 
     private fun shareRoom(name: String, code: String, id: String) {
@@ -266,7 +291,11 @@ class CallActivity : ComponentActivity() {
             wakeLock?.let { if (it.isHeld) it.release() }
         } catch (_: Exception) {}
         try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                audioManager?.clearCommunicationDevice()
+            }
             audioManager?.mode = AudioManager.MODE_NORMAL
+            @Suppress("DEPRECATION")
             audioManager?.isSpeakerphoneOn = false
             audioManager?.isMicrophoneMute = false
         } catch (_: Exception) {}
@@ -526,7 +555,32 @@ class CallActivity : ComponentActivity() {
                                         }
                                     }
                                 }
-                                webViewClient = WebViewClient()
+                                webViewClient = object : WebViewClient() {
+                                    override fun onPageFinished(view: WebView?, url: String?) {
+                                        super.onPageFinished(view, url)
+                                        // Автоматически нажимаем кнопки входа/микрофона, если VDO.Ninja их покажет
+                                        val autoClickJs = """
+                                            (function() {
+                                                function autoClick() {
+                                                    var btns = document.querySelectorAll('button, div[role="button"], a');
+                                                    for (var i = 0; i < btns.length; i++) {
+                                                        var txt = (btns[i].innerText || btns[i].textContent || '').toLowerCase();
+                                                        if (txt.indexOf('join room with microphone') !== -1 || 
+                                                            txt.indexOf('join room with camera') !== -1 ||
+                                                            txt.indexOf('join room') !== -1 ||
+                                                            txt.indexOf('start') !== -1) {
+                                                            btns[i].click();
+                                                        }
+                                                    }
+                                                }
+                                                autoClick();
+                                                var interval = setInterval(autoClick, 400);
+                                                setTimeout(function() { clearInterval(interval); }, 8000);
+                                            })();
+                                        """.trimIndent()
+                                        view?.evaluateJavascript(autoClickJs, null)
+                                    }
+                                }
                                 loadUrl(callUrl)
                                 webViewInstance = this
                             }
