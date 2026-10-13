@@ -59,6 +59,7 @@ class AngApplication : Application() {
 
         // Initialize theme state from MMKV
         try {
+            androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES)
             ThemeManager.refresh()
         } catch (_: Exception) {
         }

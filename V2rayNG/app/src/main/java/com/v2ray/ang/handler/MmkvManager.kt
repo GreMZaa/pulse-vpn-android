@@ -1061,10 +1061,18 @@ object MmkvManager {
     }
 
     fun getFavoriteServerSet(): MutableSet<String> {
-        return settingsStorage.decodeStringSet(com.v2ray.ang.AppConfig.PREF_FAVORITE_SERVERS) ?: mutableSetOf()
+        val json = settingsStorage.decodeString(com.v2ray.ang.AppConfig.PREF_FAVORITE_SERVERS)
+        if (!json.isNullOrBlank()) {
+            val array = JsonUtil.fromJson(json, Array<String>::class.java)
+            if (array != null && array.isNotEmpty()) {
+                return array.toMutableSet()
+            }
+        }
+        return settingsStorage.decodeStringSet(com.v2ray.ang.AppConfig.PREF_FAVORITE_SERVERS)?.toMutableSet() ?: mutableSetOf()
     }
 
     fun isFavoriteServer(guid: String, profile: ProfileItem? = null): Boolean {
+        if (guid.isBlank()) return false
         val set = getFavoriteServerSet()
         if (guid in set) return true
         val p = profile ?: decodeServerConfig(guid)
@@ -1073,6 +1081,7 @@ object MmkvManager {
     }
 
     fun toggleFavoriteServer(guid: String, profile: ProfileItem? = null): Boolean {
+        if (guid.isBlank()) return false
         val set = getFavoriteServerSet().toMutableSet()
         val p = profile ?: decodeServerConfig(guid)
         val id = favoriteIdentity(p)
@@ -1084,6 +1093,7 @@ object MmkvManager {
             set.add(guid)
             if (id != null) set.add(id)
         }
+        settingsStorage.encode(com.v2ray.ang.AppConfig.PREF_FAVORITE_SERVERS, JsonUtil.toJson(set.toList()))
         settingsStorage.encode(com.v2ray.ang.AppConfig.PREF_FAVORITE_SERVERS, set)
         return !currentlyFav
     }

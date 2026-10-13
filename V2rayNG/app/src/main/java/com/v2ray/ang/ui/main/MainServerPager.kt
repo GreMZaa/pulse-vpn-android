@@ -354,8 +354,8 @@ private fun ServerListItem(
     val borderColor = when {
         isFocused -> Color.White
         row.isFavorite && isSelected -> Color(0xFFFFD54F)
+        row.isFavorite -> Color(0xFFFBC02D)
         isSelected -> Color(0xFF3A3A3A)
-        row.isFavorite -> Color(0xFF3A3218)
         else -> Color(0xFF222222)
     }
 
@@ -367,12 +367,14 @@ private fun ServerListItem(
             .background(
                 when {
                     isFocused -> Color(0xFF262626)
+                    row.isFavorite && isSelected -> Color(0xFF262010)
+                    row.isFavorite -> Color(0xFF1F1A0A)
                     isSelected -> Color(0xFF1E1E1E)
                     else -> Color(0xFF161616)
                 }
             )
             .border(
-                width = if (isFocused) 2.dp else 1.dp,
+                width = if (isFocused) 2.dp else if (row.isFavorite) 1.5.dp else 1.dp,
                 color = borderColor,
                 shape = RoundedCornerShape(12.dp)
             )
@@ -388,16 +390,17 @@ private fun ServerListItem(
             // ⭐ Кнопка «Избранный сервер»
             Box(
                 modifier = Modifier
-                    .size(28.dp)
+                    .size(36.dp)
                     .clip(CircleShape)
+                    .background(if (row.isFavorite) Color(0x33FFD54F) else Color(0x14FFFFFF))
                     .clickable { actions.toggleFavorite(row.guid) },
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = if (row.isFavorite) "★" else "☆",
-                    fontSize = 16.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (row.isFavorite) Color(0xFFFFD54F) else Color(0xFF555555)
+                    color = if (row.isFavorite) Color(0xFFFFD54F) else Color(0xFF888888)
                 )
             }
 
@@ -414,13 +417,14 @@ private fun ServerListItem(
             Spacer(modifier = Modifier.width(10.dp))
 
             // Название и номер сервера
-            val displayName = if (row.remarks.startsWith("#")) row.remarks else "#${index + 1}  ${row.remarks}"
+            val baseName = if (row.remarks.startsWith("#")) row.remarks else "#${index + 1}  ${row.remarks}"
+            val displayName = if (row.isFavorite) "⭐ $baseName" else baseName
             Text(
                 text = displayName,
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = if (isSelected || row.isFavorite) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (isSelected) Color.White else Color(0xFFCCCCCC),
+                color = if (isSelected) Color.White else if (row.isFavorite) Color(0xFFFFF8E1) else Color(0xFFCCCCCC),
                 fontSize = 14.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

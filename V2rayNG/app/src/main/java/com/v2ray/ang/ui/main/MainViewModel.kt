@@ -450,7 +450,9 @@ class MainViewModel(
             )
         }.sortedWith(
             compareBy(
-                // 1. Сначала ВСЕ живые серверы (delay > 0), потом непротестированные (delay == 0), и в самый конец мертвые (delay < 0)
+                // 1. Избранные серверы (⭐) ВСЕГДА на самом верху списка!
+                { if (MmkvManager.isFavoriteServer(it.guid, it.profile)) 0 else 1 },
+                // 2. Сначала ВСЕ живые серверы (delay > 0), потом непротестированные (delay == 0), и в самый конец мертвые (delay < 0)
                 {
                     when {
                         it.testDelayMillis > 0L -> 0
@@ -458,8 +460,6 @@ class MainViewModel(
                         else -> 2 // нет ответа (delay < 0) - всегда в самый низ!
                     }
                 },
-                // 2. Избранные серверы (⭐) всегда наверху среди работающих
-                { if (MmkvManager.isFavoriteServer(it.guid, it.profile)) 0 else 1 },
                 // 3. Среди живых серверов — приоритет белых списков
                 { it.profile.getWhitelistPriority() },
                 // 4. Задержка в мс
@@ -481,9 +481,11 @@ class MainViewModel(
             }
             sortByTestResultsInternal()
             cacheMutex.withLock { groupDataCache.clear() }
-            val groupId = uiState.value.selectedGroupId
-            val servers = loadGroup(groupId, forceRefresh = true)
-            updateGroupUi(groupId, servers)
+            val allGroupIds = (_uiState.value.groups.map { it.id } + "").distinct()
+            allGroupIds.forEach { gId ->
+                val servers = loadGroup(gId, forceRefresh = true)
+                updateGroupUi(gId, servers)
+            }
         }
     }
 
@@ -857,9 +859,9 @@ class MainViewModel(
 
     private fun sortByTestResultsInternal() {
         val subs = if (uiState.value.selectedGroupId.isEmpty()) {
-            dataSource.getSubsList()
+            (dataSource.getSubsList() + "").distinct()
         } else {
-            listOf(uiState.value.selectedGroupId)
+            listOf(uiState.value.selectedGroupId, "")
         }
         subs.forEach { dataSource.sortByTestResultsForSub(it) }
     }

@@ -579,7 +579,8 @@ object AngConfigManager {
                     delay == 0L -> 1L
                     else -> 2L // нет ответа (delay < 0) - всегда в самый низ!
                 }
-                val totalScore = (statusGroup * 100_000_000L) + (favRank * 10_000_000L) + (priority * 100_000L) + (if (delay > 0L) delay else 99_999L)
+                // ИЗБРАННЫЕ СЕРВЕРЫ (favRank == 0L) ВСЕГДА В САМОМ ВЕРХУ СПИСКА!
+                val totalScore = (favRank * 1_000_000_000L) + (statusGroup * 100_000_000L) + (priority * 100_000L) + (if (delay > 0L) delay else 99_999L)
                 guid to totalScore
             }
             .sortedBy { it.second }

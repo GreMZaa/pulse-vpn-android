@@ -121,61 +121,40 @@ val toastIconCircleBg = Color(0x33FFFFFF) // Semi-transparent White
 val toastTextColor = Color.White // White
 
 object ThemeManager {
-    private val _themeMode = MutableStateFlow(
-        MmkvManager.decodeSettingsString(AppConfig.PREF_UI_MODE_NIGHT, "0") ?: "0"
-    )
+    private val _themeMode = MutableStateFlow("2")
     val themeMode: StateFlow<String> = _themeMode.asStateFlow()
 
-    private val _dynamicColorEnabled = MutableStateFlow(
-        MmkvManager.decodeSettingsBool(AppConfig.PREF_DYNAMIC_COLOR, true)
-    )
+    private val _dynamicColorEnabled = MutableStateFlow(false)
     val dynamicColorEnabled: StateFlow<Boolean> = _dynamicColorEnabled.asStateFlow()
 
     fun setThemeMode(mode: String) {
-        MmkvManager.encodeSettings(AppConfig.PREF_UI_MODE_NIGHT, mode)
-        _themeMode.value = mode
+        MmkvManager.encodeSettings(AppConfig.PREF_UI_MODE_NIGHT, "2")
+        _themeMode.value = "2"
     }
 
     fun setDynamicColorEnabled(enabled: Boolean) {
-        MmkvManager.encodeSettings(AppConfig.PREF_DYNAMIC_COLOR, enabled)
-        _dynamicColorEnabled.value = enabled
+        MmkvManager.encodeSettings(AppConfig.PREF_DYNAMIC_COLOR, false)
+        _dynamicColorEnabled.value = false
     }
 
     fun refresh() {
-        _themeMode.value =
-            MmkvManager.decodeSettingsString(AppConfig.PREF_UI_MODE_NIGHT, "0") ?: "0"
-        _dynamicColorEnabled.value =
-            MmkvManager.decodeSettingsBool(AppConfig.PREF_DYNAMIC_COLOR, true)
+        _themeMode.value = "2"
+        _dynamicColorEnabled.value = false
     }
 }
 
 @Composable
-fun resolveDarkTheme(): Boolean {
-    val mode by ThemeManager.themeMode.collectAsState()
-    return when (mode) {
-        "1" -> false
-        "2" -> true
-        else -> isSystemInDarkTheme()
-    }
-}
+fun resolveDarkTheme(): Boolean = true
 
-val LocalDarkTheme = compositionLocalOf { false }
+val LocalDarkTheme = compositionLocalOf { true }
 
 @Composable
 fun AppTheme(
-    darkTheme: Boolean = resolveDarkTheme(),
+    darkTheme: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val dynamicColor by ThemeManager.dynamicColorEnabled.collectAsState()
     val context = LocalContext.current
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColor
-        else -> LightColor
-    }
+    val colorScheme = DarkColor
     val snackbarController = rememberAppSnackbarController()
 
     val view = LocalView.current
@@ -184,20 +163,24 @@ fun AppTheme(
             val activity = view.context as? Activity ?: return@SideEffect
             val window = activity.window
             WindowCompat.getInsetsController(window, view).apply {
-                isAppearanceLightStatusBars = !darkTheme
-                isAppearanceLightNavigationBars = !darkTheme
+                isAppearanceLightStatusBars = false
+                isAppearanceLightNavigationBars = false
             }
         }
     }
 
     CompositionLocalProvider(
-        LocalDarkTheme provides darkTheme,
+        LocalDarkTheme provides true,
         LocalAppSnackbar provides snackbarController
     ) {
         MaterialTheme(
             colorScheme = colorScheme
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF121212))
+            ) {
                 AppSnackbarBridge(controller = snackbarController)
                 content()
                 AppSnackbarHost(hostState = snackbarController.hostState)
