@@ -135,7 +135,7 @@ class CallActivity : ComponentActivity() {
                 onEndCall = { endCall() },
                 onToggleMic = { toggleMic() },
                 onToggleSpeaker = { toggleSpeaker() },
-                onShare = { shareRoom(roomName, roomCode, roomId) }
+                onShare = { shareRoom(roomName, roomCode, cleanRoomId) }
             )
         }
 
