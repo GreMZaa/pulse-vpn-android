@@ -47,6 +47,7 @@ class AngApplication : Application() {
             if (!WorkManager.isInitialized()) {
                 WorkManager.initialize(this, workManagerConfiguration)
             }
+            com.v2ray.ang.handler.AppUpdateNotificationWorker.schedule(this)
         } catch (_: Exception) {
         }
 

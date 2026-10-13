@@ -34,16 +34,37 @@ object NotificationHelper {
      * @param context The context for building the notification
      * @param title The notification title
      * @param content The notification content text
+     * @param contentIntent Optional pending intent when clicked
+     * @param action Optional action button
+     * @param highPriority Whether to display as high-priority alert
      */
     fun notify(
         channelType: NotificationChannelType,
         context: Context,
         title: String,
-        content: String
+        content: String,
+        contentIntent: android.app.PendingIntent? = null,
+        action: NotificationCompat.Action? = null,
+        highPriority: Boolean = false
     ) {
-        ensureChannelCreated(channelType, context)
+        val importance = if (highPriority) NotificationManager.IMPORTANCE_HIGH else NotificationManager.IMPORTANCE_LOW
+        ensureNotificationChannel(
+            context = context,
+            channelId = channelType.channelId,
+            channelNameRes = channelType.channelNameRes,
+            importance = importance
+        )
         val notificationManager = getNotificationManager(context)
-        val builder = buildNotificationBuilder(channelType, context, title, content)
+        val builder = buildNotificationBuilder(channelType, context, title, content, action).apply {
+            if (contentIntent != null) {
+                setContentIntent(contentIntent)
+            }
+            if (highPriority) {
+                setPriority(NotificationCompat.PRIORITY_HIGH)
+                setAutoCancel(true)
+                setDefaults(NotificationCompat.DEFAULT_ALL)
+            }
+        }
         notificationManager.notify(channelType.notificationId, builder.build())
     }
 

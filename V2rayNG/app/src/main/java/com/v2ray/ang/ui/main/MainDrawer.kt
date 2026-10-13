@@ -215,30 +215,7 @@ fun MainDrawerContent(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // КНОПКА — ПОДКЛЮЧИТЬ ПК / IPHONE / MAC (КРОССПЛАТФОРМЕННАЯ ПОДПИСКА)
-            Button(
-                onClick = { onOpenCrossPlatform() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(46.dp),
-                shape = RoundedCornerShape(12.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF222222),
-                    contentColor = Color.White
-                )
-            ) {
-                Text(
-                    text = "💻 Подключить ПК / iPhone",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // КНОПКА — TELEGRAM БЕЗ РЕКЛАМЫ (SOCKS5 В 1 КЛИК)
+            // КНОПКА — TELEGRAM ПРОКСИ (SOCKS5 В 1 КЛИК)
             Button(
                 onClick = { onOpenTelegramProxy() },
                 modifier = Modifier
@@ -252,7 +229,7 @@ fun MainDrawerContent(
                 )
             ) {
                 Text(
-                    text = "✈️ Telegram без рекламы (SOCKS5)",
+                    text = "✈️ Телеграм прокси",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1

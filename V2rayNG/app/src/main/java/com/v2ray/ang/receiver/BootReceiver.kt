@@ -45,6 +45,8 @@ class BootReceiver : BroadcastReceiver() {
             }
         }
 
+        com.v2ray.ang.handler.AppUpdateNotificationWorker.schedule(context)
+
         if (!MmkvManager.decodeStartOnBoot()) {
             LogUtil.i(AppConfig.TAG, "BootReceiver: Auto-start on boot is disabled")
             return

@@ -99,6 +99,7 @@ object AppConfig {
     const val PREF_ADBLOCK_DNS_ENABLED = "pref_adblock_dns_enabled"
     const val PREF_FAVORITE_SERVERS = "pref_favorite_servers"
     const val PREF_DEVICE_HWID = "pref_device_hwid"
+    const val PREF_LAST_NOTIFIED_UPDATE_VERSION = "pref_last_notified_update_version"
 
     /** Cache keys. */
     const val CACHE_SUBSCRIPTION_ID = "cache_subscription_id"

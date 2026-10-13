@@ -727,179 +727,24 @@ fun MainScreen(
 
                         if (hasServers) {
                             Spacer(modifier = Modifier.height(10.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                // Пресет: Режим для Telegram и Звонков (MTProto + UDP)
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(14.dp))
-                                        .background(
-                                            if (telegramCallsMode) Color(0xFF172A3A) else Color(0xFF202020)
-                                        )
-                                        .border(
-                                            width = 1.dp,
-                                            color = if (telegramCallsMode) Color(0xFF29B6F6) else Color(0xFF2E2E2E),
-                                            shape = RoundedCornerShape(14.dp)
-                                        )
-                                        .clickable {
-                                            val next = !telegramCallsMode
-                                            telegramCallsMode = next
-                                            com.v2ray.ang.handler.MmkvManager.encodeSettings(
-                                                com.v2ray.ang.AppConfig.PREF_TELEGRAM_CALLS_MODE,
-                                                next
-                                            )
-                                            if (isRunning) {
-                                                onAction(MainAction.RestartService)
-                                            }
-                                        }
-                                        .padding(horizontal = 10.dp, vertical = 5.dp)
-                                ) {
-                                    Text(
-                                        text = if (telegramCallsMode) "✈️ Telegram: ВКЛ" else "✈️ Telegram: ВЫКЛ",
-                                        fontSize = 10.5.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = if (telegramCallsMode) Color(0xFF4FC3F7) else Color(0xFF888888)
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.width(6.dp))
-
-                                // Умный роутинг РФ (Банки, Госуслуги, .ru напрямую без выключения VPN)
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(14.dp))
-                                        .background(
-                                            if (smartRoutingRu) Color(0xFF162C1E) else Color(0xFF202020)
-                                        )
-                                        .border(
-                                            width = 1.dp,
-                                            color = if (smartRoutingRu) Color(0xFF4CAF50) else Color(0xFF2E2E2E),
-                                            shape = RoundedCornerShape(14.dp)
-                                        )
-                                        .clickable {
-                                            val next = !smartRoutingRu
-                                            smartRoutingRu = next
-                                            com.v2ray.ang.handler.MmkvManager.encodeSettings(
-                                                com.v2ray.ang.AppConfig.PREF_SMART_ROUTING_RU,
-                                                next
-                                            )
-                                            if (isRunning) {
-                                                onAction(MainAction.RestartService)
-                                            }
-                                        }
-                                        .padding(horizontal = 10.dp, vertical = 5.dp)
-                                ) {
-                                    Text(
-                                        text = if (smartRoutingRu) "🏦 Банки РФ: Напрямую" else "🏦 Банки РФ: В туннель",
-                                        fontSize = 10.5.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = if (smartRoutingRu) Color(0xFF81C784) else Color(0xFF888888)
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(6.dp))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                // Блокировщик рекламы и трекеров AdGuard DNS
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(14.dp))
-                                        .background(
-                                            if (adblockDnsEnabled) Color(0xFF2A1D33) else Color(0xFF202020)
-                                        )
-                                        .border(
-                                            width = 1.dp,
-                                            color = if (adblockDnsEnabled) Color(0xFFAB47BC) else Color(0xFF2E2E2E),
-                                            shape = RoundedCornerShape(14.dp)
-                                        )
-                                        .clickable {
-                                            val next = !adblockDnsEnabled
-                                            adblockDnsEnabled = next
-                                            com.v2ray.ang.handler.MmkvManager.encodeSettings(
-                                                com.v2ray.ang.AppConfig.PREF_ADBLOCK_DNS_ENABLED,
-                                                next
-                                            )
-                                            if (isRunning) {
-                                                onAction(MainAction.RestartService)
-                                            }
-                                        }
-                                        .padding(horizontal = 10.dp, vertical = 5.dp)
-                                ) {
-                                    Text(
-                                        text = if (adblockDnsEnabled) "🚫 Блок рекламы: ВКЛ" else "🚫 Блок рекламы: ВЫКЛ",
-                                        fontSize = 10.5.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = if (adblockDnsEnabled) Color(0xFFCE93D8) else Color(0xFF888888)
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.width(6.dp))
-
-                                // Диагностика и починка в 1 клик
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(14.dp))
-                                        .background(Color(0xFF202020))
-                                        .border(
-                                            width = 1.dp,
-                                            color = Color(0xFF333333),
-                                            shape = RoundedCornerShape(14.dp)
-                                        )
-                                        .clickable { showDiagnosticsDialog = true }
-                                        .padding(horizontal = 10.dp, vertical = 5.dp)
-                                ) {
-                                    Text(
-                                        text = "🛠 Диагностика",
-                                        fontSize = 10.5.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFFCCCCCC)
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(6.dp))
-
-                            // ПУЛЬС Связь: Звонки родным (выделенная полоса на всю ширину)
                             Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
                                     .clip(RoundedCornerShape(14.dp))
-                                    .background(Color(0xFF142B18))
+                                    .background(Color(0xFF202020))
                                     .border(
                                         width = 1.dp,
-                                        color = Color(0xFF2E7D32),
+                                        color = Color(0xFF333333),
                                         shape = RoundedCornerShape(14.dp)
                                     )
-                                    .clickable { showCallRoomsDialog = true }
-                                    .padding(horizontal = 14.dp, vertical = 6.dp),
-                                contentAlignment = Alignment.Center
+                                    .clickable { showDiagnosticsDialog = true }
+                                    .padding(horizontal = 16.dp, vertical = 7.dp)
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_call_24dp),
-                                        contentDescription = null,
-                                        tint = Color(0xFF81C784),
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "📞 Звонки родным (ПУЛЬС Связь)",
-                                        fontSize = 11.5.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF81C784)
-                                    )
-                                }
+                                Text(
+                                    text = "🛠 Диагностика соединения",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFFCCCCCC)
+                                )
                             }
                         }
                     }

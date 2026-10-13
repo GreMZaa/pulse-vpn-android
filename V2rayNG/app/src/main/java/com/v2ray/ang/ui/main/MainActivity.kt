@@ -97,7 +97,24 @@ class MainActivity : HelperBaseComponentActivity() {
         super.onCreate(savedInstanceState)
         mainViewModel.onAction(MainAction.Initialize)
 
-        checkAndRequestPermission(PermissionType.POST_NOTIFICATIONS) {}
+        checkAndRequestPermission(PermissionType.POST_NOTIFICATIONS) {
+            com.v2ray.ang.handler.AppUpdateNotificationWorker.schedule(this)
+        }
+        com.v2ray.ang.handler.AppUpdateNotificationWorker.schedule(this)
+
+        handleUpdateIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleUpdateIntent(intent)
+    }
+
+    private fun handleUpdateIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(com.v2ray.ang.handler.AppUpdateNotificationWorker.EXTRA_OPEN_UPDATE, false) == true) {
+            mainViewModel.onAction(MainAction.CheckForUpdateExplicit)
+        }
     }
 
     override fun onResume() {
