@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>ПУЛЬС // ТЕРМИНАЛ ЗАЩИЩЁННОЙ СВЯЗИ</title>
+  <title>ПУЛЬС // ЗАЩИЩЁННАЯ СВЯЗЬ</title>
   <meta name="theme-color" content="#06080C">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -54,7 +54,7 @@
       overflow: hidden;
     }
 
-    /* ВЕРХНЯЯ АВИОНИКА // ХЕДЕР */
+    /* ШАПКА */
     header {
       background: rgba(14, 19, 28, 0.85);
       backdrop-filter: blur(16px);
@@ -132,24 +132,24 @@
       letter-spacing: 1px;
     }
 
-    /* ОСНОВНОЙ ПУЛЬТ // PRE-JOIN VIEW */
+    /* ОСНОВНОЙ ЭКРАН ВХОДА (PRE-JOIN) */
     #prejoin-view {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 20px;
-      max-width: 480px;
+      padding: 24px 20px;
+      max-width: 440px;
       margin: 0 auto;
       width: 100%;
-      gap: 16px;
+      gap: 18px;
       overflow-y: auto;
     }
 
     .oscilloscope-box {
-      width: 130px;
-      height: 130px;
+      width: 110px;
+      height: 110px;
       position: relative;
       display: flex;
       align-items: center;
@@ -161,8 +161,8 @@
     }
 
     #wave-canvas {
-      width: 100px;
-      height: 60px;
+      width: 90px;
+      height: 50px;
     }
 
     .room-identity {
@@ -170,25 +170,141 @@
     }
     .room-name-display {
       font-family: var(--font-display);
-      font-size: 26px;
+      font-size: 24px;
       font-weight: 700;
       color: #FFF;
-      letter-spacing: 1px;
+      letter-spacing: 1.5px;
       margin-bottom: 4px;
     }
     .room-security-tag {
-      font-size: 11.5px;
+      font-size: 11px;
       color: var(--signal-green);
       display: inline-flex;
       align-items: center;
       gap: 6px;
       background: rgba(0, 255, 133, 0.08);
-      padding: 3px 10px;
+      padding: 4px 10px;
       border-radius: 4px;
       border: 1px solid rgba(0, 255, 133, 0.2);
     }
 
-    /* ТЕЛЕМЕТРИЯ СОЕДИНЕНИЯ */
+    /* ЕДИНСТВЕННОЕ ПОЛЕ ВВОДА КОМНАТЫ */
+    .tactical-field-box {
+      width: 100%;
+      background: var(--panel-surface);
+      border: 1px solid var(--border-bright);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      transition: border-color 0.2s;
+    }
+    .tactical-field-box:focus-within {
+      border-color: var(--signal-green);
+      box-shadow: 0 0 20px var(--signal-green-glow);
+    }
+
+    .field-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+    }
+
+    .field-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .field-icon {
+      font-size: 18px;
+    }
+
+    .tactical-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #FFF;
+      font-family: var(--font-mono);
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+    }
+    .tactical-input::placeholder {
+      color: #4A5568;
+      font-weight: 400;
+      font-size: 14px;
+    }
+
+    .field-clear-btn {
+      background: #1C2433;
+      border: none;
+      color: #7E8C9F;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.15s;
+    }
+    .field-clear-btn:hover {
+      background: #2D3748;
+      color: #FFF;
+    }
+
+    /* ЧЕКБОКС КАМЕРЫ */
+    .camera-opt-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      font-size: 12.5px;
+      color: #B0BEC5;
+      width: 100%;
+      padding: 2px 6px;
+    }
+    .camera-opt-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--signal-green);
+      cursor: pointer;
+    }
+
+    /* КНОПКА ВОЙТИ В КОМНАТУ */
+    .btn-tactical {
+      width: 100%;
+      padding: 16px;
+      border-radius: 12px;
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+      background: var(--signal-green);
+      color: #040806;
+      box-shadow: 0 0 24px var(--signal-green-glow);
+    }
+    .btn-tactical:hover, .btn-tactical:active {
+      transform: translateY(-2px);
+      filter: brightness(1.12);
+      box-shadow: 0 0 34px rgba(0, 255, 133, 0.5);
+    }
+
+    /* ТЕЛЕМЕТРИЯ */
     .telemetry-deck {
       width: 100%;
       background: var(--panel-surface);
@@ -218,91 +334,6 @@
       color: var(--signal-green);
     }
 
-    /* ПРЕДУПРЕЖДЕНИЕ TELEGRAM iOS */
-    .telegram-warning-card {
-      width: 100%;
-      background: rgba(255, 176, 32, 0.08);
-      border: 1px solid var(--hazard-amber);
-      border-radius: 10px;
-      padding: 12px 14px;
-      font-size: 12px;
-      line-height: 1.45;
-      color: #FFE082;
-      display: none;
-      box-shadow: 0 0 20px var(--hazard-amber-glow);
-    }
-    .telegram-warning-card strong {
-      color: #FFF;
-      display: block;
-      margin-bottom: 4px;
-      font-size: 12.5px;
-    }
-    .telegram-btn-bypass {
-      margin-top: 10px;
-      width: 100%;
-      background: var(--hazard-amber);
-      color: #000;
-      border: none;
-      padding: 10px;
-      border-radius: 6px;
-      font-weight: 700;
-      font-size: 12px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-    }
-
-    /* КНОПКИ ДЕЙСТВИЯ */
-    .action-group {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-top: 4px;
-    }
-
-    .btn-tactical {
-      width: 100%;
-      padding: 16px;
-      border-radius: 10px;
-      font-family: var(--font-display);
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .btn-tactical-primary {
-      background: var(--signal-green);
-      color: #040806;
-      box-shadow: 0 0 24px var(--signal-green-glow);
-    }
-    .btn-tactical-primary:hover, .btn-tactical-primary:active {
-      transform: translateY(-2px);
-      filter: brightness(1.12);
-      box-shadow: 0 0 34px rgba(0, 255, 133, 0.5);
-    }
-
-    .btn-tactical-secondary {
-      background: var(--panel-surface);
-      color: #FFF;
-      border: 1px solid var(--border-bright);
-    }
-    .btn-tactical-secondary:hover, .btn-tactical-secondary:active {
-      background: var(--panel-elevated);
-      border-color: var(--signal-green);
-    }
-
     /* ЭКРАН АКТИВНОГО ЗВОНКА (CALL VIEW) */
     #call-view {
       flex: 1;
@@ -319,7 +350,7 @@
       top: 12px;
       left: 12px;
       right: 12px;
-      z-index: 20;
+      z-index: 25;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -329,6 +360,7 @@
     .hud-chip {
       background: rgba(14, 19, 28, 0.88);
       backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border: 1px solid var(--border-tactical);
       padding: 6px 12px;
       border-radius: 8px;
@@ -341,6 +373,131 @@
       pointer-events: auto;
     }
 
+    .pulse-live-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--signal-green);
+      box-shadow: 0 0 6px var(--signal-green);
+      animation: radar-ping 1.6s infinite;
+    }
+
+    /* ГОЛОСОВОЙ ИНТЕРФЕЙС (КОГДА КАМЕРА ВЫКЛЮЧЕНА, НЕТ ЧЁРНОГО ЭКРАНА!) */
+    .voice-call-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: radial-gradient(circle at 50% 40%, #0D1612 0%, #06080C 75%);
+      z-index: 10;
+      text-align: center;
+      gap: 14px;
+    }
+
+    .voice-avatar-rings {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 6px;
+    }
+
+    .avatar-ring-pulse {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 2px solid var(--signal-green);
+      opacity: 0.3;
+      animation: ring-pulse-anim 2.4s cubic-bezier(0.1, 0, 0.2, 1) infinite;
+    }
+
+    .avatar-ring-outer {
+      position: absolute;
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      border: 1px dashed rgba(0, 255, 133, 0.4);
+      animation: rotate-slow 20s linear infinite;
+    }
+
+    .avatar-core {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      background: #111A16;
+      border: 2px solid var(--signal-green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 30px var(--signal-green-glow);
+    }
+    .avatar-mic-icon {
+      font-size: 34px;
+    }
+
+    @keyframes ring-pulse-anim {
+      0% { transform: scale(0.7); opacity: 0.8; }
+      100% { transform: scale(1.6); opacity: 0; }
+    }
+    @keyframes rotate-slow {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .voice-status-title {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: #FFF;
+    }
+    .voice-status-sub {
+      font-size: 12px;
+      color: var(--signal-green);
+      letter-spacing: 0.5px;
+    }
+
+    .voice-hint-badge {
+      background: rgba(14, 19, 28, 0.8);
+      border: 1px solid var(--border-tactical);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 11.5px;
+      color: #90A4AE;
+      max-width: 320px;
+      line-height: 1.4;
+    }
+
+    .voice-copy-btn {
+      background: var(--panel-elevated);
+      border: 1px solid var(--border-bright);
+      color: #FFF;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .voice-copy-btn:hover {
+      background: #1F293D;
+      border-color: var(--signal-green);
+    }
+
     #call-frame {
       width: 100%;
       height: 100%;
@@ -351,20 +508,20 @@
     /* НИЖНИЙ ПУЛЬТ УПРАВЛЕНИЯ ЗВОНКОМ */
     .call-hud-bottom {
       position: absolute;
-      bottom: 20px;
+      bottom: 24px;
       left: 50%;
       transform: translateX(-50%);
-      z-index: 20;
+      z-index: 30;
       display: flex;
       align-items: center;
-      gap: 12px;
-      background: rgba(14, 19, 28, 0.92);
+      gap: 14px;
+      background: rgba(14, 19, 28, 0.94);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      padding: 10px 18px;
+      padding: 10px 20px;
       border-radius: 40px;
       border: 1px solid var(--border-tactical);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
     }
 
     .dock-btn {
@@ -398,18 +555,35 @@
       width: 56px;
       height: 56px;
     }
+
+    /* ТОСТ */
+    #toast-msg {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #00FF85;
+      color: #000;
+      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      z-index: 100;
+      display: none;
+      box-shadow: 0 0 20px rgba(0, 255, 133, 0.5);
+    }
   </style>
 </head>
 <body>
 
-  <!-- ШАПКА АВИОНИКИ -->
+  <!-- ШАПКА -->
   <header>
     <div class="brand-cluster">
       <div class="radar-beacon"></div>
       <div class="brand-title">ПУЛЬС <span>//</span> СВЯЗЬ</div>
     </div>
     <div class="room-badge-tactical" id="header-room-code">
-      КОД: <span id="room-code-tag">PULSE</span>
+      P2P ENCRYPTED
     </div>
   </header>
 
@@ -420,11 +594,40 @@
     </div>
 
     <div class="room-identity">
-      <div class="room-name-display" id="room-name-display">Защищённая комната</div>
+      <div class="room-name-display">ПУЛЬС СВЯЗЬ</div>
       <div class="room-security-tag">
         <span>🔒</span> E2E ШИФРОВАНИЕ WebRTC OPUS
       </div>
     </div>
+
+    <!-- ЕДИНСТВЕННОЕ ПОЛЕ ВВОДА: КОД КОМНАТЫ -->
+    <div class="tactical-field-box">
+      <label class="field-label" for="room-input-field">КОД ИЛИ ИМЯ КОМНАТЫ</label>
+      <div class="field-input-wrapper">
+        <span class="field-icon">🔑</span>
+        <input 
+          type="text" 
+          id="room-input-field" 
+          class="tactical-input" 
+          placeholder="Например: СЕМЬЯ" 
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
+        />
+        <button type="button" class="field-clear-btn" onclick="clearRoomInput()" title="Очистить">✕</button>
+      </div>
+    </div>
+
+    <!-- ЧЕКБОКС: ВКЛЮЧИТЬ КАМЕРУ -->
+    <label class="camera-opt-label">
+      <input type="checkbox" id="camera-pref-checkbox" />
+      <span>Включить видеокамеру при входе</span>
+    </label>
+
+    <!-- ЕДИНСТВЕННАЯ КНОПКА ПОДКЛЮЧЕНИЯ -->
+    <button class="btn-tactical" onclick="handleJoinSubmit()">
+      <span>🚀</span> ВОЙТИ В КОМНАТУ
+    </button>
 
     <!-- ТЕЛЕМЕТРИЯ СВЯЗИ -->
     <div class="telemetry-deck">
@@ -441,29 +644,9 @@
         <span class="telemetry-val highlight">ОТСУТСТВУЮТ (DIRECT)</span>
       </div>
       <div class="telemetry-item">
-        <span class="telemetry-label">СЕТЬ</span>
-        <span class="telemetry-val">ШИФРОВАННЫЙ КАНАЛ</span>
+        <span class="telemetry-label">ЗАЩИТА</span>
+        <span class="telemetry-val">БЕЗ РЕГИСТРАЦИИ</span>
       </div>
-    </div>
-
-    <!-- ТАКТИЧЕСКОЕ ПРЕДУПРЕЖДЕНИЕ ДЛЯ TELEGRAM iOS -->
-    <div class="telegram-warning-card" id="telegram-warning">
-      <strong>⚠️ Внимание пользователям Telegram (iOS):</strong>
-      Встроенный просмотрщик Telegram может блокировать звук и микрофон. Нажмите значок <strong>•••</strong> в правом верхнем углу и выберите <strong>«Открыть в Safari»</strong>, либо нажмите кнопку ниже:
-      <button class="telegram-btn-bypass" onclick="openDirectSafari()">
-        <span>🚀</span> Открыть напрямую в Safari / Chrome
-      </button>
-    </div>
-
-    <!-- КНОПКИ ПОДКЛЮЧЕНИЯ -->
-    <div class="action-group">
-      <button class="btn-tactical btn-tactical-primary" onclick="launchSession(false)">
-        <span>🎙️</span> ВОЙТИ В ЗВОНОК (ТОЛЬКО ЗВУК)
-      </button>
-
-      <button class="btn-tactical btn-tactical-secondary" onclick="launchSession(true)">
-        <span>📹</span> ВОЙТИ С КАМЕРОЙ (ВИДЕОЗВОНОК)
-      </button>
     </div>
   </main>
 
@@ -471,43 +654,84 @@
   <section id="call-view">
     <div class="call-hud-top">
       <div class="hud-chip">
-        <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--signal-green); box-shadow:0 0 6px var(--signal-green);"></span>
+        <span class="pulse-live-dot"></span>
         В ЭФИРЕ: <span id="call-duration">00:00</span>
+      </div>
+      <div class="hud-chip" id="active-room-chip">
+        КОД: <span id="active-room-display">PULSECALL</span>
       </div>
       <div class="hud-chip" style="cursor:pointer;" onclick="openDirectSafari()">
         <span>↗️</span> В БРАУЗЕР
       </div>
     </div>
 
+    <!-- ГОЛОСОВОЙ ИНТЕРФЕЙС (ЕСЛИ КАМЕРА ВЫКЛЮЧЕНА, НЕТ ПУСТОГО ЧЁРНОГО ЭКРАНА) -->
+    <div id="voice-overlay" class="voice-call-overlay">
+      <div class="voice-avatar-rings">
+        <div class="avatar-ring-pulse"></div>
+        <div class="avatar-ring-outer"></div>
+        <div class="avatar-core">
+          <span class="avatar-mic-icon" id="voice-avatar-icon">🎙️</span>
+        </div>
+      </div>
+
+      <div class="voice-status-title" id="voice-room-title">КОМНАТА АКТИВНА</div>
+      <div class="voice-status-sub">Шифрование WebRTC Opus • P2P Mesh</div>
+
+      <div class="voice-hint-badge">
+        <span>💡</span> Ожидание собеседника (из приложения ПУЛЬС или по ссылке)
+      </div>
+
+      <button class="voice-copy-btn" onclick="copyInviteLink()">
+        <span>📋</span> Скопировать ссылку для родных
+      </button>
+    </div>
+
+    <!-- IFRAME VDO.NINJA (ЗВУК И ВИДЕО) -->
     <iframe id="call-frame" allow="camera; microphone; autoplay; display-capture; fullscreen" allowfullscreen></iframe>
 
+    <!-- НИЖНЯЯ ПАНЕЛЬ УПРАВЛЕНИЯ -->
     <div class="call-hud-bottom">
-      <button class="dock-btn" id="btn-mic-toggle" title="Микрофон" onclick="toggleMic()">🎙️</button>
+      <button class="dock-btn active" id="btn-mic-toggle" title="Микрофон" onclick="toggleMic()">🎙️</button>
       <button class="dock-btn" id="btn-cam-toggle" title="Камера" onclick="toggleCam()">📷</button>
       <button class="dock-btn" title="На весь экран" onclick="toggleFullscreen()">⛶</button>
       <button class="dock-btn danger" title="Завершить вызов" onclick="hangupCall()">📞</button>
     </div>
   </section>
 
+  <div id="toast-msg">Ссылка скопирована!</div>
+
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    const rawRoom = urlParams.get('room') || 'PulseCall';
-    const cleanRoom = rawRoom.replace(/[^a-zA-Z0-9]/g, '') || 'PulseCall';
-    const roomName = urlParams.get('name') || cleanRoom;
+    const initialRoom = urlParams.get('room') || urlParams.get('name') || '';
 
-    document.getElementById('room-name-display').textContent = roomName;
-    document.getElementById('room-code-tag').textContent = cleanRoom.toUpperCase();
-
-    // Определение браузера внутри Telegram на iOS
-    const ua = navigator.userAgent || '';
-    const isTelegram = /Telegram/i.test(ua);
-    const isIOS = /iPhone|iPad|iPod/i.test(ua);
-
-    if (isTelegram || (isIOS && !window.navigator.standalone && !window.matchMedia('(display-mode: standalone)').matches)) {
-      document.getElementById('telegram-warning').style.display = 'block';
+    const inputField = document.getElementById('room-input-field');
+    if (initialRoom) {
+      inputField.value = initialRoom;
     }
 
-    // АНИМАЦИЯ ОСЦИЛЛОГРАФА (ЗВУКОВАЯ ВОЛНА)
+    // Транслитерация русских букв для совместимости с WebRTC
+    function toSafeRoomId(text) {
+      const cyrMap = {
+        'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z',
+        'и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r',
+        'с':'s','т':'t','у':'u','ф':'f','х':'h','ц':'ts','ч':'ch','ш':'sh','щ':'sch',
+        'ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya'
+      };
+      let s = (text || '').trim().toLowerCase();
+      let res = '';
+      for (let ch of s) {
+        res += cyrMap[ch] !== undefined ? cyrMap[ch] : ch;
+      }
+      return res.replace(/[^a-zA-Z0-9]/g, '') || 'PulseCall';
+    }
+
+    function clearRoomInput() {
+      inputField.value = '';
+      inputField.focus();
+    }
+
+    // АНИМАЦИЯ ОСЦИЛЛОГРАФА
     const canvas = document.getElementById('wave-canvas');
     const ctx = canvas.getContext('2d');
     let phase = 0;
@@ -526,7 +750,7 @@
 
       for (let x = 0; x < width; x++) {
         const norm = (x / width) * Math.PI * 4;
-        const envelope = Math.sin((x / width) * Math.PI); // затухание по краям
+        const envelope = Math.sin((x / width) * Math.PI);
         const y = mid + Math.sin(norm + phase) * 14 * envelope + Math.sin(norm * 2 - phase) * 6 * envelope;
         if (x === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
@@ -543,6 +767,7 @@
 
     function startTimer() {
       callTimerSeconds = 0;
+      if (callInterval) clearInterval(callInterval);
       callInterval = setInterval(() => {
         callTimerSeconds++;
         const mins = String(Math.floor(callTimerSeconds / 60)).padStart(2, '0');
@@ -551,11 +776,12 @@
       }, 1000);
     }
 
-    function buildNinjaUrl(withVideo) {
+    let activeCleanRoom = 'PulseCall';
+    let isCamActive = false;
+    let isMicActive = true;
+
+    function buildNinjaUrl(cleanRoom, withVideo) {
       const myPushId = 'web_' + Date.now().toString().slice(-6) + Math.floor(Math.random() * 900 + 100);
-      // &webcam сообщает VDO.Ninja инициализировать устройства и пропускает экран выбора "Join Room with Camera / Screenshare"
-      // &autostart автоматически подключает сразу при готовности
-      // &cleanish убирает лишние панели, сохраняя правильную отрисовку видеопотоков без чёрного экрана
       let base = `https://vdo.ninja/?room=${cleanRoom}&push=${myPushId}&webcam&autostart&darkmode&cleanish&label=Web`;
       if (!withVideo) {
         base += '&videomute';
@@ -563,24 +789,36 @@
       return base;
     }
 
-    function launchSession(withVideo) {
-      document.getElementById('prejoin-view').style.display = 'none';
-      const callView = document.getElementById('call-view');
-      callView.style.display = 'flex';
+    function handleJoinSubmit() {
+      const raw = inputField.value.trim() || 'PulseCall';
+      activeCleanRoom = toSafeRoomId(raw);
+      const withVideo = document.getElementById('camera-pref-checkbox').checked;
+      isCamActive = withVideo;
 
-      const finalUrl = buildNinjaUrl(withVideo);
+      // Обновляем бейджи
+      document.getElementById('active-room-display').textContent = raw.toUpperCase();
+      document.getElementById('voice-room-title').textContent = `КОМНАТА: ${raw.toUpperCase()}`;
+
+      // Показываем голосовой экран или видео
+      const voiceOverlay = document.getElementById('voice-overlay');
+      voiceOverlay.style.display = withVideo ? 'none' : 'flex';
+
+      document.getElementById('prejoin-view').style.display = 'none';
+      document.getElementById('call-view').style.display = 'flex';
+
+      const btnCam = document.getElementById('btn-cam-toggle');
+      btnCam.classList.toggle('active', isCamActive);
+      btnCam.textContent = isCamActive ? '📹' : '📷';
+
+      const finalUrl = buildNinjaUrl(activeCleanRoom, withVideo);
       document.getElementById('call-frame').src = finalUrl;
       startTimer();
     }
 
     function openDirectSafari() {
-      const directUrl = buildNinjaUrl(false);
+      const directUrl = buildNinjaUrl(activeCleanRoom, false);
       window.open(directUrl, '_blank') || (window.location.href = directUrl);
     }
-
-    // УПРАВЛЕНИЕ ЧЕРЕЗ DOCK (POSTMESSAGE)
-    let isMicActive = true;
-    let isCamActive = false;
 
     function toggleMic() {
       isMicActive = !isMicActive;
@@ -589,6 +827,7 @@
       const btn = document.getElementById('btn-mic-toggle');
       btn.textContent = isMicActive ? '🎙️' : '🔇';
       btn.classList.toggle('active', isMicActive);
+      document.getElementById('voice-avatar-icon').textContent = isMicActive ? '🎙️' : '🔇';
     }
 
     function toggleCam() {
@@ -598,6 +837,10 @@
       const btn = document.getElementById('btn-cam-toggle');
       btn.textContent = isCamActive ? '📹' : '📷';
       btn.classList.toggle('active', isCamActive);
+
+      // Если включили камеру — убираем голосовой оверлей, показываем видеосетку
+      const voiceOverlay = document.getElementById('voice-overlay');
+      voiceOverlay.style.display = isCamActive ? 'none' : 'flex';
     }
 
     function toggleFullscreen() {
@@ -615,9 +858,33 @@
       document.getElementById('prejoin-view').style.display = 'flex';
     }
 
-    // Автостарт из URL параметров если переданы
-    if (urlParams.get('autostart') === '1') {
-      launchSession(urlParams.get('video') === '1');
+    function showToast(text) {
+      const toast = document.getElementById('toast-msg');
+      toast.textContent = text;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 2500);
+    }
+
+    function copyInviteLink() {
+      const raw = inputField.value.trim() || activeCleanRoom;
+      const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(raw)}`;
+      navigator.clipboard.writeText(inviteUrl).then(() => {
+        showToast('Ссылка на комнату скопирована!');
+      }).catch(() => {
+        showToast(inviteUrl);
+      });
+    }
+
+    // Обработка Enter в поле ввода
+    inputField.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        handleJoinSubmit();
+      }
+    });
+
+    // Автостарт только если явно передан ?autostart=1
+    if (urlParams.get('autostart') === '1' && initialRoom) {
+      handleJoinSubmit();
     }
   </script>
 </body>
