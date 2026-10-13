@@ -528,6 +528,7 @@ fun MainScreen(
 
     var showDiagnosticsDialog by remember { mutableStateOf(false) }
     var showCrossPlatformDialog by remember { mutableStateOf(false) }
+    var showTelegramProxyDialog by remember { mutableStateOf(false) }
     var telegramCallsMode by remember {
         mutableStateOf(
             com.v2ray.ang.handler.MmkvManager.decodeSettingsBool(
@@ -569,6 +570,10 @@ fun MainScreen(
                 onOpenCrossPlatform = {
                     scope.launch { drawerState.close() }
                     showCrossPlatformDialog = true
+                },
+                onOpenTelegramProxy = {
+                    scope.launch { drawerState.close() }
+                    showTelegramProxyDialog = true
                 },
                 onRefresh = {
                     scope.launch { drawerState.close() }
@@ -931,6 +936,14 @@ fun MainScreen(
             onDismiss = { showCrossPlatformDialog = false }
         )
     }
+
+    if (showTelegramProxyDialog) {
+        TelegramSocksDialog(
+            isRunning = isRunning,
+            onStartVpn = { onAction(MainAction.StartStopService) },
+            onDismiss = { showTelegramProxyDialog = false }
+        )
+    }
 }
 
 @Composable
@@ -1214,11 +1227,183 @@ private fun CrossPlatformSubscriptionDialog(
                         }
                     }
                 }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0xFF121212))
+                        .border(1.dp, Color(0xFF2C2C2C), RoundedCornerShape(10.dp))
+                        .padding(10.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "✈️ Telegram SOCKS5 (0% рекламы)",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(Color(0xFF2E7D32))
+                                    .padding(horizontal = 5.dp, vertical = 1.dp)
+                            ) {
+                                Text("БЕЗ РЕКЛАМЫ", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            }
+                        }
+                        Text(
+                            text = "Локальный SOCKS5 (127.0.0.1:10808) без навязчивых спонсорских каналов MTProto:",
+                            fontSize = 11.sp,
+                            color = Color(0xFF999999)
+                        )
+                        Button(
+                            onClick = {
+                                val port = com.v2ray.ang.handler.SettingsManager.getSocksPort()
+                                val tgProxyUrl = "tg://socks?server=127.0.0.1&port=$port"
+                                try {
+                                    val intent = android.content.Intent(
+                                        android.content.Intent.ACTION_VIEW,
+                                        android.net.Uri.parse(tgProxyUrl)
+                                    ).apply {
+                                        flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                                    }
+                                    context.startActivity(intent)
+                                    android.widget.Toast.makeText(context, "Открываем Telegram...", android.widget.Toast.LENGTH_SHORT).show()
+                                } catch (_: Exception) {
+                                    com.v2ray.ang.util.Utils.setClipboard(context, tgProxyUrl)
+                                    android.widget.Toast.makeText(context, "Ссылка SOCKS5 скопирована!", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth().height(36.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0288D1), contentColor = Color.White)
+                        ) {
+                            Text("⚡ Подключить Telegram в 1 клик", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
                 Text("Готово", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        }
+    )
+}
+
+@Composable
+private fun TelegramSocksDialog(
+    isRunning: Boolean,
+    onStartVpn: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val socksPort = remember { com.v2ray.ang.handler.SettingsManager.getSocksPort() }
+    val tgProxyUrl = "tg://socks?server=127.0.0.1&port=$socksPort"
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1A1A1A),
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "✈️ Telegram SOCKS5",
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color(0xFF2E7D32))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text("0% РЕКЛАМЫ", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "Официальные MTProto-прокси от чужих каналов навязывают рекламу и закреплённые спам-чаты.",
+                    fontSize = 12.sp,
+                    color = Color(0xFFBBBBBB)
+                )
+                Text(
+                    text = "ПУЛЬС VPN запускает локальный защищённый SOCKS5-прокси (127.0.0.1:$socksPort), в котором технически нет рекламы, а звонки, видео и кружочки летают на полной скорости!",
+                    fontSize = 12.sp,
+                    color = Color(0xFFDDDDDD)
+                )
+
+                DiagnosticRow("Локальный хост", "127.0.0.1")
+                DiagnosticRow("Порт SOCKS5", "$socksPort")
+                DiagnosticRow("Статус VPN", if (isRunning) "🟢 Запущен (Туннель активен)" else "⚪ Остановлен (Требуется запуск)")
+
+                if (!isRunning) {
+                    Text(
+                        text = "💡 Для работы прокси в Telegram нажмите кнопку ниже — приложение само включит туннель и откроет Telegram.",
+                        fontSize = 11.5.sp,
+                        color = Color(0xFFFFB74D)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (!isRunning) {
+                        onStartVpn()
+                    }
+                    try {
+                        val intent = android.content.Intent(
+                            android.content.Intent.ACTION_VIEW,
+                            android.net.Uri.parse(tgProxyUrl)
+                        ).apply {
+                            flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        context.startActivity(intent)
+                        android.widget.Toast.makeText(
+                            context,
+                            "Открываем Telegram... Нажмите «Включить прокси»!",
+                            android.widget.Toast.LENGTH_LONG
+                        ).show()
+                    } catch (_: Exception) {
+                        try {
+                            val webIntent = android.content.Intent(
+                                android.content.Intent.ACTION_VIEW,
+                                android.net.Uri.parse("https://t.me/socks?server=127.0.0.1&port=$socksPort")
+                            ).apply {
+                                flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                            context.startActivity(webIntent)
+                        } catch (_: Exception) {
+                            com.v2ray.ang.util.Utils.setClipboard(context, tgProxyUrl)
+                            android.widget.Toast.makeText(
+                                context,
+                                "Ссылка прокси скопирована в буфер: $tgProxyUrl",
+                                android.widget.Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+                    onDismiss()
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF0288D1),
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text("⚡ Подключить в 1 клик", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Закрыть", color = Color(0xFFAAAAAA))
             }
         }
     )

@@ -83,6 +83,7 @@ fun MainDrawerContent(
     onNavigate: (MainDestination) -> Unit,
     onOpenPromo: () -> Unit = {},
     onOpenCrossPlatform: () -> Unit = {},
+    onOpenTelegramProxy: () -> Unit = {},
     onRefresh: () -> Unit = {}
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -228,6 +229,29 @@ fun MainDrawerContent(
             ) {
                 Text(
                     text = "💻 Подключить ПК / iPhone",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // КНОПКА — TELEGRAM БЕЗ РЕКЛАМЫ (SOCKS5 В 1 КЛИК)
+            Button(
+                onClick = { onOpenTelegramProxy() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(46.dp),
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF0288D1),
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "✈️ Telegram без рекламы (SOCKS5)",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1
