@@ -33,9 +33,18 @@ class QSTileService : TileService() {
         if (state == Tile.STATE_INACTIVE) {
             qsTile?.state = Tile.STATE_INACTIVE
             qsTile?.label = getString(R.string.app_name)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                qsTile?.subtitle = "Отключено"
+            }
         } else if (state == Tile.STATE_ACTIVE) {
             qsTile?.state = Tile.STATE_ACTIVE
-            qsTile?.label = CoreServiceManager.getRunningServerName()
+            val serverName = CoreServiceManager.getRunningServerName()
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                qsTile?.label = getString(R.string.app_name)
+                qsTile?.subtitle = serverName.ifBlank { "Защита активна" }
+            } else {
+                qsTile?.label = serverName.ifBlank { getString(R.string.app_name) }
+            }
         }
 
         qsTile?.updateTile()
@@ -79,8 +88,15 @@ class QSTileService : TileService() {
      */
     override fun onClick() {
         super.onClick()
-        when (qsTile.state) {
+        when (qsTile?.state) {
             Tile.STATE_INACTIVE -> {
+                val selected = com.v2ray.ang.handler.MmkvManager.getSelectServer()
+                if (selected.isNullOrEmpty()) {
+                    val first = com.v2ray.ang.handler.MmkvManager.decodeAllServerList().firstOrNull()
+                    if (!first.isNullOrEmpty()) {
+                        com.v2ray.ang.handler.MmkvManager.setSelectServer(first)
+                    }
+                }
                 LauncherManager.startServiceFromToggle(this)
             }
 

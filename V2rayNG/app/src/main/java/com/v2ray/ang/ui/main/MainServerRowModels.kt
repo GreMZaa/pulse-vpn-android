@@ -5,6 +5,7 @@ import com.v2ray.ang.dto.entities.ServersCache
 import com.v2ray.ang.extension.isComplexType
 import com.v2ray.ang.extension.nullIfBlank
 import com.v2ray.ang.handler.AngConfigManager
+import com.v2ray.ang.handler.MmkvManager
 
 internal data class ServerRowUiModel(
     val guid: String,
@@ -16,6 +17,7 @@ internal data class ServerRowUiModel(
     val subscriptionBadge: String,
     val isWhitelist: Boolean = false,
     val isHysteria: Boolean = false,
+    val isFavorite: Boolean = false,
 )
 
 internal data class ServerGroupUiState(
@@ -39,6 +41,7 @@ internal fun buildServerRowUiModel(
         subscriptionBadge = subscriptionRemarks.firstOrNull()?.toString().orEmpty(),
         isWhitelist = profile.getWhitelistPriority() == 0,
         isHysteria = profile.isHysteria2(),
+        isFavorite = MmkvManager.isFavoriteServer(server.guid, profile),
     )
 }
 

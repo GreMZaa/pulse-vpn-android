@@ -303,13 +303,18 @@ object CoreServiceManager {
 
                 var isHealthy = false
                 try {
-                    val delay = coreController.measureDelay(SettingsManager.getDelayTestUrl())
-                    if (delay >= 0) {
+                    val delay204 = coreController.measureDelay(SettingsManager.getDelayTestUrl())
+                    if (delay204 >= 0) {
                         isHealthy = true
                     } else {
-                        val fallbackDelay = coreController.measureDelay(SettingsManager.getDelayTestUrl(true))
-                        if (fallbackDelay >= 0) {
+                        val tgDelay = coreController.measureDelay(AppConfig.DELAY_TEST_URL2)
+                        if (tgDelay >= 0) {
                             isHealthy = true
+                        } else {
+                            val gstaticDelay = coreController.measureDelay(AppConfig.DELAY_TEST_URL3)
+                            if (gstaticDelay >= 0) {
+                                isHealthy = true
+                            }
                         }
                     }
                 } catch (e: Exception) {
@@ -338,16 +343,25 @@ object CoreServiceManager {
         val candidates = allServers.filter { it != currentGuid }
             .mapNotNull { guid ->
                 MmkvManager.decodeServerConfig(guid)?.let { profile ->
-                    guid to profile
+                    val delay = MmkvManager.decodeServerAffiliationInfo(guid)?.testDelayMillis ?: 0L
+                    Triple(guid, profile, delay)
                 }
             }
 
         if (candidates.isEmpty()) return
 
-        // Сортируем: сначала серверы белого списка (Reality + RU SNI) и резервные протоколы (Hysteria 2)
-        val nextBest = candidates.minByOrNull { (_, profile) ->
-            profile.getWhitelistPriority()
-        } ?: candidates.first()
+        // Отсеиваем заведомо мертвые серверы (< 0), если есть живые или непротестированные
+        val viable = candidates.filter { it.third >= 0L }.ifEmpty { candidates }
+
+        // Сортируем: 1) Избранные ⭐, 2) Проверенные живые (>0 мс), 3) Белый список / Резерв UDP, 4) Минимальный пинг
+        val nextBest = viable.minWithOrNull(
+            compareBy(
+                { if (MmkvManager.isFavoriteServer(it.first, it.second)) 0 else 1 },
+                { if (it.third > 0L) 0 else 1 },
+                { it.second.getWhitelistPriority() },
+                { if (it.third > 0L) it.third else 99999L }
+            )
+        ) ?: viable.first()
 
         LogUtil.i(AppConfig.TAG, "Auto-Failover: switching from $currentGuid to ${nextBest.second.remarks} (${nextBest.first})")
 

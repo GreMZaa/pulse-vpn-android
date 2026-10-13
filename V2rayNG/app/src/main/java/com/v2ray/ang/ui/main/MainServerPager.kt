@@ -32,13 +32,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.foundation.focusable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -75,6 +79,7 @@ fun GroupPagerPage(
     lazyListStates: MutableMap<String, LazyListState>,
     lazyGridStates: MutableMap<String, LazyGridState>,
     onSelectServer: (String) -> Unit,
+    onToggleFavorite: (String) -> Unit = { guid -> mainViewModel.onAction(MainAction.ToggleFavoriteServer(guid)) },
     onEditServer: (String, ProfileItem) -> Unit,
     onShareServer: (String, ProfileItem) -> Unit,
     onMoreServer: (String, ProfileItem) -> Unit,
@@ -88,6 +93,7 @@ fun GroupPagerPage(
     val canReorder = groupId.isNotEmpty() && searchQuery.isEmpty()
     val actions = remember(
         onSelectServer,
+        onToggleFavorite,
         onEditServer,
         onShareServer,
         onMoreServer,
@@ -95,6 +101,7 @@ fun GroupPagerPage(
     ) {
         ServerRowActions(
             select = onSelectServer,
+            toggleFavorite = onToggleFavorite,
             edit = onEditServer,
             share = onShareServer,
             more = onMoreServer,
@@ -121,6 +128,7 @@ fun GroupPagerPage(
 
 private class ServerRowActions(
     val select: (String) -> Unit,
+    val toggleFavorite: (String) -> Unit,
     val edit: (String, ProfileItem) -> Unit,
     val share: (String, ProfileItem) -> Unit,
     val more: (String, ProfileItem) -> Unit,
@@ -313,15 +321,26 @@ private fun ServerListItem(
     doubleColumnDisplay: Boolean,
     actions: ServerRowActions
 ) {
+    var isFocused by remember { mutableStateOf(false) }
+
     val pingText = when {
         row.testDelayMillis > 0L -> "${row.testDelayMillis} мс"
         row.testDelayMillis < 0L -> "нет ответа"
         else -> "--"
     }
     val pingColor = when {
-        row.testDelayMillis > 0L -> Color.White
+        row.testDelayMillis > 0L && row.testDelayMillis <= 250L -> Color(0xFF81C784)
+        row.testDelayMillis > 250L -> Color.White
         row.testDelayMillis < 0L -> Color(0xFFE57373)
         else -> Color(0xFF666666)
+    }
+
+    val borderColor = when {
+        isFocused -> Color.White
+        row.isFavorite && isSelected -> Color(0xFFFFD54F)
+        isSelected -> Color(0xFF3A3A3A)
+        row.isFavorite -> Color(0xFF3A3218)
+        else -> Color(0xFF222222)
     }
 
     Box(
@@ -330,20 +349,44 @@ private fun ServerListItem(
             .padding(horizontal = 20.dp, vertical = 3.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(
-                if (isSelected) Color(0xFF1E1E1E) else Color(0xFF161616)
+                when {
+                    isFocused -> Color(0xFF262626)
+                    isSelected -> Color(0xFF1E1E1E)
+                    else -> Color(0xFF161616)
+                }
             )
             .border(
-                width = 1.dp,
-                color = if (isSelected) Color(0xFF3A3A3A) else Color(0xFF222222),
+                width = if (isFocused) 2.dp else 1.dp,
+                color = borderColor,
                 shape = RoundedCornerShape(12.dp)
             )
+            .onFocusChanged { isFocused = it.isFocused }
+            .focusable()
             .clickable { actions.select(row.guid) }
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .padding(horizontal = 14.dp, vertical = 10.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // ⭐ Кнопка «Избранный сервер»
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(CircleShape)
+                    .clickable { actions.toggleFavorite(row.guid) },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (row.isFavorite) "★" else "☆",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (row.isFavorite) Color(0xFFFFD54F) else Color(0xFF555555)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(6.dp))
+
             // Точка активности
             Box(
                 modifier = Modifier
@@ -352,7 +395,7 @@ private fun ServerListItem(
                     .background(if (isSelected) Color.White else Color(0xFF333333))
             )
 
-            Spacer(modifier = Modifier.width(14.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
             // Название и номер сервера
             val displayName = if (row.remarks.startsWith("#")) row.remarks else "#${index + 1}  ${row.remarks}"
@@ -360,7 +403,7 @@ private fun ServerListItem(
                 text = displayName,
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                fontWeight = if (isSelected || row.isFavorite) FontWeight.SemiBold else FontWeight.Normal,
                 color = if (isSelected) Color.White else Color(0xFFCCCCCC),
                 fontSize = 14.sp,
                 maxLines = 1,

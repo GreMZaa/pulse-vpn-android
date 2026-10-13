@@ -461,14 +461,15 @@ object SettingsManager {
         ensureDefaultValue(AppConfig.PREF_VPN_DNS, AppConfig.DNS_VPN)
         ensureDefaultValue(AppConfig.PREF_VPN_MTU, AppConfig.VPN_MTU.toString())
         ensureDefaultValue(AppConfig.PREF_SOCKS_PORT, AppConfig.PORT_SOCKS)
-        ensureDefaultValue(AppConfig.PREF_REMOTE_DNS, AppConfig.DNS_PROXY)
+        ensureDefaultValue(AppConfig.PREF_REMOTE_DNS, "${AppConfig.DNS_PROXY},https://dns.google/dns-query")
         ensureDefaultValue(AppConfig.PREF_DOMESTIC_DNS, AppConfig.DNS_DIRECT)
         ensureDefaultValue(AppConfig.PREF_DELAY_TEST_URL, AppConfig.DELAY_TEST_URL)
         ensureDefaultValue(AppConfig.PREF_IP_API_URL, AppConfig.IP_API_URL)
         ensureDefaultValue(AppConfig.PREF_HEV_TUNNEL_RW_TIMEOUT, AppConfig.HEVTUN_RW_TIMEOUT)
         ensureDefaultValue(AppConfig.PREF_MUX_CONCURRENCY, "8")
         ensureDefaultValue(AppConfig.PREF_MUX_XUDP_CONCURRENCY, AppConfig.DEFAULT_MUX_XUDP_CONCURRENCY)
-        ensureDefaultValue(AppConfig.PREF_FRAGMENT_LENGTH, "50-100")
+        ensureDefaultValue(AppConfig.PREF_FRAGMENT_PACKETS, "tlshello")
+        ensureDefaultValue(AppConfig.PREF_FRAGMENT_LENGTH, "10-20")
         ensureDefaultValue(AppConfig.PREF_FRAGMENT_INTERVAL, "10-20")
         ensureDefaultValue(AppConfig.PREF_FRAGMENT_MAXSPLIT, "10")
         ensureDefaultValue(AppConfig.PREF_OBSERVATORY_LEAST_PING_INTERVAL, AppConfig.OBSERVATORY_LEAST_PING_INTERVAL)
@@ -476,6 +477,18 @@ object SettingsManager {
         ensureDefaultValue(AppConfig.PREF_OBSERVATORY_LEAST_LOAD_METHOD, AppConfig.OBSERVATORY_LEAST_LOAD_METHOD)
         ensureDefaultValue(AppConfig.PREF_OBSERVATORY_LEAST_LOAD_SAMPLING, AppConfig.OBSERVATORY_LEAST_LOAD_SAMPLING)
         ensureDefaultValue(AppConfig.PREF_OBSERVATORY_LEAST_LOAD_TIMEOUT, AppConfig.OBSERVATORY_LEAST_LOAD_TIMEOUT)
+
+        // Ensure critical anti-censorship & telemetry flags are enabled by default on first run
+        val initKey = "pulse_anti_dpi_defaults_v2"
+        if (!MmkvManager.decodeSettingsBool(initKey, false)) {
+            MmkvManager.encodeSettings(AppConfig.PREF_FRAGMENT_ENABLED, true)
+            MmkvManager.encodeSettings(AppConfig.PREF_SNIFFING_ENABLED, true)
+            MmkvManager.encodeSettings(AppConfig.PREF_LOCAL_DNS_ENABLED, true)
+            MmkvManager.encodeSettings(AppConfig.PREF_SPEED_ENABLED, true)
+            MmkvManager.encodeSettings(AppConfig.PREF_TELEGRAM_CALLS_MODE, true)
+            MmkvManager.encodeSettings(AppConfig.PREF_DELAY_TEST_URL, AppConfig.DELAY_TEST_URL)
+            MmkvManager.encodeSettings(initKey, true)
+        }
     }
 
     private fun ensureDefaultValue(key: String, default: String) {

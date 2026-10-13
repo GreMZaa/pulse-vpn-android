@@ -81,8 +81,12 @@ private val drawerItems = primaryDrawerItems + listOf(
 fun MainDrawerContent(
     drawerState: DrawerState,
     onNavigate: (MainDestination) -> Unit,
+    onOpenPromo: () -> Unit = {},
     onRefresh: () -> Unit = {}
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val hwid = androidx.compose.runtime.remember { com.v2ray.ang.handler.SubscriptionHelper.getDeviceHwid() }
+
     ModalDrawerSheet(
         drawerState = drawerState,
         modifier = Modifier
@@ -93,10 +97,11 @@ fun MainDrawerContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 24.dp),
+                .padding(horizontal = 20.dp, vertical = 20.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Чистый логотип ПУЛЬС
             Box(
@@ -114,7 +119,7 @@ fun MainDrawerContent(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             Text(
                 text = "ПУЛЬС",
@@ -133,14 +138,33 @@ fun MainDrawerContent(
                 color = Color(0xFF777777)
             )
 
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // HWID УСТРОЙСТВА (привязка устройства)
+            Surface(
+                onClick = {
+                    com.v2ray.ang.util.Utils.setClipboard(context, hwid)
+                    android.widget.Toast.makeText(context, "HWID скопирован: $hwid", android.widget.Toast.LENGTH_SHORT).show()
+                },
+                shape = RoundedCornerShape(8.dp),
+                color = Color(0xFF1E1E1E)
+            ) {
+                Text(
+                    text = "HWID: $hwid",
+                    fontSize = 11.sp,
+                    color = Color(0xFF999999),
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             // КНОПКА — МОЯ ПОДПИСКА
             Button(
                 onClick = { onNavigate(MainDestination.Subscriptions) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp),
+                    .height(46.dp),
                 shape = RoundedCornerShape(12.dp),
                 contentPadding = PaddingValues(horizontal = 12.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -163,14 +187,37 @@ fun MainDrawerContent(
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // КНОПКА — ВВЕСТИ ПРОМОКОД ИЛИ КЛЮЧ
+            Button(
+                onClick = { onOpenPromo() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(46.dp),
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF222222),
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "🔑 Ввести промокод / ключ",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             // КНОПКА — РАЗДЕЛЬНОЕ ТУННЕЛИРОВАНИЕ
             Button(
                 onClick = { onNavigate(MainDestination.PerAppProxy) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp),
+                    .height(46.dp),
                 shape = RoundedCornerShape(12.dp),
                 contentPadding = PaddingValues(horizontal = 12.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -193,14 +240,65 @@ fun MainDrawerContent(
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // КНОПКА — ПЛИТКА В ШТОРКУ ANDROID (Quick Settings Tile)
+            Button(
+                onClick = {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                        try {
+                            val sbm = context.getSystemService(android.app.StatusBarManager::class.java)
+                            val componentName = android.content.ComponentName(
+                                context,
+                                com.v2ray.ang.service.QSTileService::class.java
+                            )
+                            sbm?.requestAddTileService(
+                                componentName,
+                                "ПУЛЬС VPN",
+                                android.graphics.drawable.Icon.createWithResource(context, com.v2ray.ang.R.drawable.ic_stat_name),
+                                context.mainExecutor
+                            ) { }
+                        } catch (_: Exception) {
+                            android.widget.Toast.makeText(
+                                context,
+                                "Откройте шторку Android → Изменить → перетащите плитку «ПУЛЬС»",
+                                android.widget.Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    } else {
+                        android.widget.Toast.makeText(
+                            context,
+                            "Откройте шторку Android → Изменить → перетащите плитку «ПУЛЬС»",
+                            android.widget.Toast.LENGTH_LONG
+                        ).show()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(46.dp),
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF222222),
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "⚡ Плитка в шторку Android",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             // КНОПКА — ПРОВЕРИТЬ ОБНОВЛЕНИЯ
             Button(
                 onClick = { onRefresh() },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp),
+                    .height(46.dp),
                 shape = RoundedCornerShape(12.dp),
                 contentPadding = PaddingValues(horizontal = 12.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -226,11 +324,11 @@ fun MainDrawerContent(
             Spacer(modifier = Modifier.weight(1f))
 
             Text(
-                text = "ПУЛЬС",
+                text = "ПУЛЬС • Android TV & Mobile",
                 fontSize = 11.sp,
                 color = Color(0xFF555555)
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }

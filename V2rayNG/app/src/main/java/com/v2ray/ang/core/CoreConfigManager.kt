@@ -633,7 +633,7 @@ object CoreConfigManager {
      * Configure local DNS inbounds, outbounds, and routing rules.
      */
     private fun configureLocalDns(configContext: CoreConfigContext, v2rayConfig: V2rayConfig) {
-        if (MmkvManager.decodeSettingsBool(AppConfig.PREF_LOCAL_DNS_ENABLED) != true) {
+        if (MmkvManager.decodeSettingsBool(AppConfig.PREF_LOCAL_DNS_ENABLED, true) != true) {
             return
         }
 
@@ -728,7 +728,7 @@ object CoreConfigManager {
      * Remove speed-test runtime sections when the feature is disabled.
      */
     private fun applySpeedDisabled(v2rayConfig: V2rayConfig) {
-        if (MmkvManager.decodeSettingsBool(AppConfig.PREF_SPEED_ENABLED) != true) {
+        if (MmkvManager.decodeSettingsBool(AppConfig.PREF_SPEED_ENABLED, true) != true) {
             v2rayConfig.stats = null
             v2rayConfig.policy?.system = null
         }
@@ -1169,10 +1169,55 @@ object CoreConfigManager {
         v2rayConfig: V2rayConfig,
         policyGroupBalancerTags: Map<String, String>
     ) {
-
+        val tgCallsMode = MmkvManager.decodeSettingsBool(AppConfig.PREF_TELEGRAM_CALLS_MODE, true)
         v2rayConfig.routing.domainStrategy =
             MmkvManager.decodeSettingsString(AppConfig.PREF_ROUTING_DOMAIN_STRATEGY)
-                ?: "AsIs"
+                ?: if (tgCallsMode) "IPIfNonMatch" else "AsIs"
+
+        if (tgCallsMode) {
+            val balancerTag = policyGroupBalancerTags[AppConfig.TAG_PROXY]
+            val outTag = if (balancerTag == null) AppConfig.TAG_PROXY else null
+            // 1. Все домены Telegram, звонков, медиа и веб-ресурсов
+            v2rayConfig.routing.rules.add(
+                V2rayConfig.RoutingBean.RulesBean(
+                    domain = arrayListOf(
+                        "geosite:telegram",
+                        "domain:telegram.org",
+                        "domain:t.me",
+                        "domain:tdesktop.com",
+                        "domain:telegra.ph",
+                        "domain:stel.com",
+                        "domain:telegram.me",
+                        "domain:cdn-telegram.org"
+                    ),
+                    network = "tcp,udp",
+                    outboundTag = outTag,
+                    balancerTag = balancerTag
+                )
+            )
+            // 2. Все официальные IP-подсети Telegram (MTProto DC1–DC5 + голосовые/видео звонки)
+            v2rayConfig.routing.rules.add(
+                V2rayConfig.RoutingBean.RulesBean(
+                    ip = arrayListOf(
+                        "149.154.160.0/20",
+                        "91.108.4.0/22",
+                        "91.108.8.0/22",
+                        "91.108.12.0/22",
+                        "91.108.16.0/22",
+                        "91.108.20.0/22",
+                        "91.108.56.0/22",
+                        "95.161.64.0/20",
+                        "185.76.151.0/24",
+                        "2001:b28:f23d::/48",
+                        "2001:b28:f23f::/48",
+                        "2001:67c:4e8::/48"
+                    ),
+                    network = "tcp,udp",
+                    outboundTag = outTag,
+                    balancerTag = balancerTag
+                )
+            )
+        }
 
         val rulesetItems = MmkvManager.decodeRoutingRulesets()
         rulesetItems?.forEach { key ->

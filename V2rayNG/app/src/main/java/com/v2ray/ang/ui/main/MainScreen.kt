@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,6 +61,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -514,6 +516,16 @@ fun MainScreen(
         )
     }
 
+    var showDiagnosticsDialog by remember { mutableStateOf(false) }
+    var telegramCallsMode by remember {
+        mutableStateOf(
+            com.v2ray.ang.handler.MmkvManager.decodeSettingsBool(
+                com.v2ray.ang.AppConfig.PREF_TELEGRAM_CALLS_MODE,
+                true
+            )
+        )
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -522,6 +534,10 @@ fun MainScreen(
                 onNavigate = { route ->
                     scope.launch { drawerState.close() }
                     onNavigate(route)
+                },
+                onOpenPromo = {
+                    scope.launch { drawerState.close() }
+                    showPromoFullscreen = true
                 },
                 onRefresh = {
                     scope.launch { drawerState.close() }
@@ -557,30 +573,56 @@ fun MainScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 12.dp)
+                        .padding(horizontal = 20.dp, vertical = 10.dp)
                         .clip(RoundedCornerShape(20.dp))
                         .background(Color(0xFF181818))
                         .border(1.dp, Color(0xFF242424), RoundedCornerShape(20.dp))
-                        .padding(vertical = 24.dp, horizontal = 16.dp),
+                        .padding(vertical = 18.dp, horizontal = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        // МИНИМАЛИСТИЧНАЯ КНОПКА ПИТАНИЯ (ЧИСТЫЙ МОНОХРОМ / АКЦЕНТ)
+                        var powerBtnFocused by remember { mutableStateOf(false) }
+
+                        // МИНИМАЛИСТИЧНАЯ КНОПКА ПИТАНИЯ (С ПОДДЕРЖКОЙ ПУЛЬТА ANDROID TV)
                         Box(
                             modifier = Modifier
-                                .size(84.dp)
+                                .size(82.dp)
                                 .clip(CircleShape)
                                 .background(
                                     if (isRunning) Color.White else Color(0xFF222222)
                                 )
                                 .border(
-                                    width = 1.dp,
-                                    color = if (isRunning) Color.White else Color(0xFF333333),
+                                    width = if (powerBtnFocused) 3.dp else 1.dp,
+                                    color = when {
+                                        powerBtnFocused -> Color(0xFF4CAF50)
+                                        isRunning -> Color.White
+                                        else -> Color(0xFF333333)
+                                    },
                                     shape = CircleShape
                                 )
+                                .let { mod ->
+                                    mod
+                                        .then(
+                                            androidx.compose.ui.Modifier
+                                                .onKeyEvent { keyEvent ->
+                                                    if ((keyEvent.key == Key.DirectionCenter || keyEvent.key == Key.Enter || keyEvent.key == Key.NumPadEnter) &&
+                                                        keyEvent.type == KeyEventType.KeyUp
+                                                    ) {
+                                                        if (!hasServers && !isRunning) {
+                                                            showPromoFullscreen = true
+                                                        } else {
+                                                            onAction(MainAction.ToggleService)
+                                                        }
+                                                        true
+                                                    } else false
+                                                }
+                                        )
+                                }
+                                .onFocusChanged { powerBtnFocused = it.isFocused }
+                                .focusable()
                                 .clickable {
                                     if (!hasServers && !isRunning) {
                                         showPromoFullscreen = true
@@ -599,7 +641,7 @@ fun MainScreen(
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
                         // ТЕКСТ СТАТУСА
                         Text(
@@ -610,79 +652,82 @@ fun MainScreen(
                             color = if (isRunning) Color.White else Color(0xFF888888)
                         )
 
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(2.dp))
 
                         Text(
-                            text = if (isRunning) "Защита активна" else "Нажмите для подключения",
-                            fontSize = 12.sp,
-                            color = Color(0xFF555555)
+                            text = if (isRunning) "Защита активна • Anti-DPI + DoH" else "Нажмите для подключения",
+                            fontSize = 11.sp,
+                            color = if (isRunning) Color(0xFF81C784) else Color(0xFF555555)
                         )
 
+                        // 📈 ЖИВОЙ ГРАФИК СКОРОСТИ (КОГДА VPN АКТИВЕН)
+                        AnimatedVisibility(visible = isRunning) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                LiveSpeedSparklineCard()
+                            }
+                        }
+
                         if (hasServers) {
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                androidx.compose.material3.Button(
-                                    onClick = { onAction(MainAction.SmartConnect) },
-                                    modifier = Modifier.height(32.dp),
-                                    shape = RoundedCornerShape(16.dp),
-                                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                        containerColor = if (isRunning) Color(0xFF282828) else Color.White,
-                                        contentColor = if (isRunning) Color.White else Color.Black
-                                    ),
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
-                                ) {
-                                    Text(
-                                        "⚡ Быстрое подключение",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.width(8.dp))
-
-                                androidx.compose.material3.OutlinedButton(
-                                    onClick = {
-                                        if (uiState.isRunning) {
-                                            onAction(MainAction.TestCurrentServer)
-                                        } else {
-                                            onAction(MainAction.TestRealAllServers)
+                                // Пресет: Режим для Telegram и Звонков (MTProto + UDP)
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(
+                                            if (telegramCallsMode) Color(0xFF172A3A) else Color(0xFF202020)
+                                        )
+                                        .border(
+                                            width = 1.dp,
+                                            color = if (telegramCallsMode) Color(0xFF29B6F6) else Color(0xFF2E2E2E),
+                                            shape = RoundedCornerShape(14.dp)
+                                        )
+                                        .clickable {
+                                            val next = !telegramCallsMode
+                                            telegramCallsMode = next
+                                            com.v2ray.ang.handler.MmkvManager.encodeSettings(
+                                                com.v2ray.ang.AppConfig.PREF_TELEGRAM_CALLS_MODE,
+                                                next
+                                            )
+                                            if (isRunning) {
+                                                onAction(MainAction.RestartService)
+                                            }
                                         }
-                                    },
-                                    modifier = Modifier.height(32.dp),
-                                    shape = RoundedCornerShape(16.dp),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF2A2A2A)),
-                                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                                        contentColor = Color.White
-                                    ),
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
+                                        .padding(horizontal = 12.dp, vertical = 6.dp)
                                 ) {
                                     Text(
-                                        "Тест",
+                                        text = if (telegramCallsMode) "✈️ Telegram + Звонки: ВКЛ" else "✈️ Telegram + Звонки: ВЫКЛ",
                                         fontSize = 11.sp,
-                                        fontWeight = FontWeight.Medium
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (telegramCallsMode) Color(0xFF4FC3F7) else Color(0xFF888888)
                                     )
                                 }
 
                                 Spacer(modifier = Modifier.width(8.dp))
 
-                                androidx.compose.material3.OutlinedButton(
-                                    onClick = { showPromoFullscreen = true },
-                                    modifier = Modifier.height(32.dp),
-                                    shape = RoundedCornerShape(16.dp),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF2A2A2A)),
-                                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                                        contentColor = Color(0xFFAAAAAA)
-                                    ),
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
+                                // Диагностика и починка в 1 клик
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(Color(0xFF202020))
+                                        .border(
+                                            width = 1.dp,
+                                            color = Color(0xFF333333),
+                                            shape = RoundedCornerShape(14.dp)
+                                        )
+                                        .clickable { showDiagnosticsDialog = true }
+                                        .padding(horizontal = 12.dp, vertical = 6.dp)
                                 ) {
                                     Text(
-                                        "Промокод",
+                                        text = "🛠 Диагностика",
                                         fontSize = 11.sp,
-                                        fontWeight = FontWeight.Medium
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(0xFFCCCCCC)
                                     )
                                 }
                             }
@@ -727,6 +772,7 @@ fun MainScreen(
                             lazyListStates = lazyListStates,
                             lazyGridStates = lazyGridStates,
                             onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
+                            onToggleFavorite = { guid -> onAction(MainAction.ToggleFavoriteServer(guid)) },
                             onEditServer = { guid, profile -> onAction(MainAction.EditServer(guid, profile)) },
                             onShareServer = { guid, profile ->
                                 shareTarget = Triple(guid, profile, false)
@@ -746,5 +792,200 @@ fun MainScreen(
                 }
             }
         }
+    }
+
+    if (showDiagnosticsDialog) {
+        ConnectionDiagnosticsDialog(
+            isRunning = isRunning,
+            onDismiss = { showDiagnosticsDialog = false },
+            onAutoRepair = {
+                com.v2ray.ang.handler.MmkvManager.encodeSettings(com.v2ray.ang.AppConfig.PREF_FRAGMENT_ENABLED, true)
+                com.v2ray.ang.handler.MmkvManager.encodeSettings(com.v2ray.ang.AppConfig.PREF_LOCAL_DNS_ENABLED, true)
+                com.v2ray.ang.handler.MmkvManager.encodeSettings(com.v2ray.ang.AppConfig.PREF_TELEGRAM_CALLS_MODE, true)
+                telegramCallsMode = true
+                showDiagnosticsDialog = false
+                onAction(MainAction.SmartConnect)
+            }
+        )
+    }
+}
+
+@Composable
+private fun LiveSpeedSparklineCard() {
+    var downSpeedBps by remember { mutableStateOf(0L) }
+    var upSpeedBps by remember { mutableStateOf(0L) }
+    var history by remember { mutableStateOf(List(24) { 0f }) }
+
+    LaunchedEffect(Unit) {
+        var prevRx = android.net.TrafficStats.getTotalRxBytes()
+        var prevTx = android.net.TrafficStats.getTotalTxBytes()
+        while (true) {
+            kotlinx.coroutines.delay(1000L)
+            val curRx = android.net.TrafficStats.getTotalRxBytes()
+            val curTx = android.net.TrafficStats.getTotalTxBytes()
+            val dRx = if (prevRx > 0 && curRx >= prevRx) curRx - prevRx else 0L
+            val dTx = if (prevTx > 0 && curTx >= prevTx) curTx - prevTx else 0L
+            prevRx = curRx
+            prevTx = curTx
+            downSpeedBps = dRx
+            upSpeedBps = dTx
+            val mbps = (dRx + dTx).toFloat() / 1024f
+            history = (history.drop(1) + mbps)
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFF131313))
+            .border(1.dp, Color(0xFF222222), RoundedCornerShape(12.dp))
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(
+                    text = "↓ ${formatSpeed(downSpeedBps)}",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF81C784)
+                )
+                Text(
+                    text = "↑ ${formatSpeed(upSpeedBps)}",
+                    fontSize = 11.sp,
+                    color = Color(0xFF888888)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Sparkline график
+            androidx.compose.foundation.Canvas(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(28.dp)
+            ) {
+                val maxVal = (history.maxOrNull() ?: 1f).coerceAtLeast(16f)
+                val stepX = if (history.size > 1) size.width / (history.size - 1) else size.width
+                val path = androidx.compose.ui.graphics.Path()
+                history.forEachIndexed { idx, v ->
+                    val x = idx * stepX
+                    val y = size.height - ((v / maxVal).coerceIn(0f, 1f) * (size.height - 4f)) - 2f
+                    if (idx == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                }
+                drawPath(
+                    path = path,
+                    color = Color(0xFF4CAF50),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx())
+                )
+            }
+        }
+    }
+}
+
+private fun formatSpeed(bytesPerSec: Long): String {
+    return when {
+        bytesPerSec >= 1024L * 1024L -> String.format(java.util.Locale.US, "%.1f МБ/с", bytesPerSec / (1024f * 1024f))
+        bytesPerSec >= 1024L -> String.format(java.util.Locale.US, "%d КБ/с", bytesPerSec / 1024L)
+        else -> "$bytesPerSec Б/с"
+    }
+}
+
+@Composable
+private fun ConnectionDiagnosticsDialog(
+    isRunning: Boolean,
+    onDismiss: () -> Unit,
+    onAutoRepair: () -> Unit
+) {
+    var stepTunnel by remember { mutableStateOf("Проверка...") }
+    var stepDpiDns by remember { mutableStateOf("Проверка...") }
+    var stepHttp204 by remember { mutableStateOf("Проверка...") }
+    var stepTelegram by remember { mutableStateOf("Проверка...") }
+    var isChecking by remember { mutableStateOf(true) }
+
+    LaunchedEffect(isRunning) {
+        isChecking = true
+        withContext(Dispatchers.IO) {
+            val fragOn = com.v2ray.ang.handler.MmkvManager.decodeSettingsBool(com.v2ray.ang.AppConfig.PREF_FRAGMENT_ENABLED, true)
+            val dohOn = com.v2ray.ang.handler.MmkvManager.decodeSettingsBool(com.v2ray.ang.AppConfig.PREF_LOCAL_DNS_ENABLED, true)
+            stepDpiDns = if (fragOn && dohOn) "✅ Активны (Fragment + DoH)" else "⚠️ Частично отключены"
+
+            if (!isRunning) {
+                stepTunnel = "❌ VPN отключен"
+                stepHttp204 = "⏸ Ожидание запуска VPN"
+                stepTelegram = "⏸ Ожидание запуска VPN"
+            } else {
+                val httpPort = com.v2ray.ang.handler.SettingsManager.getHttpPort()
+                stepTunnel = "✅ Туннель активен (порт $httpPort)"
+
+                val delay204 = HttpUtil.measureUrlDelay(
+                    UrlContentRequest(url = com.v2ray.ang.AppConfig.DELAY_TEST_URL, timeout = 3500, httpPort = httpPort)
+                )
+                stepHttp204 = if (delay204 > 0L) "✅ Доступен ($delay204 мс)" else "❌ Нет ответа (HTTP-204)"
+
+                val delayTg = HttpUtil.measureUrlDelay(
+                    UrlContentRequest(url = com.v2ray.ang.AppConfig.DELAY_TEST_URL2, timeout = 3500, httpPort = httpPort)
+                )
+                stepTelegram = if (delayTg > 0L) "✅ Доступен ($delayTg мс)" else "❌ Блокировка / Таймаут"
+            }
+        }
+        isChecking = false
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1A1A1A),
+        title = {
+            Text(
+                text = "Диагностика соединения",
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                DiagnosticRow("VPN Туннель", stepTunnel)
+                DiagnosticRow("Анти-DPI и DoH DNS", stepDpiDns)
+                DiagnosticRow("Интернет (HTTP-204)", stepHttp204)
+                DiagnosticRow("Telegram и Звонки", stepTelegram)
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onAutoRepair,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = Color.Black
+                )
+            ) {
+                Text("⚡ Починить в 1 клик", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Закрыть", color = Color(0xFFAAAAAA))
+            }
+        }
+    )
+}
+
+@Composable
+private fun DiagnosticRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFF121212))
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = label, fontSize = 12.sp, color = Color(0xFF999999))
+        Text(text = value, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
     }
 }

@@ -93,6 +93,10 @@ object AppConfig {
     const val PREF_SUBSCRIPTION_PLAN = "pref_subscription_plan"
     const val PREF_SUBSCRIPTION_EXPIRES = "pref_subscription_expires"
     const val PREF_SUBSCRIPTION_DAYS = "pref_subscription_days"
+    const val PREF_SUBSCRIPTION_MAX_DEVICES = "pref_subscription_max_devices"
+    const val PREF_TELEGRAM_CALLS_MODE = "pref_telegram_calls_mode"
+    const val PREF_FAVORITE_SERVERS = "pref_favorite_servers"
+    const val PREF_DEVICE_HWID = "pref_device_hwid"
 
     /** Cache keys. */
     const val CACHE_SUBSCRIPTION_ID = "cache_subscription_id"
@@ -138,8 +142,9 @@ object AppConfig {
     const val APP_PRIVACY_POLICY = "$APP_URL"
     const val APP_PROMOTION_URL = "aHR0cHM6Ly9ncmVlbXphYS1wdWxzZXdsLXZwbi5zdGF0aWMuaGYuc3BhY2U="
     const val TG_CHANNEL_URL = "https://greemzaa-pulsewl-vpn.static.hf.space"
-    const val DELAY_TEST_URL = "https://www.gstatic.com/generate_204"
-    const val DELAY_TEST_URL2 = "https://www.google.com/generate_204"
+    const val DELAY_TEST_URL = "https://cp.cloudflare.com/generate_204"
+    const val DELAY_TEST_URL2 = "https://core.telegram.org"
+    const val DELAY_TEST_URL3 = "https://www.gstatic.com/generate_204"
     const val OBSERVATORY_LEAST_PING_INTERVAL = "3m"
     const val OBSERVATORY_LEAST_LOAD_INTERVAL = "5m"
     const val OBSERVATORY_LEAST_LOAD_METHOD = "HEAD"

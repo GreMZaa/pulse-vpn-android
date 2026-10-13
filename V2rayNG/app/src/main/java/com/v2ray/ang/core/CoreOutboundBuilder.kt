@@ -44,7 +44,8 @@ object CoreOutboundBuilder {
     /** Applies global outbound options (mux, protocol-specific tweaks, etc.). */
     private fun updateOutboundWithGlobalSettings(outbound: OutboundBean): Boolean {
         try {
-            var muxEnabled = MmkvManager.decodeSettingsBool(AppConfig.PREF_MUX_ENABLED, false)
+            val tgCallsMode = MmkvManager.decodeSettingsBool(AppConfig.PREF_TELEGRAM_CALLS_MODE, true)
+            var muxEnabled = MmkvManager.decodeSettingsBool(AppConfig.PREF_MUX_ENABLED, false) || tgCallsMode
             val protocol = outbound.protocol
             if (protocol.equals(EConfigType.SHADOWSOCKS.name, true)
                 || protocol.equals(EConfigType.SOCKS.name, true)
@@ -61,9 +62,9 @@ object CoreOutboundBuilder {
 
             if (muxEnabled) {
                 outbound.mux?.enabled = true
-                outbound.mux?.concurrency = MmkvManager.decodeSettingsString(AppConfig.PREF_MUX_CONCURRENCY, "8").orEmpty().toInt()
-                outbound.mux?.xudpConcurrency = MmkvManager.decodeSettingsString(AppConfig.PREF_MUX_XUDP_CONCURRENCY, AppConfig.DEFAULT_MUX_XUDP_CONCURRENCY).orEmpty().toInt()
-                outbound.mux?.xudpProxyUDP443 = MmkvManager.decodeSettingsString(AppConfig.PREF_MUX_XUDP_QUIC, "reject")
+                outbound.mux?.concurrency = MmkvManager.decodeSettingsString(AppConfig.PREF_MUX_CONCURRENCY, "8").orEmpty().toIntOrNull() ?: 8
+                outbound.mux?.xudpConcurrency = MmkvManager.decodeSettingsString(AppConfig.PREF_MUX_XUDP_CONCURRENCY, AppConfig.DEFAULT_MUX_XUDP_CONCURRENCY).orEmpty().toIntOrNull() ?: 8
+                outbound.mux?.xudpProxyUDP443 = if (tgCallsMode) "allow" else MmkvManager.decodeSettingsString(AppConfig.PREF_MUX_XUDP_QUIC, "reject")
                 if (protocol.equals(EConfigType.VLESS.name, true) && outbound.settings?.flow?.isNotEmpty() == true) {
                     outbound.mux?.concurrency = -1
                 }
@@ -604,7 +605,7 @@ object CoreOutboundBuilder {
      */
     private fun updateOutboundFragment(streamSettings: OutboundBean.StreamSettingsBean): Boolean {
         try {
-            if (MmkvManager.decodeSettingsBool(AppConfig.PREF_FRAGMENT_ENABLED, false) == false) {
+            if (MmkvManager.decodeSettingsBool(AppConfig.PREF_FRAGMENT_ENABLED, true) == false) {
                 return true
             }
             if (streamSettings.security != AppConfig.TLS
@@ -629,7 +630,7 @@ object CoreOutboundBuilder {
                 settings = OutboundBean.StreamSettingsBean.FinalMaskBean.MaskBean.MaskSettingsBean(
                     packets = packets,
                     length = MmkvManager.decodeSettingsString(AppConfig.PREF_FRAGMENT_LENGTH)
-                        ?: "50-100",
+                        ?: "10-20",
                     delay = MmkvManager.decodeSettingsString(AppConfig.PREF_FRAGMENT_INTERVAL)
                         ?: "10-20",
                     maxSplit = MmkvManager.decodeSettingsString(AppConfig.PREF_FRAGMENT_MAXSPLIT)

@@ -1050,4 +1050,43 @@ object MmkvManager {
     }
 
     //endregion
+
+    //region Favorite Servers
+
+    private fun favoriteIdentity(profile: ProfileItem?): String? {
+        if (profile == null) return null
+        val host = profile.server?.trim().orEmpty()
+        val port = profile.serverPort?.trim().orEmpty()
+        return if (host.isNotEmpty() && port.isNotEmpty()) "$host:$port" else profile.remarks.trim().takeIf { it.isNotEmpty() }
+    }
+
+    fun getFavoriteServerSet(): MutableSet<String> {
+        return settingsStorage.decodeStringSet(com.v2ray.ang.AppConfig.PREF_FAVORITE_SERVERS) ?: mutableSetOf()
+    }
+
+    fun isFavoriteServer(guid: String, profile: ProfileItem? = null): Boolean {
+        val set = getFavoriteServerSet()
+        if (guid in set) return true
+        val p = profile ?: decodeServerConfig(guid)
+        val id = favoriteIdentity(p)
+        return id != null && id in set
+    }
+
+    fun toggleFavoriteServer(guid: String, profile: ProfileItem? = null): Boolean {
+        val set = getFavoriteServerSet().toMutableSet()
+        val p = profile ?: decodeServerConfig(guid)
+        val id = favoriteIdentity(p)
+        val currentlyFav = (guid in set) || (id != null && id in set)
+        if (currentlyFav) {
+            set.remove(guid)
+            if (id != null) set.remove(id)
+        } else {
+            set.add(guid)
+            if (id != null) set.add(id)
+        }
+        settingsStorage.encode(com.v2ray.ang.AppConfig.PREF_FAVORITE_SERVERS, set)
+        return !currentlyFav
+    }
+
+    //endregion
 }

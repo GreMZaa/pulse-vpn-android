@@ -242,17 +242,19 @@ class MainActivity : HelperBaseComponentActivity() {
             if (subInfo != null) {
                 val isValid = SubscriptionHelper.validateSubscriptionOnline()
                 if (!isValid) {
-                    toast("Подписка аннулирована или срок действия истек")
+                    toast("Подписка аннулирована, истекла или превышен лимит устройств (HWID: ${SubscriptionHelper.getDeviceHwid()})")
                     mainViewModel.reloadServerList()
                     return@launch
                 }
             }
 
             var guid = mainViewModel.uiState.value.selectedGuid
-            if (guid.isNullOrEmpty()) {
-                val allServers = MmkvManager.decodeAllServerList()
-                if (allServers.isNotEmpty()) {
-                    guid = allServers.first()
+            val currentAff = guid?.let { MmkvManager.decodeServerAffiliationInfo(it) }
+            if (guid.isNullOrEmpty() || (currentAff != null && currentAff.testDelayMillis < 0L)) {
+                val bestGuid = mainViewModel.findSmartConnectBestServerGuid()
+                    ?: MmkvManager.decodeAllServerList().firstOrNull()
+                if (!bestGuid.isNullOrEmpty()) {
+                    guid = bestGuid
                     mainViewModel.updateSelectedGuid(guid)
                 } else {
                     toast("Пожалуйста, активируйте промокод для подключения к серверу")
@@ -350,9 +352,17 @@ class MainActivity : HelperBaseComponentActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_BUTTON_B) {
-            moveTaskToBack(false)
-            return true
+        when (keyCode) {
+            KeyEvent.KEYCODE_BUTTON_B -> {
+                moveTaskToBack(false)
+                return true
+            }
+            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+            KeyEvent.KEYCODE_MEDIA_PLAY,
+            KeyEvent.KEYCODE_MEDIA_STOP -> {
+                handleFabAction()
+                return true
+            }
         }
         return super.onKeyDown(keyCode, event)
     }

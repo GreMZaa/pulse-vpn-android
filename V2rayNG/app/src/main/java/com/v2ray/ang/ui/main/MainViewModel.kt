@@ -45,11 +45,14 @@ import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.PatternSyntaxException
 
-private fun pingSortScore(delayMillis: Long): Long = when {
-    delayMillis in 1L..999L -> delayMillis
-    delayMillis >= 1000L -> 100_000L + delayMillis
-    delayMillis == 0L -> 500_000_000L // еще не тестирован
-    else -> Long.MAX_VALUE // < 0 (нет ответа) - в самый конец
+private fun pingSortScore(delayMillis: Long, isFavorite: Boolean = false): Long {
+    val favPenalty = if (isFavorite) 0L else 5_000_000L
+    return when {
+        delayMillis in 1L..999L -> favPenalty + delayMillis
+        delayMillis >= 1000L -> favPenalty + 100_000L + delayMillis
+        delayMillis == 0L -> 500_000_000L + favPenalty // еще не тестирован
+        else -> Long.MAX_VALUE - (if (isFavorite) 1_000L else 0L) // < 0 (нет ответа) - в самый конец
+    }
 }
 
 private fun applyTestDelayResults(
@@ -62,7 +65,7 @@ private fun applyTestDelayResults(
     } else {
         server.copy(testDelayMillis = delayMillis)
     }
-}.sortedBy { pingSortScore(it.testDelayMillis) }
+}.sortedBy { pingSortScore(it.testDelayMillis, MmkvManager.isFavoriteServer(it.guid, it.profile)) }
 
 private fun applyTestDelayResultsToRows(
     rows: List<ServerRowUiModel>,
@@ -74,7 +77,7 @@ private fun applyTestDelayResultsToRows(
     } else {
         row.copy(testDelayMillis = delayMillis)
     }
-}.sortedBy { pingSortScore(it.testDelayMillis) }
+}.sortedBy { pingSortScore(it.testDelayMillis, it.isFavorite) }
 
 class MainViewModel(
     application: Application,
@@ -298,6 +301,7 @@ class MainViewModel(
             MainAction.ExportAll -> exportAllAsync()
             is MainAction.SelectGroup -> subscriptionIdChanged(action.groupId)
             is MainAction.SelectServer -> updateSelectedGuid(action.guid)
+            is MainAction.ToggleFavoriteServer -> toggleFavoriteServer(action.guid)
             is MainAction.RemoveServer -> removeServerAndRefresh(action.guid)
             is MainAction.Search -> filterConfig(action.query)
             is MainAction.ImportBatchConfig -> importBatchConfig(action.configText)
@@ -454,12 +458,34 @@ class MainViewModel(
                         else -> 2 // нет ответа (delay < 0) - всегда в самый низ!
                     }
                 },
-                // 2. Среди живых серверов — приоритет белых списков
+                // 2. Избранные серверы (⭐) всегда наверху среди работающих
+                { if (MmkvManager.isFavoriteServer(it.guid, it.profile)) 0 else 1 },
+                // 3. Среди живых серверов — приоритет белых списков
                 { it.profile.getWhitelistPriority() },
-                // 3. Задержка в мс
+                // 4. Задержка в мс
                 { if (it.testDelayMillis > 0L) it.testDelayMillis else 99999L }
             )
         )
+
+    fun toggleFavoriteServer(guid: String) {
+        viewModelScope.launch(ioDispatcher) {
+            val profile = dataSource.decodeServerConfig(guid)
+            val isNowFav = MmkvManager.toggleFavoriteServer(guid, profile)
+            withContext(Dispatchers.Main) {
+                val name = profile?.remarks ?: "Сервер"
+                if (isNowFav) {
+                    toastSuccess("⭐ Добавлен в избранное: $name")
+                } else {
+                    toast("Убран из избранного: $name")
+                }
+            }
+            sortByTestResultsInternal()
+            cacheMutex.withLock { groupDataCache.clear() }
+            val groupId = uiState.value.selectedGroupId
+            val servers = loadGroup(groupId, forceRefresh = true)
+            updateGroupUi(groupId, servers)
+        }
+    }
 
     private suspend fun loadGroup(
         groupId: String,
@@ -1030,16 +1056,21 @@ class MainViewModel(
                 // 2. Обновляем вкладки и список серверов
                 setupGroupTab(forceRefresh = true).join()
 
-                // 3. Автоматически выбираем самый быстрый работающий сервер
+                // 3. Автоматически выбираем самый быстрый работающий сервер (с приоритетом Избранных ⭐)
                 val selectedGroup = uiState.value.selectedGroupId
                 val freshServers = loadGroup(selectedGroup, forceRefresh = true)
                 val fastestWorking = freshServers.filter { it.testDelayMillis > 0L }
-                    .minByOrNull { it.testDelayMillis }
+                    .minByOrNull {
+                        val favRank = if (MmkvManager.isFavoriteServer(it.guid, it.profile)) 0L else 1L
+                        favRank * 10_000_000L + it.profile.getWhitelistPriority() * 100_000L + it.testDelayMillis
+                    }
                     ?: freshServers.firstOrNull()
 
                 fastestWorking?.let {
-                    dataSource.setSelectServer(it.guid)
-                    updateSelectedGuid(it.guid)
+                    if (!uiState.value.isRunning) {
+                        dataSource.setSelectServer(it.guid)
+                        updateSelectedGuid(it.guid)
+                    }
                 }
             } catch (e: Exception) {
                 LogUtil.e(AppConfig.TAG, "Auto sort and select fastest server failed", e)
@@ -1059,13 +1090,15 @@ class MainViewModel(
         val testedServers = allList.filter { it.testDelayMillis > 0L }
         if (testedServers.isNotEmpty()) {
             return testedServers.minByOrNull {
-                it.profile.getWhitelistPriority() * 100000L + it.testDelayMillis
+                val favRank = if (MmkvManager.isFavoriteServer(it.guid, it.profile)) 0L else 1L
+                favRank * 10_000_000L + it.profile.getWhitelistPriority() * 100_000L + it.testDelayMillis
             }?.guid
         }
 
         val candidates = allList.filter { it.testDelayMillis >= 0L }.ifEmpty { allList }
         return candidates.minByOrNull {
-            it.profile.getWhitelistPriority()
+            val favRank = if (MmkvManager.isFavoriteServer(it.guid, it.profile)) 0 else 1
+            favRank * 100 + it.profile.getWhitelistPriority()
         }?.guid ?: allList.firstOrNull()?.guid
     }
 

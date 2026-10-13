@@ -62,7 +62,8 @@ class RealPingWorkerService(
             scope.launch {
                 runningCount.incrementAndGet()
                 try {
-                    val result = if (onlyTcp) startTcping(guid) else startRealPing(guid)
+                    // Всегда выполняем настоящую проверку туннеля (Real HTTP-204 + Telegram Check) вместо простого TCP-пинга
+                    val result = startRealPing(guid)
                     if (scope.isActive) {
                         onEvent(RealPingEvent.Result(guid, result))
                     }
@@ -117,7 +118,7 @@ class RealPingWorkerService(
         ) {
             val url = config.server.orEmpty()
             val port = config.serverPort.orEmpty().toInt()
-            val tcpTime = SpeedtestManager.socketConnectTime(url, port, 3500)
+            val tcpTime = SpeedtestManager.socketConnectTime(url, port, 3000)
             if (tcpTime <= -1L) {
                 return retFailure
             }
@@ -128,28 +129,16 @@ class RealPingWorkerService(
             return retFailure
         }
         return RealPingExecutionLimiter.run(config.configType) {
-            CoreNativeManager.measureOutboundDelay(configResult.content, SettingsManager.getDelayTestUrl())
+            // 1. Проверка реального HTTP-204 (Cloudflare / пользовательский URL)
+            var delay = CoreNativeManager.measureOutboundDelay(configResult.content, SettingsManager.getDelayTestUrl())
+            // 2. Резервная проверка Google 204 / Telegram Core через туннель
+            if (delay <= 0L) {
+                delay = CoreNativeManager.measureOutboundDelay(configResult.content, com.v2ray.ang.AppConfig.DELAY_TEST_URL3)
+            }
+            if (delay <= 0L) {
+                delay = CoreNativeManager.measureOutboundDelay(configResult.content, com.v2ray.ang.AppConfig.DELAY_TEST_URL2)
+            }
+            delay
         }
-    }
-
-    private fun startTcping(guid: String): Long {
-        val retFailure = -1L
-
-        val config = MmkvManager.decodeServerConfig(guid) ?: return retFailure
-        if (!config.configType.isComplexType()
-            && config.configType != EConfigType.HYSTERIA2
-            && config.configType != EConfigType.WIREGUARD
-            && config.alpn?.split(',')?.all { it.trim().startsWith("h3") } != true
-            && config.server.isNotNullEmpty()
-            && config.serverPort?.toIntOrNull() != null
-        ) {
-            val url = config.server.orEmpty()
-            val port = config.serverPort.orEmpty().toInt()
-            val tcpTime = SpeedtestManager.socketConnectTime(url, port, 3500)
-
-            return tcpTime
-        }
-
-        return retFailure
     }
 }

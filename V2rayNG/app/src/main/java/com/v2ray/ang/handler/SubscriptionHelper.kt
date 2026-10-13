@@ -1,11 +1,15 @@
 package com.v2ray.ang.handler
 
+import android.os.Build
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.dto.UrlContentRequest
 import com.v2ray.ang.util.HttpUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
+import java.security.MessageDigest
+import java.util.UUID
 
 object SubscriptionHelper {
 
@@ -15,8 +19,75 @@ object SubscriptionHelper {
         val daysLeft: Double,
         val expiresAt: Long,
         val isActive: Boolean,
-        val serverCount: Int
+        val serverCount: Int,
+        val hwid: String = getDeviceHwid(),
+        val deviceModel: String = getDeviceModelName(),
+        val maxDevices: Int = 2
     )
+
+    fun getDeviceHwid(): String {
+        val existing = MmkvManager.decodeSettingsString(AppConfig.PREF_DEVICE_HWID)
+        if (!existing.isNullOrBlank()) {
+            return existing
+        }
+        val rawFingerprint = buildString {
+            append(Build.BOARD).append("|")
+            append(Build.BRAND).append("|")
+            append(Build.DEVICE).append("|")
+            append(Build.HARDWARE).append("|")
+            append(Build.MANUFACTURER).append("|")
+            append(Build.MODEL).append("|")
+            append(Build.PRODUCT).append("|")
+            append(Build.SUPPORTED_ABIS.joinToString(","))
+        }
+        val hash = try {
+            val md = MessageDigest.getInstance("SHA-256")
+            val bytes = md.digest(rawFingerprint.toByteArray(Charsets.UTF_8))
+            bytes.take(5).joinToString("") { "%02X".format(it) }
+        } catch (_: Exception) {
+            UUID.randomUUID().toString().replace("-", "").take(10).uppercase()
+        }
+        val generated = "PL-$hash"
+        MmkvManager.encodeSettings(AppConfig.PREF_DEVICE_HWID, generated)
+        return generated
+    }
+
+    fun getDeviceModelName(): String {
+        val manufacturer = Build.MANUFACTURER.orEmpty().trim()
+        val model = Build.MODEL.orEmpty().trim()
+        return if (model.startsWith(manufacturer, ignoreCase = true)) {
+            model.replaceFirstChar { it.uppercase() }
+        } else {
+            "${manufacturer.replaceFirstChar { it.uppercase() }} $model".trim()
+        }
+    }
+
+    private fun isHwidAllowed(itemJson: JSONObject, currentHwid: String): Pair<Boolean, Int> {
+        val maxDevices = itemJson.optInt("max_devices", 2).coerceAtLeast(1)
+        val boundArray: JSONArray? = itemJson.optJSONArray("bound_hwids") ?: itemJson.optJSONArray("bound_devices")
+        if (boundArray == null || boundArray.length() == 0) {
+            return true to maxDevices
+        }
+        val boundList = mutableListOf<String>()
+        for (i in 0 until boundArray.length()) {
+            val elem = boundArray.opt(i)
+            when (elem) {
+                is String -> if (elem.isNotBlank()) boundList.add(elem.trim().uppercase())
+                is JSONObject -> {
+                    val id = elem.optString("hwid").ifBlank { elem.optString("id") }.trim().uppercase()
+                    if (id.isNotBlank()) boundList.add(id)
+                }
+            }
+        }
+        if (boundList.isEmpty() || boundList.contains("*") || boundList.contains(currentHwid.uppercase())) {
+            return true to maxDevices
+        }
+        // Если слоты еще свободны (boundList.size < maxDevices), устройство проходит
+        if (boundList.size < maxDevices) {
+            return true to maxDevices
+        }
+        return false to maxDevices
+    }
 
     fun getActiveSubscription(): SubscriptionInfo? {
         val code = MmkvManager.decodeSettingsString(AppConfig.PREF_SUBSCRIPTION_CODE)
@@ -28,6 +99,7 @@ object SubscriptionHelper {
         val displayCode = if (!code.isNullOrBlank()) code else "Импортированные узлы"
         val plan = MmkvManager.decodeSettingsString(AppConfig.PREF_SUBSCRIPTION_PLAN, "Тариф ПУЛЬС") ?: "Тариф ПУЛЬС"
         val expiresAt = MmkvManager.decodeSettingsLong(AppConfig.PREF_SUBSCRIPTION_EXPIRES, 0L)
+        val maxDevices = MmkvManager.decodeSettingsInt(AppConfig.PREF_SUBSCRIPTION_MAX_DEVICES, 2).coerceAtLeast(1)
         val now = System.currentTimeMillis()
         val daysLeft = if (expiresAt > now) {
             ((expiresAt - now) / 86400000.0 * 10).toInt() / 10.0
@@ -37,14 +109,25 @@ object SubscriptionHelper {
             0.0
         }
         val isActive = (expiresAt == 0L && serverCount > 0) || (expiresAt > now && serverCount > 0)
-        return SubscriptionInfo(displayCode, plan, daysLeft, expiresAt, isActive, serverCount)
+        return SubscriptionInfo(
+            code = displayCode,
+            planName = plan,
+            daysLeft = daysLeft,
+            expiresAt = expiresAt,
+            isActive = isActive,
+            serverCount = serverCount,
+            hwid = getDeviceHwid(),
+            deviceModel = getDeviceModelName(),
+            maxDevices = maxDevices
+        )
     }
 
-    fun saveSubscription(code: String, plan: String, days: Double, expiresAt: Long) {
+    fun saveSubscription(code: String, plan: String, days: Double, expiresAt: Long, maxDevices: Int = 2) {
         MmkvManager.encodeSettings(AppConfig.PREF_SUBSCRIPTION_CODE, code)
         MmkvManager.encodeSettings(AppConfig.PREF_SUBSCRIPTION_PLAN, plan)
         MmkvManager.encodeSettings(AppConfig.PREF_SUBSCRIPTION_DAYS, days.toFloat())
         MmkvManager.encodeSettings(AppConfig.PREF_SUBSCRIPTION_EXPIRES, expiresAt)
+        MmkvManager.encodeSettings(AppConfig.PREF_SUBSCRIPTION_MAX_DEVICES, maxDevices)
     }
 
     fun clearSubscription() {
@@ -65,6 +148,7 @@ object SubscriptionHelper {
         }
 
         try {
+            val currentHwid = getDeviceHwid()
             val cloudStateUrl = "https://greemzaa-pulsewl-vpn.static.hf.space/api/cloud_state.json?t=${System.currentTimeMillis()}"
             val stateJsonStr = HttpUtil.getUrlContent(UrlContentRequest(url = cloudStateUrl, timeout = 6000))
             if (stateJsonStr.isNullOrBlank()) {
@@ -74,6 +158,8 @@ object SubscriptionHelper {
             val json = JSONObject(stateJsonStr)
             var found = false
             var matchedDays = 0.0
+            var hwidAllowed = true
+            var maxDev = 2
 
             val promos = json.optJSONArray("promos")
             if (promos != null) {
@@ -82,6 +168,9 @@ object SubscriptionHelper {
                     if (p.optString("code").equals(code, ignoreCase = true)) {
                         found = true
                         matchedDays = p.optDouble("days", 30.0)
+                        val (allowed, limit) = isHwidAllowed(p, currentHwid)
+                        hwidAllowed = allowed
+                        maxDev = limit
                         break
                     }
                 }
@@ -98,6 +187,9 @@ object SubscriptionHelper {
                             if (isActive && daysLeft > 0) {
                                 found = true
                                 matchedDays = daysLeft
+                                val (allowed, limit) = isHwidAllowed(k, currentHwid)
+                                hwidAllowed = allowed
+                                maxDev = limit
                             }
                             break
                         }
@@ -105,13 +197,14 @@ object SubscriptionHelper {
                 }
             }
 
-            if (!found) {
+            if (!found || !hwidAllowed) {
                 clearSubscription()
                 val allGuids = MmkvManager.decodeAllServerList()
                 allGuids.forEach { MmkvManager.removeServer(it) }
                 return@withContext false
             }
 
+            MmkvManager.encodeSettings(AppConfig.PREF_SUBSCRIPTION_MAX_DEVICES, maxDev)
             val expiresAt = MmkvManager.decodeSettingsLong(AppConfig.PREF_SUBSCRIPTION_EXPIRES, 0L)
             if (expiresAt > 0L && matchedDays > 0) {
                 MmkvManager.encodeSettings(AppConfig.PREF_SUBSCRIPTION_DAYS, matchedDays.toFloat())
@@ -180,7 +273,9 @@ object SubscriptionHelper {
                 val json = JSONObject(stateJsonStr)
                 var matchedDays = 30.0
                 var matchedPlan = "Тариф ПУЛЬС"
+                var matchedMaxDevices = 2
                 var found = false
+                val myHwid = getDeviceHwid()
 
                 // Проверяем список промокодов
                 val promos = json.optJSONArray("promos")
@@ -191,6 +286,7 @@ object SubscriptionHelper {
                             found = true
                             matchedDays = p.optDouble("days", 30.0)
                             matchedPlan = "Промокод: ${p.optString("code")}"
+                            matchedMaxDevices = p.optInt("max_devices", 2)
                             break
                         }
                     }
@@ -203,9 +299,16 @@ object SubscriptionHelper {
                         for (i in 0 until keys.length()) {
                             val k = keys.getJSONObject(i)
                             if (k.optString("key_code").equals(trimmed, ignoreCase = true)) {
+                                if (!isHwidAllowed(k, myHwid)) {
+                                    val maxDev = k.optInt("max_devices", 2)
+                                    return@withContext Result.failure(
+                                        IllegalArgumentException("Лимит устройств ($maxDev) исчерпан для этого ключа. Ваш HWID: $myHwid")
+                                    )
+                                }
                                 found = true
                                 matchedDays = k.optDouble("days_left", 30.0)
                                 matchedPlan = k.optString("plan_name", "Ключ доступа")
+                                matchedMaxDevices = k.optInt("max_devices", 2)
                                 break
                             }
                         }
@@ -223,10 +326,11 @@ object SubscriptionHelper {
                                 code = trimmed.uppercase(),
                                 plan = matchedPlan,
                                 days = matchedDays,
-                                expiresAt = expiry
+                                expiresAt = expiry,
+                                maxDevices = matchedMaxDevices
                             )
                             return@withContext Result.success(
-                                ActivationResult(count, "Подписка $matchedPlan успешно активирована ($count серверов)", subB64)
+                                ActivationResult(count, "Подписка $matchedPlan активирована ($count серверов, HWID: $myHwid)", subB64)
                             )
                         }
                     }

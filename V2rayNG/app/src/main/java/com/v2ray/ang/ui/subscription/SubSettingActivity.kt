@@ -268,6 +268,15 @@ fun SubSettingScreen(
                                 color = Color(0xFFAAAAAA)
                             )
 
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            Text(
+                                text = "HWID: ${SubscriptionHelper.getDeviceHwid()} (${SubscriptionHelper.getDeviceModelName()}) • Лимит: до ${info.maxDevices} устр.",
+                                fontSize = 11.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = Color(0xFF81C784)
+                            )
+
                             Spacer(modifier = Modifier.height(12.dp))
 
                             Row(

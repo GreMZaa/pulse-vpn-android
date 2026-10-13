@@ -570,6 +570,8 @@ object AngConfigManager {
                 val profile = MmkvManager.decodeServerConfig(guid)
                 val delay =
                     MmkvManager.decodeServerAffiliationInfo(guid)?.testDelayMillis ?: 0L
+                val isFav = MmkvManager.isFavoriteServer(guid, profile)
+                val favRank = if (isFav) 0L else 1L
                 val priority = profile?.getWhitelistPriority() ?: 3
 
                 val statusGroup = when {
@@ -577,7 +579,7 @@ object AngConfigManager {
                     delay == 0L -> 1L
                     else -> 2L // нет ответа (delay < 0) - всегда в самый низ!
                 }
-                val totalScore = (statusGroup * 10_000_000L) + (priority * 100_000L) + (if (delay > 0L) delay else 99_999L)
+                val totalScore = (statusGroup * 100_000_000L) + (favRank * 10_000_000L) + (priority * 100_000L) + (if (delay > 0L) delay else 99_999L)
                 guid to totalScore
             }
             .sortedBy { it.second }

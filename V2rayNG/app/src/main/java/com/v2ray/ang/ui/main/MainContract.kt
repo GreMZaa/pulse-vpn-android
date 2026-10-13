@@ -60,6 +60,7 @@ sealed interface MainAction {
 
     data class SelectGroup(val groupId: String) : MainAction
     data class SelectServer(val guid: String) : MainAction
+    data class ToggleFavoriteServer(val guid: String) : MainAction
     data class RemoveServer(val guid: String) : MainAction
     data class EditServer(val guid: String, val profile: com.v2ray.ang.dto.entities.ProfileItem) : MainAction
     data class Search(val query: String) : MainAction
