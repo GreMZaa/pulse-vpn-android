@@ -287,8 +287,9 @@ object CoreServiceManager {
     }
 
     /**
-     * Фоновый монитор здоровья: проверяет отклик текущего сервера.
-     * При обрыве/блокировке узла автоматически переключает соединение на следующий лучший сервер из пула.
+     * Фоновый монитор здоровья: мгновенное автопереключение на живой сервер при обрыве/блокировке.
+     * Проверяет доступность каждые 12 секунд. При сбое делает быструю повторную проверку через 1.5 секунды
+     * и мгновенно переключает соединение на следующий лучший сервер из пула.
      */
     private fun startFailoverMonitor(service: Service) {
         failoverJob?.cancel()
@@ -296,9 +297,9 @@ object CoreServiceManager {
 
         failoverJob = CoroutineScope(Dispatchers.IO).launch {
             // Начальная задержка для стабилизации соединения
-            delay(15000L)
+            delay(8000L)
             while (isActive && isRunning()) {
-                delay(25000L)
+                delay(12000L)
                 if (!isRunning() || isReloading) continue
 
                 var isHealthy = false
@@ -325,9 +326,27 @@ object CoreServiceManager {
                     consecutiveFailures = 0
                 } else {
                     consecutiveFailures++
-                    LogUtil.w(AppConfig.TAG, "Failover health check failed ($consecutiveFailures/2)")
-                    if (consecutiveFailures >= 2) {
+                    LogUtil.w(AppConfig.TAG, "Failover health check failed, re-probing in 1.5s...")
+                    // Быстрая повторная проверка через 1.5 секунды для исключения случайной сетевой задержки
+                    delay(1500L)
+                    var retryHealthy = false
+                    try {
+                        val retry204 = coreController.measureDelay(SettingsManager.getDelayTestUrl())
+                        if (retry204 >= 0) {
+                            retryHealthy = true
+                        } else {
+                            val retryTg = coreController.measureDelay(AppConfig.DELAY_TEST_URL2)
+                            if (retryTg >= 0) {
+                                retryHealthy = true
+                            }
+                        }
+                    } catch (_: Exception) {}
+
+                    if (retryHealthy) {
                         consecutiveFailures = 0
+                    } else {
+                        consecutiveFailures = 0
+                        LogUtil.w(AppConfig.TAG, "Failover: connection is dead, triggering instant switch!")
                         triggerFailover(service)
                     }
                 }
@@ -369,10 +388,16 @@ object CoreServiceManager {
         val reloadSuccess = reloadCore()
 
         if (reloadSuccess) {
+            val toastMsg = "🔄 Автопереключение: ${nextBest.second.remarks}"
+            CoroutineScope(Dispatchers.Main.immediate).launch {
+                try {
+                    android.widget.Toast.makeText(service, toastMsg, android.widget.Toast.LENGTH_SHORT).show()
+                } catch (_: Exception) {}
+            }
             MessageHelper.sendMsg2UI(
                 service,
                 AppConfig.MSG_STATE_RESTART,
-                "⚡ Авто-переключение: сервер переподключен на ${nextBest.second.remarks}"
+                toastMsg
             )
             NotificationManager.showNotification(nextBest.second)
         }

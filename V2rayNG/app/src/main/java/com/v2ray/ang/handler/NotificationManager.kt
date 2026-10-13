@@ -104,7 +104,8 @@ object NotificationManager {
         mBuilder = NotificationCompat.Builder(service, channelId)
             .setSmallIcon(R.drawable.ic_stat_name)
             .setContentTitle(formattedTitle)
-            .setContentText("Соединение активно • Трафик защищен")
+            .setContentText("↓ 0 Б/с   ↑ 0 Б/с   •   Трафик защищен")
+            .setSubText("ПУЛЬС VPN")
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .setShowWhen(false)
@@ -112,12 +113,12 @@ object NotificationManager {
             .setContentIntent(contentPendingIntent)
             .addAction(
                 R.drawable.ic_delete_24dp,
-                service.getString(R.string.notification_action_stop_v2ray),
+                "Отключить",
                 stopV2RayPendingIntent
             )
             .addAction(
                 R.drawable.ic_restore_24dp,
-                service.getString(R.string.title_service_restart),
+                "Сменить сервер",
                 restartV2RayPendingIntent
             )
 
