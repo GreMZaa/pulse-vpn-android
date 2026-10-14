@@ -67,6 +67,18 @@ class MainActivity : HelperBaseComponentActivity() {
             if (it.resultCode == RESULT_OK) startV2Ray()
         }
 
+    private val requestBatteryOptLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            checkAndRequestVpnPreflight()
+        }
+
+    private val requestVpnPermissionPreflight =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                LogUtil.i(AppConfig.TAG, "Preflight VPN permission granted")
+            }
+        }
+
     private val profileEditorLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode != RESULT_OK) return@registerForActivityResult
@@ -100,10 +112,7 @@ class MainActivity : HelperBaseComponentActivity() {
         super.onCreate(savedInstanceState)
         mainViewModel.onAction(MainAction.Initialize)
 
-        checkAndRequestPermission(PermissionType.POST_NOTIFICATIONS) {
-            com.v2ray.ang.handler.AppUpdateNotificationWorker.schedule(this)
-        }
-        com.v2ray.ang.handler.AppUpdateNotificationWorker.schedule(this)
+        checkAndRequestAllPermissions()
 
         handleUpdateIntent(intent)
     }
@@ -321,22 +330,67 @@ class MainActivity : HelperBaseComponentActivity() {
         }
     }
 
-    private fun checkAndRequestBatteryOptimization() {
+    private fun checkAndRequestAllPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            checkAndRequestPermission(
+                PermissionType.POST_NOTIFICATIONS,
+                onDenied = {
+                    checkAndRequestBatteryOptimization(isStartup = true)
+                },
+                onGranted = {
+                    com.v2ray.ang.handler.AppUpdateNotificationWorker.schedule(this)
+                    checkAndRequestBatteryOptimization(isStartup = true)
+                }
+            )
+        } else {
+            com.v2ray.ang.handler.AppUpdateNotificationWorker.schedule(this)
+            checkAndRequestBatteryOptimization(isStartup = true)
+        }
+    }
+
+    private fun checkAndRequestBatteryOptimization(isStartup: Boolean = false) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             try {
                 val powerManager = getSystemService(POWER_SERVICE) as? PowerManager
                 if (powerManager != null && !powerManager.isIgnoringBatteryOptimizations(packageName)) {
-                    val alreadyAsked = MmkvManager.decodeSettingsBool("battery_opt_prompted", false)
-                    if (!alreadyAsked) {
-                        MmkvManager.encodeSettings("battery_opt_prompted", true)
-                        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                            data = Uri.parse("package:$packageName")
-                        }
+                    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                        data = Uri.parse("package:$packageName")
+                    }
+                    if (isStartup) {
+                        requestBatteryOptLauncher.launch(intent)
+                    } else {
                         startActivity(intent)
                     }
+                    return
                 }
             } catch (e: Exception) {
-                LogUtil.d(AppConfig.TAG, "Battery optimization request: ${e.message}")
+                try {
+                    val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                    if (isStartup) {
+                        requestBatteryOptLauncher.launch(intent)
+                    } else {
+                        startActivity(intent)
+                    }
+                    return
+                } catch (e2: Exception) {
+                    LogUtil.d(AppConfig.TAG, "Battery optimization request: ${e2.message}")
+                }
+            }
+        }
+        if (isStartup) {
+            checkAndRequestVpnPreflight()
+        }
+    }
+
+    private fun checkAndRequestVpnPreflight() {
+        if (SettingsManager.isVpnMode()) {
+            try {
+                val vpnIntent = VpnService.prepare(this)
+                if (vpnIntent != null) {
+                    requestVpnPermissionPreflight.launch(vpnIntent)
+                }
+            } catch (e: Exception) {
+                LogUtil.e(AppConfig.TAG, "VpnService.prepare preflight failed", e)
             }
         }
     }

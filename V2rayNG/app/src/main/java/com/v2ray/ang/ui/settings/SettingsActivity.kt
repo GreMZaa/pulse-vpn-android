@@ -1,11 +1,15 @@
 package com.v2ray.ang.ui.settings
 
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
 import android.provider.Settings
 import androidx.activity.viewModels
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -102,6 +106,7 @@ fun SettingsScreen(
     onModeHelpClicked: () -> Unit,
     onSystemVpnSettingsClicked: () -> Unit
 ) {
+    val context = LocalContext.current
     val scrollState = rememberScrollState()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val systemVpnSettingsAvailable by viewModel.systemVpnSettingsAvailable.collectAsStateWithLifecycle()
@@ -643,6 +648,29 @@ fun SettingsScreen(
                     summary = stringResource(R.string.summary_pref_is_booted),
                     checked = isBooted,
                     onCheckedChange = { isBooted = it }
+                )
+                val isIgnoringBattery = remember(context) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        (context.getSystemService(Context.POWER_SERVICE) as? PowerManager)?.isIgnoringBatteryOptimizations(context.packageName) == true
+                    } else true
+                }
+                SettingsMenuItem(
+                    title = "Оптимизация батареи (фоновая работа)",
+                    subtitle = if (isIgnoringBattery) "Без ограничений (VPN работает стабильно) ✅" else "Ограничено системой — нажмите для настройки ⚠️",
+                    onClick = {
+                        try {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                    data = Uri.parse("package:${context.packageName}")
+                                }
+                                context.startActivity(intent)
+                            }
+                        } catch (_: Exception) {
+                            try {
+                                context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                            } catch (_: Exception) {}
+                        }
+                    }
                 )
                 if (systemVpnSettingsAvailable) {
                     SettingsMenuItem(

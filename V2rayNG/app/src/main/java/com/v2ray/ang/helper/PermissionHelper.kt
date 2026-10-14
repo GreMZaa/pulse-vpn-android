@@ -26,8 +26,13 @@ class PermissionHelper(private val activity: ComponentActivity) {
      *
      * @param permissionType the type of permission
      * @param onGranted called when permission is granted (called immediately if already granted)
+     * @param onDenied optional callback called when permission is denied
      */
-    fun request(permissionType: PermissionType, onGranted: () -> Unit) {
+    fun request(
+        permissionType: PermissionType,
+        onGranted: () -> Unit,
+        onDenied: (() -> Unit)? = null
+    ) {
         val permission = permissionType.getPermission()
         if (ContextCompat.checkSelfPermission(activity, permission) == PackageManager.PERMISSION_GRANTED) {
             onGranted()
@@ -41,6 +46,7 @@ class PermissionHelper(private val activity: ComponentActivity) {
                         activity.getString(permissionType.getLabelRes())
                     )
                     activity.toast(message)
+                    onDenied?.invoke()
                 }
             }
             permissionLauncher.launch(permission)

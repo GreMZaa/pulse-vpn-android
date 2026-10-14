@@ -38,12 +38,14 @@ abstract class HelperBaseComponentActivity : BaseComponentActivity() {
      *
      * @param permissionType The type of permission to check and request
      * @param onGranted Callback to execute when permission is granted
+     * @param onDenied Optional callback to execute when permission is denied
      */
     protected fun checkAndRequestPermission(
         permissionType: PermissionType,
+        onDenied: (() -> Unit)? = null,
         onGranted: () -> Unit
     ) {
-        permissionRequester.request(permissionType, onGranted)
+        permissionRequester.request(permissionType, onGranted, onDenied)
     }
 
     /**
