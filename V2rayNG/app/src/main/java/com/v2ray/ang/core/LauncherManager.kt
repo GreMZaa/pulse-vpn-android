@@ -18,6 +18,10 @@ import com.v2ray.ang.service.CoreRootService
 import com.v2ray.ang.service.CoreVpnService
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.Utils
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 object LauncherManager {
 
@@ -31,8 +35,20 @@ object LauncherManager {
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "LauncherManager: ${e.message}", e)
             val msg = e.message ?: e.javaClass.simpleName
-            if (msg.contains("process is", ignoreCase = true) || msg.contains("Unable to launch", ignoreCase = true)) {
-                context.toast("Служба VPN запускается... Повторите нажатие через пару секунд.")
+            if (msg.contains("process is", ignoreCase = true) ||
+                msg.contains("Unable to launch", ignoreCase = true) ||
+                msg.contains("ForegroundServiceStartNotAllowed", ignoreCase = true)
+            ) {
+                CoroutineScope(Dispatchers.Main).launch {
+                    delay(600)
+                    try {
+                        startServiceFromToggleInternal(context)
+                        LogUtil.i(AppConfig.TAG, "LauncherManager toggle retry succeeded")
+                    } catch (retryEx: Exception) {
+                        LogUtil.e(AppConfig.TAG, "LauncherManager toggle retry failed: ${retryEx.message}", retryEx)
+                        context.toast("Служба VPN запускается... Повторите нажатие через пару секунд.")
+                    }
+                }
             } else {
                 context.toast(msg)
             }
@@ -57,8 +73,20 @@ object LauncherManager {
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "LauncherManager: ${e.message}", e)
             val msg = e.message ?: e.javaClass.simpleName
-            if (msg.contains("process is", ignoreCase = true) || msg.contains("Unable to launch", ignoreCase = true)) {
-                context.toast("Служба VPN запускается... Повторите нажатие через пару секунд.")
+            if (msg.contains("process is", ignoreCase = true) ||
+                msg.contains("Unable to launch", ignoreCase = true) ||
+                msg.contains("ForegroundServiceStartNotAllowed", ignoreCase = true)
+            ) {
+                CoroutineScope(Dispatchers.Main).launch {
+                    delay(600)
+                    try {
+                        startContextService(context)
+                        LogUtil.i(AppConfig.TAG, "LauncherManager startService retry succeeded")
+                    } catch (retryEx: Exception) {
+                        LogUtil.e(AppConfig.TAG, "LauncherManager startService retry failed: ${retryEx.message}", retryEx)
+                        context.toast("Служба VPN запускается... Повторите нажатие через пару секунд.")
+                    }
+                }
             } else {
                 context.toast(msg)
             }

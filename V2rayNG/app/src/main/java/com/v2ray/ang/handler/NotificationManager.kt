@@ -148,18 +148,34 @@ object NotificationManager {
         val n = notification ?: return
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                ServiceCompat.startForeground(
-                    service,
-                    NOTIFICATION_ID,
-                    n,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                var started = false
+                val typesToTry = intArrayOf(
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED or ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
                 )
+                for (type in typesToTry) {
+                    try {
+                        ServiceCompat.startForeground(service, NOTIFICATION_ID, n, type)
+                        started = true
+                        LogUtil.i(AppConfig.TAG, "startForeground succeeded with type $type")
+                        break
+                    } catch (e: Throwable) {
+                        LogUtil.w(AppConfig.TAG, "startForeground with type $type failed: ${e.message}")
+                    }
+                }
+                if (!started) {
+                    try {
+                        service.startForeground(NOTIFICATION_ID, n)
+                    } catch (e2: Throwable) {
+                        LogUtil.e(AppConfig.TAG, "startForeground fallback also failed", e2)
+                    }
+                }
             } else {
                 service.startForeground(NOTIFICATION_ID, n)
             }
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "startForegroundCompat failed", e)
-            // Fallback: try plain startForeground
             try {
                 service.startForeground(NOTIFICATION_ID, n)
             } catch (e2: Exception) {
