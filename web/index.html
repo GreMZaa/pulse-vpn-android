@@ -77,17 +77,32 @@
 
     /* ШАПКА В СТИЛЕ ПРИЛОЖЕНИЯ */
     header {
-      background: rgba(11, 20, 27, 0.92);
+      background: rgba(11, 20, 27, 0.94);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--border-subtle);
-      padding: 12px 18px;
+      padding-top: max(14px, calc(10px + env(safe-area-inset-top, 0px)));
+      padding-bottom: 14px;
+      padding-left: max(16px, calc(16px + env(safe-area-inset-left, 0px)));
+      padding-right: max(16px, calc(16px + env(safe-area-inset-right, 0px)));
       display: flex;
       align-items: center;
       justify-content: space-between;
       position: sticky;
       top: 0;
       z-index: 50;
+      box-sizing: border-box;
+    }
+
+    /* На iOS / Android в режиме PWA (с рабочего стола) учитываем Dynamic Island / вырез */
+    @media all and (display-mode: standalone) {
+      header {
+        padding-top: max(50px, calc(14px + env(safe-area-inset-top, 44px)));
+      }
+    }
+
+    .is-standalone-pwa header {
+      padding-top: max(50px, calc(14px + env(safe-area-inset-top, 44px)));
     }
 
     .brand-box {
@@ -134,15 +149,16 @@
       gap: 8px;
     }
 
-    .badge-pill {
-      background: rgba(34, 197, 94, 0.15);
-      border: 1px solid rgba(34, 197, 94, 0.35);
+    .badge-e2e {
+      background: rgba(34, 197, 94, 0.12);
+      border: 1px solid rgba(34, 197, 94, 0.3);
       color: #4ADE80;
-      font-size: 10.5px;
-      font-weight: 700;
-      padding: 4px 9px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 10px;
       border-radius: 20px;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
     }
 
     .btn-install-header {
@@ -512,6 +528,44 @@
       justify-content: center;
       cursor: pointer;
       font-size: 14px;
+      transition: all 0.15s;
+    }
+
+    .btn-room-delete {
+      color: #94A3B8;
+    }
+    .btn-room-delete:hover, .btn-room-delete:active {
+      color: #EF4444;
+      background: rgba(239, 68, 68, 0.16);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    .rooms-empty-card {
+      background: rgba(16, 27, 36, 0.45);
+      border: 1px dashed var(--border-subtle);
+      border-radius: 14px;
+      padding: 22px 16px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .empty-icon {
+      font-size: 26px;
+      opacity: 0.6;
+    }
+    .empty-title {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-white);
+    }
+    .empty-sub {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+      max-width: 270px;
     }
 
     /* ТЕЛЕМЕТРИЯ / БЕЗОПАСНОСТЬ */
@@ -766,7 +820,7 @@
     </div>
 
     <div class="header-badges">
-      <span class="badge-pill">ПОСТОЯННЫЕ</span>
+      <span class="badge-e2e">🔒 Direct E2E</span>
       <button class="btn-install-header" id="btn-header-install" onclick="triggerPwaInstall()">
         <span>📲</span> На экран
       </button>
@@ -966,20 +1020,36 @@
     }
 
     // --- 3. ХРАНЕНИЕ ПОСТОЯННЫХ КОМНАТ (LOCALSTORAGE) ---
-    const STORAGE_KEY = 'pulse_saved_rooms_v2';
-    const defaultRooms = [
-      { id: 'PulseSemia1042', name: 'Семья (Дом)', code: 'SEMIA1042' }
-    ];
+    const STORAGE_KEY = 'pulse_saved_rooms_v3';
 
     function getSavedRooms() {
       try {
+        // Миграция и очистка старой демо-комнаты SEMIA1042
+        ['pulse_saved_rooms_v2', 'pulse_saved_rooms'].forEach(k => {
+          const old = localStorage.getItem(k);
+          if (old) {
+            try {
+              const parsed = JSON.parse(old);
+              if (Array.isArray(parsed)) {
+                const cleaned = parsed.filter(r => r && r.code !== 'SEMIA1042' && r.id !== 'PulseSemia1042');
+                if (cleaned.length > 0 && !localStorage.getItem(STORAGE_KEY)) {
+                  localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
+                }
+              }
+            } catch(e){}
+            localStorage.removeItem(k);
+          }
+        });
+
         const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
+        if (raw !== null) {
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed)) {
+            return parsed.filter(r => r && r.code !== 'SEMIA1042' && r.id !== 'PulseSemia1042');
+          }
         }
       } catch(e){}
-      return defaultRooms;
+      return [];
     }
 
     function saveRooms(list) {
@@ -993,6 +1063,17 @@
       const list = getSavedRooms();
       const container = document.getElementById('rooms-list-container');
       container.innerHTML = '';
+
+      if (!list || list.length === 0) {
+        container.innerHTML = `
+          <div class="rooms-empty-card">
+            <div class="empty-icon">🛋️</div>
+            <div class="empty-title">Список комнат пуст</div>
+            <div class="empty-sub">Вы можете создать постоянную комнату кнопкой выше или войти по любому коду.</div>
+          </div>
+        `;
+        return;
+      }
 
       list.forEach((r, idx) => {
         const card = document.createElement('div');
@@ -1011,10 +1092,12 @@
             <button class="btn-room-call" onclick="quickJoin('${escapeHtml(r.code)}')">
               <span>📞</span> Звонок
             </button>
-            <button class="btn-room-icon" title="Поделиться" onclick="shareRoomLink('${escapeHtml(r.code)}', '${escapeHtml(r.name)}')">
+            <button class="btn-room-icon" title="Поделиться" onclick="event.stopPropagation(); shareRoomLink('${escapeHtml(r.code)}', '${escapeHtml(r.name)}')">
               📲
             </button>
-            ${list.length > 1 ? `<button class="btn-room-icon" title="Удалить" onclick="deleteRoom(${idx})">✕</button>` : ''}
+            <button class="btn-room-icon btn-room-delete" title="Удалить комнату" onclick="event.stopPropagation(); deleteRoom(${idx})">
+              🗑️
+            </button>
           </div>
         `;
         container.appendChild(card);
@@ -1047,8 +1130,11 @@
 
     function deleteRoom(idx) {
       const list = getSavedRooms();
-      list.splice(idx, 1);
-      saveRooms(list);
+      if (idx >= 0 && idx < list.length) {
+        const removed = list.splice(idx, 1);
+        saveRooms(list);
+        showToast('Комната удалена');
+      }
     }
 
     function quickJoin(code) {

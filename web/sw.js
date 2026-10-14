@@ -1,5 +1,5 @@
 // ПУЛЬС Связь Service Worker
-const CACHE_NAME = 'pulse-call-v1';
+const CACHE_NAME = 'pulse-call-v2';
 const ASSETS = [
   './',
   './index.html',
