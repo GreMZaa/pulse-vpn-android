@@ -781,7 +781,7 @@
     let isMicActive = true;
 
     function buildNinjaUrl(cleanRoom, withVideo) {
-      let base = `https://vdo.ninja/?room=${cleanRoom}&label=Web&autostart&darkmode&cleanish&webcam`;
+      let base = `https://vdo.ninja/?room=${cleanRoom}&label=Web&autostart&darkmode&cleanish&webcam&largepreview&showpreview`;
       if (!withVideo) {
         base += '&videomute';
       }
@@ -822,7 +822,10 @@
     function toggleMic() {
       isMicActive = !isMicActive;
       const frame = document.getElementById('call-frame');
-      frame.contentWindow.postMessage({ action: 'mic', value: isMicActive }, '*');
+      try {
+        frame.contentWindow.postMessage({ mic: isMicActive }, '*');
+        frame.contentWindow.postMessage({ action: 'mic', value: isMicActive }, '*');
+      } catch(e){}
       const btn = document.getElementById('btn-mic-toggle');
       btn.textContent = isMicActive ? '🎙️' : '🔇';
       btn.classList.toggle('active', isMicActive);
@@ -832,7 +835,10 @@
     function toggleCam() {
       isCamActive = !isCamActive;
       const frame = document.getElementById('call-frame');
-      frame.contentWindow.postMessage({ action: 'camera', value: isCamActive }, '*');
+      try {
+        frame.contentWindow.postMessage({ camera: isCamActive }, '*');
+        frame.contentWindow.postMessage({ action: 'camera', value: isCamActive }, '*');
+      } catch(e){}
       const btn = document.getElementById('btn-cam-toggle');
       btn.textContent = isCamActive ? '📹' : '📷';
       btn.classList.toggle('active', isCamActive);

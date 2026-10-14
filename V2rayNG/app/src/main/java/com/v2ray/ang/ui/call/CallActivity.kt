@@ -10,6 +10,7 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
+import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.webkit.PermissionRequest
@@ -95,12 +96,16 @@ class CallActivity : ComponentActivity() {
     private var isMicMuted by mutableStateOf(false)
     private var isSpeakerOn by mutableStateOf(true)
     private var isCameraOn by mutableStateOf(false)
+    private var hasPermissions by mutableStateOf(false)
 
     private val requestCallPermissions =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { perms ->
-            val audioGranted = perms[Manifest.permission.RECORD_AUDIO] == true
+            val audioGranted = perms[Manifest.permission.RECORD_AUDIO] == true ||
+                    ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
             if (audioGranted) {
+                hasPermissions = true
                 initAudioAndLoad()
+                webViewInstance?.reload()
             } else {
                 Toast.makeText(this, "Для звонков необходим доступ к микрофону", Toast.LENGTH_LONG).show()
                 finish()
@@ -110,6 +115,10 @@ class CallActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
+            WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
+        )
 
         audioManager = getSystemService(Context.AUDIO_SERVICE) as? AudioManager
 
@@ -129,14 +138,15 @@ class CallActivity : ComponentActivity() {
         val roomName = intent.getStringExtra(EXTRA_ROOM_NAME) ?: "Защищённая комната"
         val roomCode = (intent.getStringExtra(EXTRA_ROOM_CODE) ?: "").replace(Regex("[^a-zA-Z0-9]"), "")
 
-        // Полноценная конференц-комната (все участники видят и слышат друг друга)
-        val callUrl = "https://vdo.ninja/?room=$cleanRoomId&label=Android&autostart&darkmode&cleanish&webcam&videomute"
+        // Включаем largepreview и showpreview для отображения собственного видеопотока камеры без чёрного экрана
+        val callUrl = "https://vdo.ninja/?room=$cleanRoomId&label=Android&autostart&darkmode&cleanish&webcam&largepreview&showpreview"
 
         setContent {
             CallScreenContent(
                 roomName = roomName,
                 roomCode = roomCode,
                 callUrl = callUrl,
+                hasPermissions = hasPermissions,
                 isMicMuted = isMicMuted,
                 isSpeakerOn = isSpeakerOn,
                 isCameraOn = isCameraOn,
@@ -162,6 +172,7 @@ class CallActivity : ComponentActivity() {
         if (needed.isNotEmpty()) {
             requestCallPermissions.launch(needed.toTypedArray())
         } else {
+            hasPermissions = true
             initAudioAndLoad()
         }
     }
@@ -202,8 +213,21 @@ class CallActivity : ComponentActivity() {
         isMicMuted = next
         try {
             audioManager?.isMicrophoneMute = next
-            // Официальный postMessage API VDO.Ninja (не трогает посторонние кнопки)
-            val js = "try { window.postMessage({ action: 'mic', value: ${!next} }, '*'); } catch(e){}"
+            val enabled = !next
+            val js = """
+                (function() {
+                    try { window.postMessage({ mic: $enabled }, '*'); } catch(e){}
+                    try { window.postMessage({ action: 'mic', value: $enabled }, '*'); } catch(e){}
+                    try {
+                        var vids = document.querySelectorAll('audio, video');
+                        vids.forEach(function(v) {
+                            if (v.srcObject) {
+                                v.srcObject.getAudioTracks().forEach(function(t) { t.enabled = $enabled; });
+                            }
+                        });
+                    } catch(e){}
+                })();
+            """.trimIndent()
             webViewInstance?.evaluateJavascript(js, null)
         } catch (_: Exception) {}
     }
@@ -220,8 +244,20 @@ class CallActivity : ComponentActivity() {
     private fun setCameraState(enabled: Boolean) {
         isCameraOn = enabled
         try {
-            // Официальный postMessage API VDO.Ninja (не трогает кнопки записи)
-            val js = "try { window.postMessage({ action: 'camera', value: $enabled }, '*'); } catch(e){}"
+            val js = """
+                (function() {
+                    try { window.postMessage({ camera: $enabled }, '*'); } catch(e){}
+                    try { window.postMessage({ action: 'camera', value: $enabled }, '*'); } catch(e){}
+                    try {
+                        var vids = document.querySelectorAll('video');
+                        vids.forEach(function(v) {
+                            if (v.srcObject) {
+                                v.srcObject.getVideoTracks().forEach(function(t) { t.enabled = $enabled; });
+                            }
+                        });
+                    } catch(e){}
+                })();
+            """.trimIndent()
             webViewInstance?.evaluateJavascript(js, null)
         } catch (_: Exception) {}
     }
@@ -279,6 +315,7 @@ class CallActivity : ComponentActivity() {
         roomName: String,
         roomCode: String,
         callUrl: String,
+        hasPermissions: Boolean,
         isMicMuted: Boolean,
         isSpeakerOn: Boolean,
         isCameraOn: Boolean,
@@ -414,48 +451,90 @@ class CallActivity : ComponentActivity() {
                     .fillMaxWidth()
                     .weight(1f)
                     .padding(vertical = 12.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color.Black)
+                    .background(Color.Black, RoundedCornerShape(16.dp))
                     .border(1.5.dp, if (isCameraOn) Color(0xFF2E7D32) else Color(0xFF222222), RoundedCornerShape(16.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 // 1. ПОЛНОРАЗМЕРНЫЙ WEBVIEW ДЛЯ WebRTC (АУДИО + ВИДЕОСЕТКА)
                 // Всегда держит полный размер контейнера, чтобы WebRTC не сжимался до 1px
-                AndroidView(
-                    factory = { ctx ->
-                        WebView(ctx).apply {
-                            layoutParams = ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.MATCH_PARENT
-                            )
-                            settings.apply {
-                                javaScriptEnabled = true
-                                domStorageEnabled = true
-                                mediaPlaybackRequiresUserGesture = false
-                                databaseEnabled = true
-                                allowFileAccess = true
-                                cacheMode = WebSettings.LOAD_DEFAULT
-                            }
-                            webChromeClient = object : WebChromeClient() {
-                                override fun onPermissionRequest(request: PermissionRequest?) {
-                                    post {
-                                        request?.grant(request.resources)
+                if (hasPermissions) {
+                    AndroidView(
+                        factory = { ctx ->
+                            WebView(ctx).apply {
+                                setLayerType(View.LAYER_TYPE_HARDWARE, null)
+                                layoutParams = ViewGroup.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                    ViewGroup.LayoutParams.MATCH_PARENT
+                                )
+                                settings.apply {
+                                    javaScriptEnabled = true
+                                    domStorageEnabled = true
+                                    mediaPlaybackRequiresUserGesture = false
+                                    databaseEnabled = true
+                                    allowFileAccess = true
+                                    allowContentAccess = true
+                                    cacheMode = WebSettings.LOAD_DEFAULT
+                                }
+                                webChromeClient = object : WebChromeClient() {
+                                    override fun onPermissionRequest(request: PermissionRequest?) {
+                                        runOnUiThread {
+                                            try {
+                                                request?.grant(request.resources ?: arrayOf(
+                                                    PermissionRequest.RESOURCE_AUDIO_CAPTURE,
+                                                    PermissionRequest.RESOURCE_VIDEO_CAPTURE
+                                                ))
+                                            } catch (_: Exception) {}
+                                        }
                                     }
                                 }
+                                webViewClient = object : WebViewClient() {
+                                    override fun onPageFinished(view: WebView?, url: String?) {
+                                        super.onPageFinished(view, url)
+                                        if (!isCameraOn) {
+                                            setCameraState(false)
+                                        }
+                                    }
+                                }
+                                loadUrl(callUrl)
+                                webViewInstance = this
                             }
-                            webViewClient = WebViewClient()
-                            loadUrl(callUrl)
-                            webViewInstance = this
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Text(
+                        text = "Ожидание разрешений...",
+                        fontSize = 13.sp,
+                        color = Color(0xFF888888)
+                    )
+                }
+
+                // Индикатор активной камеры поверх видео
+                if (isCameraOn) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = 12.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color(0xDD111111))
+                            .border(1.dp, Color(0xFF2E7D32), RoundedCornerShape(20.dp))
+                            .padding(horizontal = 14.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "🟢 Камера включена • Прямой эфир",
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF81C784)
+                        )
+                    }
+                }
 
                 // 2. ГОЛОСОВОЙ ОВЕРЛЕЙ (ПОКАЗЫВАЕТСЯ ТОЛЬКО КОГДА КАМЕРА ВЫКЛЮЧЕНА)
                 if (!isCameraOn) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
+                            .clip(RoundedCornerShape(16.dp))
                             .background(Color(0xFF0F0F0F)),
                         contentAlignment = Alignment.Center
                     ) {
