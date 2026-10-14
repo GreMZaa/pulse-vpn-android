@@ -1406,6 +1406,7 @@
         const baseOrigin = window.location.origin + window.location.pathname.replace(/\/admin\.html$/, '');
 
         let cloudData = null;
+        const revealedKeyTimers = {};
 
         function showToast(msg) {
             const box = document.getElementById('toastBox');
@@ -2171,8 +2172,6 @@
                 `;
             }).join('');
         }
-
-        const revealedKeyTimers = {};
 
         function revealAndCopyKey(keyCode, el) {
             navigator.clipboard.writeText(keyCode);
