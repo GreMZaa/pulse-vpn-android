@@ -3,30 +3,53 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>ПУЛЬС // ЗАЩИЩЁННАЯ СВЯЗЬ</title>
-  <meta name="theme-color" content="#06080C">
+  <title>ПУЛЬС Связь — Защищённые звонки P2P</title>
+  
+  <!-- PWA & Mobile Web App Meta -->
+  <meta name="theme-color" content="#0B141B">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ПУЛЬС Связь">
+  <meta name="description" content="Постоянные зашифрованные комнаты для видеозвонков P2P. Без цензуры и регистрации.">
+  
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
   <style>
     :root {
-      --void-bg: #06080C;
-      --panel-surface: #0E131C;
-      --panel-elevated: #151C2A;
-      --border-tactical: #1E283A;
-      --border-bright: #2A3852;
-      --signal-green: #00FF85;
-      --signal-green-glow: rgba(0, 255, 133, 0.28);
-      --signal-green-dark: #004D28;
-      --hazard-amber: #FFB020;
-      --hazard-amber-glow: rgba(255, 176, 32, 0.25);
-      --alert-crimson: #FF3355;
-      --alert-crimson-glow: rgba(255, 51, 85, 0.35);
-      --telemetry-cyan: #38BDF8;
-      --text-stark: #F3F6FA;
-      --text-dim: #7E8C9F;
-      --font-display: 'Chakra Petch', -apple-system, sans-serif;
+      --bg-dark: #0B141B;
+      --bg-surface: #101B24;
+      --bg-card: #15222E;
+      --bg-card-hover: #1A2B3B;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-focus: #0284C7;
+      
+      --pulse-green: #22C55E;
+      --pulse-green-dark: #16A34A;
+      --pulse-green-glow: rgba(34, 197, 94, 0.25);
+      
+      --pulse-blue: #0284C7;
+      --pulse-blue-hover: #0369A1;
+      --pulse-blue-glow: rgba(2, 132, 199, 0.35);
+      
+      --hazard-amber: #F59E0B;
+      --alert-red: #EF4444;
+      
+      --text-white: #FFFFFF;
+      --text-main: #F1F5F9;
+      --text-secondary: #94A3B8;
+      --text-muted: #64748B;
+      
+      --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
     }
 
@@ -39,673 +62,1048 @@
     }
 
     body {
-      background-color: var(--void-bg);
-      background-image: 
-        radial-gradient(ellipse at 50% 0%, rgba(0, 255, 133, 0.08) 0%, transparent 60%),
-        linear-gradient(rgba(0, 255, 133, 0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 255, 133, 0.02) 1px, transparent 1px);
-      background-size: 100% 100%, 36px 36px, 36px 36px;
-      color: var(--text-stark);
-      font-family: var(--font-mono);
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-main);
       min-height: 100vh;
       min-height: 100dvh;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(34, 197, 94, 0.07) 0%, transparent 55%),
+        linear-gradient(to bottom, #0B141B, #070D12);
     }
 
-    /* ШАПКА */
+    /* ШАПКА В СТИЛЕ ПРИЛОЖЕНИЯ */
     header {
-      background: rgba(14, 19, 28, 0.85);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border-tactical);
-      padding: 14px 20px;
+      background: rgba(11, 20, 27, 0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      position: sticky;
+      top: 0;
       z-index: 50;
     }
 
-    .brand-cluster {
+    .brand-box {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      cursor: pointer;
     }
 
-    .radar-beacon {
-      width: 14px;
-      height: 14px;
-      position: relative;
+    .brand-icon-box {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: #111A16;
+      border: 1px solid rgba(34, 197, 94, 0.4);
       display: flex;
       align-items: center;
       justify-content: center;
+      box-shadow: 0 0 12px var(--pulse-green-glow);
     }
-    .radar-beacon::before {
-      content: '';
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      background: var(--signal-green);
-      opacity: 0.3;
-      animation: radar-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-    }
-    .radar-beacon::after {
-      content: '';
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--signal-green);
-      box-shadow: 0 0 10px var(--signal-green);
-    }
-    @keyframes radar-ping {
-      0% { transform: scale(0.8); opacity: 0.8; }
-      100% { transform: scale(2.4); opacity: 0; }
+
+    .brand-icon-box svg {
+      width: 22px;
+      height: 22px;
     }
 
     .brand-title {
-      font-family: var(--font-display);
-      font-size: 16px;
+      font-size: 17px;
       font-weight: 700;
-      letter-spacing: 2px;
-      color: #FFF;
+      color: var(--text-white);
       display: flex;
       align-items: center;
       gap: 6px;
-    }
-    .brand-title span {
-      color: var(--signal-green);
+      letter-spacing: -0.2px;
     }
 
-    .room-badge-tactical {
+    .brand-title span {
+      color: var(--pulse-green);
+    }
+
+    .header-badges {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: var(--panel-elevated);
-      border: 1px solid var(--border-bright);
-      padding: 5px 12px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--signal-green);
-      letter-spacing: 1px;
     }
 
-    /* ОСНОВНОЙ ЭКРАН ВХОДА (PRE-JOIN) */
+    .badge-pill {
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.35);
+      color: #4ADE80;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-install-header {
+      background: var(--pulse-blue);
+      border: none;
+      color: #FFF;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 16px;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+    }
+    .btn-install-header:active {
+      transform: scale(0.95);
+    }
+
+    /* PWA ИНСТАЛЛ-БАННЕР ДЛЯ РАБОЧЕГО СТОЛА */
+    #pwa-install-banner {
+      background: linear-gradient(90deg, #0F2333 0%, #102A24 100%);
+      border-bottom: 1px solid rgba(34, 197, 94, 0.3);
+      padding: 10px 16px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      z-index: 45;
+      font-size: 13px;
+    }
+
+    .pwa-banner-content {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pwa-banner-text {
+      color: #E2E8F0;
+      line-height: 1.3;
+    }
+    .pwa-banner-text strong {
+      color: #FFF;
+      display: block;
+      font-size: 13.5px;
+    }
+
+    .pwa-banner-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-pwa-action {
+      background: var(--pulse-green-dark);
+      color: #FFF;
+      border: none;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn-pwa-dismiss {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    /* ОСНОВНОЙ КОНТЕЙНЕР (PRE-JOIN) */
     #prejoin-view {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 24px 20px;
-      max-width: 440px;
+      padding: 20px 16px 40px;
+      max-width: 480px;
       margin: 0 auto;
       width: 100%;
       gap: 18px;
-      overflow-y: auto;
     }
 
-    .oscilloscope-box {
-      width: 110px;
-      height: 110px;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      background: radial-gradient(circle, #0F1A13 0%, var(--void-bg) 75%);
-      border: 2px solid var(--signal-green);
-      box-shadow: 0 0 35px var(--signal-green-glow), inset 0 0 25px rgba(0, 255, 133, 0.15);
-    }
-
-    #wave-canvas {
-      width: 90px;
-      height: 50px;
-    }
-
-    .room-identity {
-      text-align: center;
-    }
-    .room-name-display {
-      font-family: var(--font-display);
-      font-size: 24px;
-      font-weight: 700;
-      color: #FFF;
-      letter-spacing: 1.5px;
-      margin-bottom: 4px;
-    }
-    .room-security-tag {
-      font-size: 11px;
-      color: var(--signal-green);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(0, 255, 133, 0.08);
-      padding: 4px 10px;
-      border-radius: 4px;
-      border: 1px solid rgba(0, 255, 133, 0.2);
-    }
-
-    /* ЕДИНСТВЕННОЕ ПОЛЕ ВВОДА КОМНАТЫ */
-    .tactical-field-box {
+    /* КАРТОЧКА ГЛАВНОГО ВХОДА */
+    .hero-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 22px 18px;
       width: 100%;
-      background: var(--panel-surface);
-      border: 1px solid var(--border-bright);
-      border-radius: 12px;
-      padding: 14px 16px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-      transition: border-color 0.2s;
-    }
-    .tactical-field-box:focus-within {
-      border-color: var(--signal-green);
-      box-shadow: 0 0 20px var(--signal-green-glow);
+      gap: 14px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
     }
 
-    .field-label {
-      font-size: 10.5px;
-      font-weight: 700;
-      color: var(--text-dim);
-      letter-spacing: 1px;
-    }
-
-    .field-input-wrapper {
+    .hero-header {
       display: flex;
       align-items: center;
-      gap: 10px;
-    }
-    .field-icon {
-      font-size: 18px;
+      justify-content: space-between;
     }
 
-    .tactical-input {
-      flex: 1;
-      background: transparent;
-      border: none;
-      outline: none;
-      color: #FFF;
-      font-family: var(--font-mono);
+    .hero-title-group h2 {
       font-size: 17px;
       font-weight: 700;
-      letter-spacing: 1.2px;
-    }
-    .tactical-input::placeholder {
-      color: #4A5568;
-      font-weight: 400;
-      font-size: 14px;
+      color: var(--text-white);
+      letter-spacing: -0.3px;
     }
 
-    .field-clear-btn {
-      background: #1C2433;
-      border: none;
-      color: #7E8C9F;
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 12px;
-      transition: all 0.15s;
-    }
-    .field-clear-btn:hover {
-      background: #2D3748;
-      color: #FFF;
-    }
-
-    /* ЧЕКБОКС КАМЕРЫ */
-    .camera-opt-label {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
+    .hero-title-group p {
       font-size: 12.5px;
-      color: #B0BEC5;
-      width: 100%;
-      padding: 2px 6px;
-    }
-    .camera-opt-label input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      accent-color: var(--signal-green);
-      cursor: pointer;
+      color: var(--text-secondary);
+      margin-top: 2px;
     }
 
-    /* КНОПКА ВОЙТИ В КОМНАТУ */
-    .btn-tactical {
-      width: 100%;
-      padding: 16px;
-      border-radius: 12px;
-      font-family: var(--font-display);
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-      position: relative;
-      overflow: hidden;
-      background: var(--signal-green);
-      color: #040806;
-      box-shadow: 0 0 24px var(--signal-green-glow);
-    }
-    .btn-tactical:hover, .btn-tactical:active {
-      transform: translateY(-2px);
-      filter: brightness(1.12);
-      box-shadow: 0 0 34px rgba(0, 255, 133, 0.5);
-    }
-
-    /* ТЕЛЕМЕТРИЯ */
-    .telemetry-deck {
-      width: 100%;
-      background: var(--panel-surface);
-      border: 1px solid var(--border-tactical);
-      border-radius: 10px;
-      padding: 12px 14px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      font-size: 11px;
-    }
-    .telemetry-item {
+    /* ПОЛЕ ВВОДА КОМНАТЫ */
+    .input-field-group {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 6px;
     }
-    .telemetry-label {
-      color: var(--text-dim);
-      font-size: 9.5px;
-      letter-spacing: 0.8px;
-    }
-    .telemetry-val {
-      color: var(--text-stark);
+
+    .input-label {
+      font-size: 12px;
       font-weight: 600;
-    }
-    .telemetry-val.highlight {
-      color: var(--signal-green);
+      color: var(--text-secondary);
     }
 
-    /* ЭКРАН АКТИВНОГО ЗВОНКА (CALL VIEW) */
-    #call-view {
-      flex: 1;
-      width: 100%;
-      height: 100%;
-      display: none;
-      flex-direction: column;
+    .input-wrapper {
       position: relative;
-      background: #000;
+      display: flex;
+      align-items: center;
     }
 
-    .call-hud-top {
+    .input-icon {
       position: absolute;
-      top: 12px;
-      left: 12px;
-      right: 12px;
-      z-index: 25;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      left: 14px;
+      font-size: 16px;
+      color: var(--text-secondary);
       pointer-events: none;
     }
 
-    .hud-chip {
-      background: rgba(14, 19, 28, 0.88);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid var(--border-tactical);
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 12px;
+    .app-input {
+      width: 100%;
+      height: 48px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 0 42px 0 42px;
+      color: var(--text-white);
+      font-family: var(--font-mono);
+      font-size: 15px;
+      font-weight: 600;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .app-input:focus {
+      border-color: var(--pulse-blue);
+      box-shadow: 0 0 0 3px var(--pulse-blue-glow);
+    }
+
+    .input-clear-btn {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 15px;
+      cursor: pointer;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ЧЕКБОКС КАМЕРЫ */
+    .camera-toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      padding: 2px 0;
+    }
+
+    .camera-toggle-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--pulse-green-dark);
+      cursor: pointer;
+    }
+
+    .camera-toggle-row span {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    /* ГЛАВНАЯ КНОПКА ЗВОНКА */
+    .btn-primary-call {
+      height: 50px;
+      background: var(--pulse-blue);
+      border: none;
+      border-radius: 14px;
+      color: #FFF;
+      font-family: var(--font-main);
+      font-size: 15px;
       font-weight: 700;
-      color: var(--signal-green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px var(--pulse-blue-glow);
+      transition: all 0.2s;
+    }
+
+    .btn-primary-call:active {
+      transform: scale(0.98);
+      background: var(--pulse-blue-hover);
+    }
+
+    /* СЕКЦИЯ ПОСТОЯННЫХ КОМНАТ (КАК В ПРИЛОЖЕНИИ) */
+    .rooms-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+    }
+
+    .section-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-white);
       display: flex;
       align-items: center;
       gap: 6px;
-      pointer-events: auto;
     }
 
-    .pulse-live-dot {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
+    .btn-create-room-small {
+      background: rgba(2, 132, 199, 0.15);
+      border: 1px solid rgba(2, 132, 199, 0.3);
+      color: #38BDF8;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .rooms-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .room-card-app {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      transition: background 0.2s;
+    }
+    .room-card-app:hover {
+      background: var(--bg-card);
+    }
+
+    .room-left-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .room-avatar {
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
-      background: var(--signal-green);
-      box-shadow: 0 0 6px var(--signal-green);
-      animation: radar-ping 1.6s infinite;
+      background: var(--pulse-green-dark);
+      color: #FFF;
+      font-size: 17px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
     }
 
-    /* ГОЛОСОВОЙ ИНТЕРФЕЙС (КОГДА КАМЕРА ВЫКЛЮЧЕНА, НЕТ ЧЁРНОГО ЭКРАНА!) */
-    .voice-call-overlay {
+    .room-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .room-name-text {
+      font-size: 14.5px;
+      font-weight: 600;
+      color: #FFF;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .room-code-badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 1px 6px;
+      border-radius: 6px;
+      align-self: flex-start;
+    }
+
+    .room-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-room-call {
+      background: var(--pulse-green-dark);
+      color: #FFF;
+      border: none;
+      padding: 7px 13px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .btn-room-call:active {
+      transform: scale(0.95);
+    }
+
+    .btn-room-icon {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    /* ТЕЛЕМЕТРИЯ / БЕЗОПАСНОСТЬ */
+    .security-notice-card {
+      background: rgba(16, 27, 36, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 12px 14px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sec-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11.5px;
+    }
+    .sec-lbl { color: var(--text-muted); }
+    .sec-val { color: var(--pulse-green); font-weight: 600; font-family: var(--font-mono); }
+
+    /* ЭКРАН АКТИВНОГО ЗВОНКА (CALL VIEW) */
+    #call-view {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 100;
+      background: #000;
+      display: none;
+      flex-direction: column;
+    }
+
+    #call-frame {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
+      border: none;
+      background: #000;
+      z-index: 1;
+    }
+
+    /* ПЛАВАЮЩИЙ ХЕДЕР В ЗВОНКЕ */
+    .call-floating-top {
+      position: absolute;
+      top: env(safe-area-inset-top, 16px);
+      left: 0;
+      right: 0;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .call-status-pill {
+      pointer-events: auto;
+      background: rgba(11, 20, 27, 0.85);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #FFF;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--pulse-green);
+      box-shadow: 0 0 8px var(--pulse-green);
+      animation: dot-pulse 1.8s infinite;
+    }
+    @keyframes dot-pulse {
+      0% { opacity: 0.6; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.2); }
+      100% { opacity: 0.6; transform: scale(0.9); }
+    }
+
+    .call-top-btn {
+      pointer-events: auto;
+      background: rgba(11, 20, 27, 0.85);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #FFF;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* НИЖНИЙ ПУЛЬТ В СТИЛЕ TELEGRAM */
+    .call-bottom-dock {
+      position: absolute;
+      bottom: calc(env(safe-area-inset-bottom, 20px) + 16px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 10px 18px;
+      border-radius: 36px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    .dock-circle-btn {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      border: none;
+      color: #FFF;
+      font-size: 22px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 24px;
-      background: radial-gradient(circle at 50% 40%, #0D1612 0%, #06080C 75%);
-      z-index: 10;
-      text-align: center;
-      gap: 14px;
-    }
-
-    .voice-avatar-rings {
-      position: relative;
-      width: 140px;
-      height: 140px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 6px;
-    }
-
-    .avatar-ring-pulse {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      border: 2px solid var(--signal-green);
-      opacity: 0.3;
-      animation: ring-pulse-anim 2.4s cubic-bezier(0.1, 0, 0.2, 1) infinite;
-    }
-
-    .avatar-ring-outer {
-      position: absolute;
-      width: 110px;
-      height: 110px;
-      border-radius: 50%;
-      border: 1px dashed rgba(0, 255, 133, 0.4);
-      animation: rotate-slow 20s linear infinite;
-    }
-
-    .avatar-core {
-      width: 84px;
-      height: 84px;
-      border-radius: 50%;
-      background: #111A16;
-      border: 2px solid var(--signal-green);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 0 30px var(--signal-green-glow);
-    }
-    .avatar-mic-icon {
-      font-size: 34px;
-    }
-
-    @keyframes ring-pulse-anim {
-      0% { transform: scale(0.7); opacity: 0.8; }
-      100% { transform: scale(1.6); opacity: 0; }
-    }
-    @keyframes rotate-slow {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .voice-status-title {
-      font-family: var(--font-display);
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      color: #FFF;
-    }
-    .voice-status-sub {
-      font-size: 12px;
-      color: var(--signal-green);
-      letter-spacing: 0.5px;
-    }
-
-    .voice-hint-badge {
-      background: rgba(14, 19, 28, 0.8);
-      border: 1px solid var(--border-tactical);
-      border-radius: 8px;
-      padding: 8px 14px;
-      font-size: 11.5px;
-      color: #90A4AE;
-      max-width: 320px;
-      line-height: 1.4;
-    }
-
-    .voice-copy-btn {
-      background: var(--panel-elevated);
-      border: 1px solid var(--border-bright);
-      color: #FFF;
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-family: var(--font-mono);
-      font-size: 12px;
-      font-weight: 600;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s;
-    }
-    .voice-copy-btn:hover {
-      background: #1F293D;
-      border-color: var(--signal-green);
+      transition: all 0.15s;
     }
 
-    #call-frame {
-      width: 100%;
-      height: 100%;
-      border: none;
-      background: #000;
-    }
-
-    /* НИЖНИЙ ПУЛЬТ УПРАВЛЕНИЯ ЗВОНКОМ */
-    .call-hud-bottom {
-      position: absolute;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 30;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      background: rgba(14, 19, 28, 0.94);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      padding: 10px 20px;
-      border-radius: 40px;
-      border: 1px solid var(--border-tactical);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
-    }
-
-    .dock-btn {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      background: var(--panel-elevated);
-      border: 1px solid var(--border-bright);
-      color: #FFF;
-      font-size: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .dock-btn:active {
+    .dock-circle-btn:active {
       transform: scale(0.92);
     }
-    .dock-btn.active {
-      background: var(--signal-green);
-      color: #000;
-      border-color: var(--signal-green);
-      box-shadow: 0 0 16px var(--signal-green-glow);
-    }
-    .dock-btn.danger {
-      background: var(--alert-crimson);
+
+    .dock-circle-btn.active {
+      background: var(--pulse-green-dark);
       color: #FFF;
-      border-color: var(--alert-crimson);
-      box-shadow: 0 0 20px var(--alert-crimson-glow);
-      width: 56px;
-      height: 56px;
+      box-shadow: 0 0 14px var(--pulse-green-glow);
     }
 
-    /* ТОСТ */
+    .dock-circle-btn.danger {
+      background: var(--alert-red);
+      color: #FFF;
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.4);
+    }
+
+    /* МОДАЛЬНОЕ ОКНО СОЗДАНИЯ КОМНАТЫ */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      padding: 20px;
+    }
+
+    .modal-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 20px;
+      max-width: 360px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #FFF;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .btn-modal-cancel {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .btn-modal-confirm {
+      background: var(--pulse-blue);
+      border: none;
+      color: #FFF;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* ТОСТ ОПОВЕЩЕНИЙ */
     #toast-msg {
       position: fixed;
-      bottom: 90px;
+      bottom: calc(env(safe-area-inset-bottom, 20px) + 24px);
       left: 50%;
       transform: translateX(-50%);
-      background: #00FF85;
-      color: #000;
-      font-weight: 700;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 12px;
-      z-index: 100;
+      background: #0284C7;
+      color: #FFF;
+      font-weight: 600;
+      padding: 10px 20px;
+      border-radius: 24px;
+      font-size: 13px;
+      z-index: 300;
       display: none;
-      box-shadow: 0 0 20px rgba(0, 255, 133, 0.5);
+      box-shadow: 0 4px 20px rgba(2, 132, 199, 0.5);
     }
   </style>
 </head>
 <body>
 
-  <!-- ШАПКА -->
+  <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
   <header>
-    <div class="brand-cluster">
-      <div class="radar-beacon"></div>
-      <div class="brand-title">ПУЛЬС <span>//</span> СВЯЗЬ</div>
+    <div class="brand-box" onclick="location.reload()">
+      <div class="brand-icon-box">
+        <svg viewBox="0 0 108 108" fill="none">
+          <path d="M20,54 L36,54 L44,28 L56,80 L66,42 L76,64 L82,54 L92,54" stroke="#22C55E" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="brand-title">
+        ПУЛЬС <span>Связь</span>
+      </div>
     </div>
-    <div class="room-badge-tactical" id="header-room-code">
-      P2P ENCRYPTED
+
+    <div class="header-badges">
+      <span class="badge-pill">ПОСТОЯННЫЕ</span>
+      <button class="btn-install-header" id="btn-header-install" onclick="triggerPwaInstall()">
+        <span>📲</span> На экран
+      </button>
     </div>
   </header>
 
-  <!-- ЭКРАН ПОДГОТОВКИ (PRE-JOIN) -->
+  <!-- БАННЕР УСТАНОВКИ НА РАБОЧИЙ СТОЛ (IOS / ANDROID) -->
+  <div id="pwa-install-banner">
+    <div class="pwa-banner-content">
+      <span style="font-size: 22px;">📲</span>
+      <div class="pwa-banner-text" id="pwa-banner-text">
+        <strong>Добавить на рабочий стол</strong>
+        Звоните как через отдельное приложение
+      </div>
+    </div>
+    <div class="pwa-banner-actions">
+      <button class="btn-pwa-action" id="btn-pwa-action-cta" onclick="triggerPwaInstall()">Установить</button>
+      <button class="btn-pwa-dismiss" onclick="dismissPwaBanner()">✕</button>
+    </div>
+  </div>
+
+  <!-- ЭКРАН ВЫБОРА И ПОДКЛЮЧЕНИЯ (PRE-JOIN) -->
   <main id="prejoin-view">
-    <div class="oscilloscope-box">
-      <canvas id="wave-canvas" width="100" height="60"></canvas>
+    
+    <!-- КАРТОЧКА БЫСТРОГО ПОДКЛЮЧЕНИЯ ПО КОДУ -->
+    <div class="hero-card">
+      <div class="hero-header">
+        <div class="hero-title-group">
+          <h2>Вход в защищённую комнату</h2>
+          <p>Введите код или перейдите по ссылке собеседника</p>
+        </div>
+      </div>
+
+      <div class="input-field-group">
+        <label class="input-label" for="room-input-field">КОД ИЛИ НАЗВАНИЕ КОМНАТЫ</label>
+        <div class="input-wrapper">
+          <span class="input-icon">🔑</span>
+          <input 
+            type="text" 
+            id="room-input-field" 
+            class="app-input" 
+            placeholder="Например: СЕМЬЯ или ROOM1234" 
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+          />
+          <button type="button" class="input-clear-btn" onclick="clearRoomInput()" title="Очистить">✕</button>
+        </div>
+      </div>
+
+      <label class="camera-toggle-row">
+        <input type="checkbox" id="camera-pref-checkbox" checked />
+        <span>📹 Включить видеокамеру при входе</span>
+      </label>
+
+      <button class="btn-primary-call" onclick="handleJoinSubmit()">
+        <span>📞</span> ВОЙТИ В ЗВОНОК
+      </button>
     </div>
 
-    <div class="room-identity">
-      <div class="room-name-display">ПУЛЬС СВЯЗЬ</div>
-      <div class="room-security-tag">
-        <span>🔒</span> E2E ШИФРОВАНИЕ WebRTC OPUS
+    <!-- СПИСОК ПОСТОЯННЫХ КОМНАТ (КАК В ANDROID ПРИЛОЖЕНИИ) -->
+    <div class="rooms-section">
+      <div class="section-header-row">
+        <span class="section-title">
+          <span>👥</span> Ваши постоянные комнаты
+        </span>
+        <button class="btn-create-room-small" onclick="openCreateModal()">+ Создать комнату</button>
+      </div>
+
+      <div class="rooms-list" id="rooms-list-container">
+        <!-- Комнаты генерируются через JS из localStorage -->
       </div>
     </div>
 
-    <!-- ЕДИНСТВЕННОЕ ПОЛЕ ВВОДА: КОД КОМНАТЫ -->
-    <div class="tactical-field-box">
-      <label class="field-label" for="room-input-field">КОД ИЛИ ИМЯ КОМНАТЫ</label>
-      <div class="field-input-wrapper">
-        <span class="field-icon">🔑</span>
-        <input 
-          type="text" 
-          id="room-input-field" 
-          class="tactical-input" 
-          placeholder="Например: СЕМЬЯ" 
-          autocomplete="off"
-          autocorrect="off"
-          spellcheck="false"
-        />
-        <button type="button" class="field-clear-btn" onclick="clearRoomInput()" title="Очистить">✕</button>
+    <!-- ИНФОРМАЦИЯ О БЕЗОПАСНОСТИ -->
+    <div class="security-notice-card">
+      <div class="sec-row">
+        <span class="sec-lbl">Шифрование звонка</span>
+        <span class="sec-val">E2E WebRTC Opus HD</span>
+      </div>
+      <div class="sec-row">
+        <span class="sec-lbl">Топология сети</span>
+        <span class="sec-val">P2P Mesh + Relay</span>
+      </div>
+      <div class="sec-row">
+        <span class="sec-lbl">Серверы записи</span>
+        <span class="sec-val">Отсутствуют (Direct)</span>
+      </div>
+      <div class="sec-row">
+        <span class="sec-lbl">Установка</span>
+        <span class="sec-val">PWA (iPhone & Android)</span>
       </div>
     </div>
 
-    <!-- ЧЕКБОКС: ВКЛЮЧИТЬ КАМЕРУ -->
-    <label class="camera-opt-label">
-      <input type="checkbox" id="camera-pref-checkbox" checked />
-      <span>Включить видеокамеру при входе</span>
-    </label>
-
-    <!-- ЕДИНСТВЕННАЯ КНОПКА ПОДКЛЮЧЕНИЯ -->
-    <button class="btn-tactical" onclick="handleJoinSubmit()">
-      <span>🚀</span> ВОЙТИ В КОМНАТУ
-    </button>
-
-    <!-- ТЕЛЕМЕТРИЯ СВЯЗИ -->
-    <div class="telemetry-deck">
-      <div class="telemetry-item">
-        <span class="telemetry-label">ТОПОЛОГИЯ</span>
-        <span class="telemetry-val highlight">P2P MESH // ТСПУ-BYPASS</span>
-      </div>
-      <div class="telemetry-item">
-        <span class="telemetry-label">АУДИО КОДЕК</span>
-        <span class="telemetry-val">OPUS 48kHz HD STEREO</span>
-      </div>
-      <div class="telemetry-item">
-        <span class="telemetry-label">СЕРВЕРЫ ЗАПИСИ</span>
-        <span class="telemetry-val highlight">ОТСУТСТВУЮТ (DIRECT)</span>
-      </div>
-      <div class="telemetry-item">
-        <span class="telemetry-label">ЗАЩИТА</span>
-        <span class="telemetry-val">БЕЗ РЕГИСТРАЦИИ</span>
-      </div>
-    </div>
   </main>
 
   <!-- ЭКРАН АКТИВНОГО ЗВОНКА (CALL VIEW) -->
   <section id="call-view">
-    <div class="call-hud-top">
-      <div class="hud-chip">
-        <span class="pulse-live-dot"></span>
-        В ЭФИРЕ: <span id="call-duration">00:00</span>
+    <!-- ПЛАВАЮЩИЙ ХЕДЕР -->
+    <div class="call-floating-top">
+      <div class="call-status-pill">
+        <span class="pulse-dot"></span>
+        <span id="call-room-label">PULSE</span> • <span id="call-duration">00:00</span>
       </div>
-      <div class="hud-chip" id="active-room-chip">
-        КОД: <span id="active-room-display">PULSECALL</span>
-      </div>
-      <div class="hud-chip" style="cursor:pointer;" onclick="copyInviteLink()">
-        <span>📋</span> ССЫЛКА
-      </div>
-      <div class="hud-chip" style="cursor:pointer;" onclick="openDirectSafari()">
-        <span>↗️</span> В БРАУЗЕР
+      <div style="display: flex; gap: 8px;">
+        <button class="call-top-btn" onclick="copyInviteLink()">
+          <span>📋</span> Ссылка
+        </button>
+        <button class="call-top-btn" onclick="hangupCall()" style="color: #F87171;">
+          <span>✕</span> Выйти
+        </button>
       </div>
     </div>
 
-    <!-- IFRAME VDO.NINJA (ЗВУК И ВИДЕО - НА ВЕСЬ ЭКРАН) -->
+    <!-- ПОЛНОЭКРАННЫЙ IFRAME СВЯЗИ -->
     <iframe id="call-frame" allow="camera; microphone; autoplay; display-capture; fullscreen" allowfullscreen></iframe>
 
-    <!-- НИЖНЯЯ ПАНЕЛЬ УПРАВЛЕНИЯ -->
-    <div class="call-hud-bottom">
-      <button class="dock-btn" title="Перевернуть камеру" onclick="flipCam()">🔄</button>
-      <button class="dock-btn active" id="btn-mic-toggle" title="Микрофон" onclick="toggleMic()">🎙️</button>
-      <button class="dock-btn active" id="btn-cam-toggle" title="Камера" onclick="toggleCam()">📹</button>
-      <button class="dock-btn" title="На весь экран" onclick="toggleFullscreen()">⛶</button>
-      <button class="dock-btn danger" title="Завершить вызов" onclick="hangupCall()">📞</button>
+    <!-- ПАНЕЛЬ УПРАВЛЕНИЯ В СТИЛЕ TELEGRAM -->
+    <div class="call-bottom-dock">
+      <button class="dock-circle-btn" title="Перевернуть камеру" onclick="flipCam()">🔄</button>
+      <button class="dock-circle-btn active" id="btn-mic-toggle" title="Микрофон" onclick="toggleMic()">🎙️</button>
+      <button class="dock-circle-btn active" id="btn-cam-toggle" title="Камера" onclick="toggleCam()">📹</button>
+      <button class="dock-circle-btn" title="На весь экран" onclick="toggleFullscreen()">⛶</button>
+      <button class="dock-circle-btn danger" title="Завершить вызов" onclick="hangupCall()">📞</button>
     </div>
   </section>
+
+  <!-- МОДАЛЬНОЕ ОКНО СОЗДАНИЯ КОМНАТЫ -->
+  <div class="modal-backdrop" id="modal-create-room">
+    <div class="modal-card">
+      <div class="modal-title">Создать постоянную комнату</div>
+      <div class="input-field-group">
+        <label class="input-label" for="new-room-name-input">Имя комнаты (например: Семья, Мама, Друг)</label>
+        <input type="text" id="new-room-name-input" class="app-input" style="padding-left: 14px;" placeholder="Имя комнаты">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-modal-cancel" onclick="closeCreateModal()">Отмена</button>
+        <button class="btn-modal-confirm" onclick="saveNewRoom()">Создать</button>
+      </div>
+    </div>
+  </div>
 
   <div id="toast-msg">Ссылка скопирована!</div>
 
   <script>
+    // --- 1. РЕГИСТРАЦИЯ SERVICE WORKER (PWA) ---
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+
+    // --- 2. ОБНАРУЖЕНИЕ PWA И ДИАЛОГ УСТАНОВКИ НА РАБОЧИЙ СТОЛ ---
+    let deferredPrompt = null;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const pwaBanner = document.getElementById('pwa-install-banner');
+    const headerInstallBtn = document.getElementById('btn-header-install');
+    const bannerText = document.getElementById('pwa-banner-text');
+    const bannerCta = document.getElementById('btn-pwa-action-cta');
+
+    if (!isStandalone) {
+      if (isIos) {
+        // iOS Safari инструкция
+        bannerText.innerHTML = '<strong>Добавить на экран iPhone:</strong> Нажмите «Поделиться» ⎋ и «На экран „Домой“» ➕';
+        bannerCta.textContent = 'Инструкция';
+        pwaBanner.style.display = 'flex';
+        headerInstallBtn.style.display = 'inline-flex';
+      } else {
+        // Android Chrome
+        window.addEventListener('beforeinstallprompt', (e) => {
+          e.preventDefault();
+          deferredPrompt = e;
+          pwaBanner.style.display = 'flex';
+          headerInstallBtn.style.display = 'inline-flex';
+        });
+      }
+    }
+
+    function triggerPwaInstall() {
+      if (isIos) {
+        alert('Как установить на iPhone:\n1. Нажмите иконку «Поделиться» ⎋ внизу браузера Safari.\n2. Прокрутите вниз и выберите «На экран „Домой“» ➕.\n\nИконка ПУЛЬС появится прямо на вашем рабочем столе!');
+      } else if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(() => {
+          deferredPrompt = null;
+          pwaBanner.style.display = 'none';
+          headerInstallBtn.style.display = 'none';
+        });
+      } else {
+        alert('Для установки приложения нажмите в меню браузера (три точки) ➔ «Установить приложение» или «Добавить на главный экран».');
+      }
+    }
+
+    function dismissPwaBanner() {
+      pwaBanner.style.display = 'none';
+    }
+
+    // --- 3. ХРАНЕНИЕ ПОСТОЯННЫХ КОМНАТ (LOCALSTORAGE) ---
+    const STORAGE_KEY = 'pulse_saved_rooms_v2';
+    const defaultRooms = [
+      { id: 'PulseSemia1042', name: 'Семья (Дом)', code: 'SEMIA1042' }
+    ];
+
+    function getSavedRooms() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch(e){}
+      return defaultRooms;
+    }
+
+    function saveRooms(list) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+      } catch(e){}
+      renderRoomsList();
+    }
+
+    function renderRoomsList() {
+      const list = getSavedRooms();
+      const container = document.getElementById('rooms-list-container');
+      container.innerHTML = '';
+
+      list.forEach((r, idx) => {
+        const card = document.createElement('div');
+        card.className = 'room-card-app';
+        
+        const letter = (r.name || 'К').charAt(0).toUpperCase();
+        card.innerHTML = `
+          <div class="room-left-group" onclick="quickJoin('${escapeHtml(r.code)}')">
+            <div class="room-avatar">${letter}</div>
+            <div class="room-info">
+              <span class="room-name-text">${escapeHtml(r.name)}</span>
+              <span class="room-code-badge">КОД: ${escapeHtml(r.code)}</span>
+            </div>
+          </div>
+          <div class="room-actions">
+            <button class="btn-room-call" onclick="quickJoin('${escapeHtml(r.code)}')">
+              <span>📞</span> Звонок
+            </button>
+            <button class="btn-room-icon" title="Поделиться" onclick="shareRoomLink('${escapeHtml(r.code)}', '${escapeHtml(r.name)}')">
+              📲
+            </button>
+            ${list.length > 1 ? `<button class="btn-room-icon" title="Удалить" onclick="deleteRoom(${idx})">✕</button>` : ''}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function openCreateModal() {
+      document.getElementById('modal-create-room').style.display = 'flex';
+      document.getElementById('new-room-name-input').focus();
+    }
+
+    function closeCreateModal() {
+      document.getElementById('modal-create-room').style.display = 'none';
+      document.getElementById('new-room-name-input').value = '';
+    }
+
+    function saveNewRoom() {
+      const name = document.getElementById('new-room-name-input').value.trim() || 'Комната';
+      const num = Math.floor(1000 + Math.random() * 9000);
+      const slug = translit(name).replace(/[^a-zA-Z0-9]/g, '').slice(0, 10) || 'Room';
+      const code = (slug + num).toUpperCase();
+      const id = 'Pulse' + code;
+
+      const list = getSavedRooms();
+      list.unshift({ id, name, code });
+      saveRooms(list);
+      closeCreateModal();
+      showToast('Комната сохранена!');
+    }
+
+    function deleteRoom(idx) {
+      const list = getSavedRooms();
+      list.splice(idx, 1);
+      saveRooms(list);
+    }
+
+    function quickJoin(code) {
+      inputField.value = code;
+      handleJoinSubmit();
+    }
+
+    function shareRoomLink(code, name) {
+      const canonical = toSafeRoomId(code);
+      const url = `${window.location.origin}${window.location.pathname}?room=${canonical}&name=${encodeURIComponent(name)}`;
+      const text = `📞 Защищённый звонок в «ПУЛЬС Связь»\nКомната: ${name}\nКод: ${code}\nСсылка: ${url}`;
+      
+      if (navigator.share) {
+        navigator.share({ title: 'ПУЛЬС Связь', text: text, url: url }).catch(() => {
+          copyToClipboard(url);
+        });
+      } else {
+        copyToClipboard(url);
+      }
+    }
+
+    function copyToClipboard(str) {
+      navigator.clipboard.writeText(str).then(() => {
+        showToast('Ссылка скопирована!');
+      }).catch(() => {
+        showToast(str);
+      });
+    }
+
+    // --- 4. НОРМАЛИЗАЦИЯ И ПОДКЛЮЧЕНИЕ К WEBRTC ---
     const urlParams = new URLSearchParams(window.location.search);
     const initialRoom = urlParams.get('room') || urlParams.get('name') || '';
-
     const inputField = document.getElementById('room-input-field');
+
     if (initialRoom) {
       inputField.value = initialRoom;
     }
 
-    // Транслитерация и единая каноническая нормализация имени комнаты для 100% соединения Web и Android
-    function toSafeRoomId(text) {
-      const cyrMap = {
+    function translit(text) {
+      const cyr = {
         'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z',
         'и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r',
         'с':'s','т':'t','у':'u','ф':'f','х':'h','ц':'ts','ч':'ch','ш':'sh','щ':'sch',
         'ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya'
       };
-      let s = (text || '').trim().toLowerCase();
-      let res = '';
+      let s = (text || '').toLowerCase();
+      let r = '';
       for (let ch of s) {
-        res += cyrMap[ch] !== undefined ? cyrMap[ch] : ch;
+        r += cyr[ch] !== undefined ? cyr[ch] : ch;
       }
-      let clean = res.replace(/[^a-zA-Z0-9]/g, '');
+      return r;
+    }
+
+    function toSafeRoomId(text) {
+      let clean = translit(text).replace(/[^a-zA-Z0-9]/g, '');
       if (clean.startsWith('pulse_')) clean = clean.substring(6);
       else if (clean.startsWith('pulse')) clean = clean.substring(5);
       return 'pulse_' + (clean || 'call');
@@ -716,37 +1114,20 @@
       inputField.focus();
     }
 
-    // АНИМАЦИЯ ОСЦИЛЛОГРАФА
-    const canvas = document.getElementById('wave-canvas');
-    const ctx = canvas.getContext('2d');
-    let phase = 0;
-
-    function renderWave() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.beginPath();
-      ctx.strokeStyle = '#00FF85';
-      ctx.lineWidth = 2.5;
-      ctx.shadowBlur = 8;
-      ctx.shadowColor = '#00FF85';
-
-      const width = canvas.width;
-      const height = canvas.height;
-      const mid = height / 2;
-
-      for (let x = 0; x < width; x++) {
-        const norm = (x / width) * Math.PI * 4;
-        const envelope = Math.sin((x / width) * Math.PI);
-        const y = mid + Math.sin(norm + phase) * 14 * envelope + Math.sin(norm * 2 - phase) * 6 * envelope;
-        if (x === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+    function buildNinjaUrl(cleanRoom, withVideo) {
+      // &beepvolume=0 — полное отключение зуммеров и гудков
+      // &relay — гарантированное прохождение NAT и мобильных операторов РФ
+      let base = `https://vdo.ninja/?room=${cleanRoom}&label=Web&autostart&darkmode&cleanish&webcam&largepreview&showpreview&mesh&relay&aec&agc&denoise&beepvolume=0`;
+      if (!withVideo) {
+        base += '&videomute';
       }
-      ctx.stroke();
-      phase += 0.08;
-      requestAnimationFrame(renderWave);
+      return base;
     }
-    renderWave();
 
-    // ТАЙМЕР ЗВОНКА
+    // --- 5. УПРАВЛЕНИЕ АКТИВНЫМ ВЫЗОВОМ ---
+    let activeCleanRoom = 'pulse_call';
+    let isCamActive = true;
+    let isMicActive = true;
     let callTimerSeconds = 0;
     let callInterval = null;
 
@@ -761,26 +1142,13 @@
       }, 1000);
     }
 
-    let activeCleanRoom = 'pulse_call';
-    let isCamActive = true;
-    let isMicActive = true;
-
-    function buildNinjaUrl(cleanRoom, withVideo) {
-      let base = `https://vdo.ninja/?room=${cleanRoom}&label=Web&autostart&darkmode&cleanish&webcam&largepreview&showpreview&mesh&relay&aec&agc&denoise&beepvolume=0`;
-      if (!withVideo) {
-        base += '&videomute';
-      }
-      return base;
-    }
-
     function handleJoinSubmit() {
       const raw = inputField.value.trim() || 'PulseCall';
       activeCleanRoom = toSafeRoomId(raw);
       const withVideo = document.getElementById('camera-pref-checkbox').checked;
       isCamActive = withVideo;
 
-      // Обновляем бейджи
-      document.getElementById('active-room-display').textContent = raw.toUpperCase();
+      document.getElementById('call-room-label').textContent = raw.toUpperCase();
 
       document.getElementById('prejoin-view').style.display = 'none';
       document.getElementById('call-view').style.display = 'flex';
@@ -792,11 +1160,6 @@
       const finalUrl = buildNinjaUrl(activeCleanRoom, withVideo);
       document.getElementById('call-frame').src = finalUrl;
       startTimer();
-    }
-
-    function openDirectSafari() {
-      const directUrl = buildNinjaUrl(activeCleanRoom, isCamActive);
-      window.open(directUrl, '_blank') || (window.location.href = directUrl);
     }
 
     function flipCam() {
@@ -847,18 +1210,11 @@
       document.getElementById('prejoin-view').style.display = 'flex';
     }
 
-    window.addEventListener('message', (e) => {
-      if (!e.data) return;
-      const act = e.data.action || e.data.event;
-      if (act === 'peer-joined' || act === 'stream-added' || act === 'new-view-connection' || act === 'user-joined') {
-        const hint = document.querySelector('.voice-hint-badge');
-        if (hint) {
-          hint.innerHTML = '<span>🟢</span> Собеседник подключился! Прямой P2P канал связи';
-          hint.style.background = 'rgba(0, 255, 133, 0.2)';
-          hint.style.borderColor = 'rgba(0, 255, 133, 0.4)';
-        }
-      }
-    });
+    function copyInviteLink() {
+      const raw = inputField.value.trim() || activeCleanRoom;
+      const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(raw)}`;
+      copyToClipboard(inviteUrl);
+    }
 
     function showToast(text) {
       const toast = document.getElementById('toast-msg');
@@ -867,24 +1223,14 @@
       setTimeout(() => { toast.style.display = 'none'; }, 2500);
     }
 
-    function copyInviteLink() {
-      const raw = inputField.value.trim() || activeCleanRoom;
-      const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(raw)}`;
-      navigator.clipboard.writeText(inviteUrl).then(() => {
-        showToast('Ссылка на комнату скопирована!');
-      }).catch(() => {
-        showToast(inviteUrl);
-      });
+    function escapeHtml(str) {
+      return (str || '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
     }
 
-    // Обработка Enter в поле ввода
-    inputField.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        handleJoinSubmit();
-      }
-    });
+    // Инициализация списка сохранённых комнат
+    renderRoomsList();
 
-    // Автостарт только если явно передан ?autostart=1
+    // Автостарт при ?autostart=1
     if (urlParams.get('autostart') === '1' && initialRoom) {
       handleJoinSubmit();
     }
