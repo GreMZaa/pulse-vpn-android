@@ -785,7 +785,7 @@
     let isMicActive = true;
 
     function buildNinjaUrl(cleanRoom, withVideo) {
-      let base = `https://vdo.ninja/?room=${cleanRoom}&label=Web&autostart&darkmode&cleanish&webcam&largepreview&showpreview&mesh&relay&aec&agc&denoise&broadcast=0`;
+      let base = `https://vdo.ninja/?room=${cleanRoom}&label=Web&autostart&darkmode&cleanish&webcam&largepreview&showpreview&mesh&relay&aec&agc&denoise`;
       if (!withVideo) {
         base += '&videomute';
       }
@@ -874,7 +874,26 @@
       document.getElementById('call-frame').src = 'about:blank';
       document.getElementById('call-view').style.display = 'none';
       document.getElementById('prejoin-view').style.display = 'flex';
+      const hint = document.querySelector('.voice-hint-badge');
+      if (hint) {
+        hint.innerHTML = '<span>💡</span> Ожидание собеседника (из приложения ПУЛЬС или по ссылке)';
+        hint.style.background = '';
+        hint.style.borderColor = '';
+      }
     }
+
+    window.addEventListener('message', (e) => {
+      if (!e.data) return;
+      const act = e.data.action || e.data.event;
+      if (act === 'peer-joined' || act === 'stream-added' || act === 'new-view-connection' || act === 'user-joined') {
+        const hint = document.querySelector('.voice-hint-badge');
+        if (hint) {
+          hint.innerHTML = '<span>🟢</span> Собеседник подключился! Прямой P2P канал связи';
+          hint.style.background = 'rgba(0, 255, 133, 0.2)';
+          hint.style.borderColor = 'rgba(0, 255, 133, 0.4)';
+        }
+      }
+    });
 
     function showToast(text) {
       const toast = document.getElementById('toast-msg');

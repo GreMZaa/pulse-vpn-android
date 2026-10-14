@@ -47,8 +47,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -98,7 +101,15 @@ class CallActivity : ComponentActivity() {
     private var isMicMuted by mutableStateOf(false)
     private var isSpeakerOn by mutableStateOf(true)
     private var isCameraOn by mutableStateOf(false)
+    private var isPeerConnected by mutableStateOf(false)
     private var hasPermissions by mutableStateOf(false)
+
+    class CallJsBridge(private val onPeerStateChanged: (Boolean) -> Unit) {
+        @android.webkit.JavascriptInterface
+        fun setPeerConnected(connected: Boolean) {
+            onPeerStateChanged(connected)
+        }
+    }
 
     private val requestCallPermissions =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { perms ->
@@ -141,7 +152,7 @@ class CallActivity : ComponentActivity() {
 
         // Единый канонический идентификатор комнаты для 100% соединения Web и Android
         val canonicalRoomId = CallRoomManager.getCanonicalRoomId(roomCode.ifEmpty { rawRoomId })
-        val callUrl = "https://vdo.ninja/?room=$canonicalRoomId&label=Android&autostart&darkmode&cleanish&webcam&largepreview&showpreview&mesh&relay&aec&agc&denoise&broadcast=0"
+        val callUrl = "https://vdo.ninja/?room=$canonicalRoomId&label=Android&autostart&darkmode&cleanish&webcam&largepreview&showpreview&mesh&relay&aec&agc&denoise"
 
         setContent {
             CallScreenContent(
@@ -149,6 +160,7 @@ class CallActivity : ComponentActivity() {
                 roomCode = roomCode,
                 callUrl = callUrl,
                 hasPermissions = hasPermissions,
+                isPeerConnected = isPeerConnected,
                 isMicMuted = isMicMuted,
                 isSpeakerOn = isSpeakerOn,
                 isCameraOn = isCameraOn,
@@ -346,6 +358,7 @@ class CallActivity : ComponentActivity() {
         roomCode: String,
         callUrl: String,
         hasPermissions: Boolean,
+        isPeerConnected: Boolean,
         isMicMuted: Boolean,
         isSpeakerOn: Boolean,
         isCameraOn: Boolean,
@@ -358,17 +371,23 @@ class CallActivity : ComponentActivity() {
     ) {
         var callSeconds by remember { mutableIntStateOf(0) }
 
-        LaunchedEffect(Unit) {
-            while (true) {
-                delay(1000L)
-                callSeconds++
+        LaunchedEffect(isPeerConnected) {
+            if (isPeerConnected) {
+                while (true) {
+                    delay(1000L)
+                    callSeconds++
+                }
             }
         }
 
-        val formattedDuration = remember(callSeconds) {
-            val minutes = callSeconds / 60
-            val seconds = callSeconds % 60
-            String.format("%02d:%02d", minutes, seconds)
+        val formattedDuration = remember(callSeconds, isPeerConnected) {
+            if (!isPeerConnected) {
+                "Гудки..."
+            } else {
+                val minutes = callSeconds / 60
+                val seconds = callSeconds % 60
+                String.format("%02d:%02d", minutes, seconds)
+            }
         }
 
         val infiniteTransition = rememberInfiniteTransition(label = "pulse")
@@ -406,6 +425,11 @@ class CallActivity : ComponentActivity() {
                                 allowContentAccess = true
                                 cacheMode = WebSettings.LOAD_DEFAULT
                             }
+                            addJavascriptInterface(CallJsBridge { connected ->
+                                runOnUiThread {
+                                    this@CallActivity.isPeerConnected = connected
+                                }
+                            }, "PulseCallBridge")
                             webChromeClient = object : WebChromeClient() {
                                 override fun onPermissionRequest(request: PermissionRequest?) {
                                     runOnUiThread {
@@ -420,17 +444,47 @@ class CallActivity : ComponentActivity() {
                             webViewClient = object : WebViewClient() {
                                 override fun onPageFinished(view: WebView?, url: String?) {
                                     super.onPageFinished(view, url)
-                                    // Авто-воспроизведение удаленного звука и видео без пауз
                                     val watchdogJs = """
-                                        setInterval(function() {
-                                            document.querySelectorAll('video, audio').forEach(function(el) {
-                                                el.setAttribute('playsinline', 'true');
-                                                el.setAttribute('webkit-playsinline', 'true');
-                                                if (el.paused) {
-                                                    el.play().catch(function(){});
-                                                }
-                                            });
-                                        }, 1000);
+                                        (function() {
+                                            try {
+                                                window.addEventListener('message', function(e) {
+                                                    try {
+                                                        if (!e.data) return;
+                                                        var act = e.data.action || e.data.event;
+                                                        if (act === 'peer-joined' || act === 'stream-added' || act === 'new-view-connection' || act === 'user-joined') {
+                                                            if (window.PulseCallBridge) window.PulseCallBridge.setPeerConnected(true);
+                                                        }
+                                                    } catch(err){}
+                                                });
+                                            } catch(e){}
+
+                                            setInterval(function() {
+                                                try {
+                                                    var media = document.querySelectorAll('video, audio');
+                                                    var remoteFound = false;
+                                                    for (var i = 0; i < media.length; i++) {
+                                                        var el = media[i];
+                                                        el.setAttribute('playsinline', 'true');
+                                                        el.setAttribute('webkit-playsinline', 'true');
+                                                        if (el.paused) {
+                                                            el.play().catch(function(){});
+                                                        }
+                                                        if (el.srcObject && el.srcObject.active) {
+                                                            var tracks = el.srcObject.getTracks ? el.srcObject.getTracks() : [];
+                                                            if (tracks.length > 0 && !el.muted) {
+                                                                remoteFound = true;
+                                                            }
+                                                        }
+                                                    }
+                                                    if (document.querySelectorAll('video').length > 1) {
+                                                        remoteFound = true;
+                                                    }
+                                                    if (window.PulseCallBridge) {
+                                                        window.PulseCallBridge.setPeerConnected(remoteFound);
+                                                    }
+                                                } catch(err){}
+                                            }, 1000);
+                                        })();
                                     """.trimIndent()
                                     evaluateJavascript(watchdogJs, null)
                                 }
@@ -471,20 +525,23 @@ class CallActivity : ComponentActivity() {
                         verticalArrangement = Arrangement.Center,
                         modifier = Modifier.fillMaxSize()
                     ) {
+                        val avatarGlowColor = if (isPeerConnected) Color(0x2222C55E) else Color(0x33F59E0B)
+                        val avatarBgColor = if (isPeerConnected) Color(0xFF16A34A) else Color(0xFFD97706)
+
                         // Пульсирующий круг аватара
                         Box(
                             modifier = Modifier
                                 .size(140.dp)
                                 .scale(pulseScale)
                                 .clip(CircleShape)
-                                .background(Color(0x2222C55E)),
+                                .background(avatarGlowColor),
                             contentAlignment = Alignment.Center
                         ) {
                             Box(
                                 modifier = Modifier
                                     .size(108.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFF16A34A)),
+                                    .background(avatarBgColor),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
@@ -508,28 +565,84 @@ class CallActivity : ComponentActivity() {
                         Spacer(modifier = Modifier.height(6.dp))
 
                         Text(
-                            text = formattedDuration,
+                            text = if (isPeerConnected) formattedDuration else "📞 Вызов... Идут гудки",
                             fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF94A3B8)
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (isPeerConnected) Color(0xFF94A3B8) else Color(0xFFFBBF24)
                         )
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0x3310B981))
-                                .padding(horizontal = 12.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = "🟢 Прямой канал связи P2P",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color(0xFF34D399)
-                            )
+                        if (isPeerConnected) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color(0x3310B981))
+                                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "🟢 Прямой канал связи P2P",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF34D399)
+                                )
+                            }
+                        } else {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(horizontal = 24.dp)
+                            ) {
+                                Text(
+                                    text = "Собеседник ещё не вошёл в комнату.\nОтправьте ему ссылку, чтобы он подключился:",
+                                    textAlign = TextAlign.Center,
+                                    fontSize = 13.sp,
+                                    color = Color(0xFF94A3B8),
+                                    lineHeight = 18.sp
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Button(
+                                    onClick = onShare,
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_share_24dp),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                        tint = Color.White
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Отправить ссылку собеседнику",
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                            }
                         }
                     }
+                }
+            }
+
+            // Баннер вверху при включенной камере, если собеседник еще не подключился
+            if (isCameraOn && !isPeerConnected) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 74.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(0xEE0F172A))
+                        .border(1.dp, Color(0xFFF59E0B), RoundedCornerShape(20.dp))
+                        .clickable { onShare() }
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "📞 Гудки... Нажмите, чтобы отправить ссылку 📲",
+                        fontSize = 13.sp,
+                        color = Color(0xFFFBBF24),
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
 
