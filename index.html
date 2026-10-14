@@ -785,7 +785,7 @@
     let isMicActive = true;
 
     function buildNinjaUrl(cleanRoom, withVideo) {
-      let base = `https://vdo.ninja/?room=${cleanRoom}&label=Web&autostart&darkmode&cleanish&webcam&largepreview&showpreview&mesh`;
+      let base = `https://vdo.ninja/?room=${cleanRoom}&label=Web&autostart&darkmode&cleanish&webcam&largepreview&showpreview&mesh&relay&aec&agc&denoise&broadcast=0`;
       if (!withVideo) {
         base += '&videomute';
       }
