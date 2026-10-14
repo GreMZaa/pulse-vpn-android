@@ -1444,34 +1444,30 @@
             const promosCard = document.getElementById('promosSection');
             const serversCard = document.getElementById('serversSection');
 
+            if (colLeft) colLeft.style.display = (tab === 'overview') ? 'grid' : 'none';
+
             if (tab === 'overview') {
-                grid.classList.remove('mode-single');
-                colLeft.style.display = 'grid';
-                colCenter.style.display = 'grid';
-                colRight.style.display = 'grid';
-                promosCard.style.display = 'flex';
-                promosCard.style.maxHeight = '215px';
-                serversCard.style.display = 'flex';
+                if (grid) grid.classList.remove('mode-single');
+                if (colCenter) colCenter.style.display = 'grid';
+                if (colRight) colRight.style.display = 'grid';
+                if (promosCard) { promosCard.style.display = 'flex'; promosCard.style.maxHeight = '215px'; }
+                if (serversCard) serversCard.style.display = 'flex';
             } else if (tab === 'keys') {
-                grid.classList.add('mode-single');
-                colLeft.style.display = 'none';
-                colCenter.style.display = 'grid';
-                colRight.style.display = 'none';
+                if (grid) grid.classList.add('mode-single');
+                if (colCenter) colCenter.style.display = 'grid';
+                if (colRight) colRight.style.display = 'none';
             } else if (tab === 'promos') {
-                grid.classList.add('mode-single');
-                colLeft.style.display = 'none';
-                colCenter.style.display = 'none';
-                colRight.style.display = 'grid';
-                promosCard.style.display = 'flex';
-                promosCard.style.maxHeight = 'none';
-                serversCard.style.display = 'none';
+                if (grid) grid.classList.add('mode-single');
+                if (colCenter) colCenter.style.display = 'none';
+                if (colRight) colRight.style.display = 'grid';
+                if (promosCard) { promosCard.style.display = 'flex'; promosCard.style.maxHeight = 'none'; }
+                if (serversCard) serversCard.style.display = 'none';
             } else if (tab === 'servers') {
-                grid.classList.add('mode-single');
-                colLeft.style.display = 'none';
-                colCenter.style.display = 'none';
-                colRight.style.display = 'grid';
-                promosCard.style.display = 'none';
-                serversCard.style.display = 'flex';
+                if (grid) grid.classList.add('mode-single');
+                if (colCenter) colCenter.style.display = 'none';
+                if (colRight) colRight.style.display = 'grid';
+                if (promosCard) promosCard.style.display = 'none';
+                if (serversCard) serversCard.style.display = 'flex';
             }
         }
 

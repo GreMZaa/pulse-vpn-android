@@ -38,6 +38,17 @@
     // Avoid double mounting
     if (document.getElementById('agentation-root-mount')) return;
 
+    // Ensure document.body is available
+    if (!document.body) {
+      await new Promise(res => {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', res);
+        } else {
+          res();
+        }
+      });
+    }
+
     // Determine endpoint (runs in standalone web mode unless a custom remote endpoint is specified)
     let endpoint = null;
     if (agentationParam && (agentationParam.startsWith('http://') || agentationParam.startsWith('https://'))) {
@@ -59,6 +70,8 @@
 
     const mount = document.createElement('div');
     mount.id = 'agentation-root-mount';
+    mount.style.position = 'relative';
+    mount.style.zIndex = '2147483647';
     document.body.appendChild(mount);
 
     const props = {};
