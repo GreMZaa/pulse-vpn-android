@@ -822,6 +822,41 @@
             border-color: var(--primary);
         }
 
+        .key-code-chip.masked {
+            letter-spacing: 1.5px;
+            font-size: 11px;
+            color: var(--text-muted);
+            background: var(--bg-card-subtle);
+            user-select: none;
+        }
+
+        .key-code-chip.masked:hover {
+            color: var(--text-title);
+            background: rgba(124, 58, 237, 0.12);
+            border-color: rgba(124, 58, 237, 0.35);
+        }
+
+        .key-code-chip.revealed {
+            letter-spacing: normal;
+            color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.12);
+            border-color: rgba(16, 185, 129, 0.35);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+        }
+
+        .key-countdown {
+            font-size: 9.5px;
+            font-weight: 700;
+            opacity: 0.85;
+            background: rgba(16, 185, 129, 0.2);
+            padding: 1px 5px;
+            border-radius: 4px;
+            margin-left: 3px;
+        }
+
+        @keyframes spinFast { 100% { transform: rotate(360deg); } }
+        .rotating { animation: spinFast 0.6s linear infinite; }
+
         .btn-xs {
             padding: 5px 9px;
             border-radius: 8px;
@@ -1114,46 +1149,6 @@
                             </div>
                         </a>
                     </li>
-                    <li class="nav-item" id="nav-keys">
-                        <a href="#keys" onclick="switchTab('keys'); return false;">
-                            <div class="nav-link-left">
-                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
-                                </svg>
-                                <span>Ключи доступа</span>
-                            </div>
-                            <span class="nav-badge" id="badgeKeysCount">0</span>
-                        </a>
-                    </li>
-                    <li class="nav-item" id="nav-promos">
-                        <a href="#promos" onclick="switchTab('promos'); return false;">
-                            <div class="nav-link-left">
-                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="20 12 20 22 4 22 4 12"></polyline>
-                                    <rect x="2" y="7" width="20" height="5"></rect>
-                                    <line x1="12" y1="22" x2="12" y2="7"></line>
-                                    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
-                                    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
-                                </svg>
-                                <span>Промокоды</span>
-                            </div>
-                            <span class="nav-badge" id="badgePromosCount">0</span>
-                        </a>
-                    </li>
-                    <li class="nav-item" id="nav-servers">
-                        <a href="#servers" onclick="switchTab('servers'); return false;">
-                            <div class="nav-link-left">
-                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
-                                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
-                                    <line x1="6" y1="6" x2="6.01" y2="6"></line>
-                                    <line x1="6" y1="18" x2="6.01" y2="18"></line>
-                                </svg>
-                                <span>Пул серверов</span>
-                            </div>
-                            <span class="nav-badge" id="badgeServersCount">0</span>
-                        </a>
-                    </li>
                 </ul>
             </div>
 
@@ -1370,22 +1365,23 @@
 
                     <!-- 2. LIVE SERVERS POOL -->
                     <div class="bento-card" id="serversSection" style="min-height:0;">
-                        <div class="card-title-row">
-                            <h3>⚡ Живой пул серверов (Авто-обновление 20м)</h3>
-                            <div style="display:flex;gap:6px;align-items:center;">
+                        <div class="card-title-row" style="flex-wrap:wrap;gap:6px;">
+                            <h3 style="font-size:13.5px;">⚡ Пул серверов</h3>
+                            <div style="display:flex;gap:4px;align-items:center;">
+                                <button class="btn-xs" onclick="manualRefreshServers(this)" id="btnRefreshNodes" title="Обновить список серверов">🔄 Обновить</button>
                                 <button class="btn-xs" onclick="manageCustomCascades()" title="Добавить свой VIP Каскад (РФ -> Зарубеж)">👑 +Каскад</button>
-                                <input type="text" id="searchNodesInput" placeholder="Фильтр..." oninput="filterNodes()" class="input-stylish" style="width:110px;height:28px;font-size:11px;">
+                                <input type="text" id="searchNodesInput" placeholder="Поиск..." oninput="filterNodes()" class="input-stylish" style="width:70px;height:26px;font-size:11px;padding:2px 6px;">
                             </div>
                         </div>
 
                         <div class="table-scroll-box">
-                            <table class="table-compact">
+                            <table class="table-compact" style="table-layout:fixed;width:100%;">
                                 <thead>
                                     <tr>
-                                        <th>Узел</th>
-                                        <th>Тип</th>
-                                        <th>Транспорт</th>
-                                        <th>Пинг</th>
+                                        <th style="width:38%;">Узел</th>
+                                        <th style="width:24%;">Категория</th>
+                                        <th style="width:23%;">Транспорт</th>
+                                        <th style="width:15%;text-align:right;">Пинг</th>
                                     </tr>
                                 </thead>
                                 <tbody id="nodesTableBody"></tbody>
@@ -2119,11 +2115,15 @@
                     ? `📱 🔒 ${totalDevCount}/${maxDev} устр.`
                     : `📱 0/${maxDev} устр. (инфо)`;
 
+                const isRevealed = Boolean(revealedKeyTimers[k.key_code]);
+                const chipText = isRevealed ? `🔓 ${safeKey}` : `👁️ ••••-••••-••••-••••`;
+                const chipClass = isRevealed ? 'key-code-chip revealed' : 'key-code-chip masked';
+
                 return `
                     <tr>
                         <td>
-                            <span class="key-code-chip" onclick="copyToClipboard('${safeKey}', 'Ключ скопирован!')" title="Нажмите для копирования">
-                                ${safeKey}
+                            <span class="${chipClass}" id="chip-${safeKey}" onclick="revealAndCopyKey('${safeKey}', this)" title="Нажмите, чтобы скопировать и показать ключ (на 10 сек)">
+                                ${chipText}
                             </span>
                         </td>
                         <td>
@@ -2133,12 +2133,9 @@
                             </button>
                         </td>
                         <td style="color:var(--text-muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;">${safeNote}</td>
-                        <td style="display:flex;gap:4px;">
+                        <td>
                             <button class="btn-xs" onclick="copyToClipboard('${subUrl}', 'Ссылка подписки скопирована!')" title="Универсальная ссылка для iOS / ПК / Android">
                                 🔗 Ссылка
-                            </button>
-                            <button class="btn-xs" onclick="copyCrossPlatformGuide('${safeKey}')" title="Скопировать готовую инструкцию для клиента (Android + iPhone + ПК)">
-                                💻 Все ОС
                             </button>
                         </td>
                         <td style="text-align:right;">
@@ -2151,27 +2148,68 @@
 
             // Nodes
             document.getElementById('nodesTableBody').innerHTML = (cloudData.nodes || []).map(n => {
-                const ping = n.latency_ms !== null
+                const ping = (typeof n.latency_ms === 'number' && n.latency_ms > 0)
                     ? `<span style="color:var(--accent-green);font-weight:700;">${parseInt(n.latency_ms, 10)} мс</span>`
                     : `<span style="color:var(--text-muted);">—</span>`;
                 const cat = n.is_cascade
-                    ? `<span class="stat-pill pill-purple">👑 VIP Каскад</span>`
+                    ? `<span class="stat-pill pill-purple" style="padding:2px 6px;font-size:9.5px;">👑 VIP</span>`
                     : (n.is_ru
-                        ? `<span class="stat-pill pill-amber">Белый список</span>`
-                        : `<span class="stat-pill pill-green">Шлюз</span>`);
+                        ? `<span class="stat-pill pill-amber" style="padding:2px 6px;font-size:9.5px;">🇷🇺 Белый</span>`
+                        : `<span class="stat-pill pill-green" style="padding:2px 6px;font-size:9.5px;">⚡ Шлюз</span>`);
                 const safeRemark = escapeHtml(n.remark);
-                const safeType = escapeHtml(n.type);
-                const safeSec = escapeHtml(n.security);
+                const rawType = (n.type || 'TCP').split('#')[0].split('@')[0].trim().toUpperCase();
+                const rawSec = (n.security || 'REALITY').toUpperCase();
+                const transportDisplay = `${rawType}/${rawSec}`;
 
                 return `
                     <tr>
-                        <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;" title="${safeRemark}">${safeRemark}</td>
-                        <td>${cat}</td>
-                        <td><code style="font-size:10.5px;color:var(--text-muted);">${safeType}/${safeSec}</code></td>
-                        <td>${ping}</td>
+                        <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${safeRemark}">${safeRemark}</td>
+                        <td style="white-space:nowrap;">${cat}</td>
+                        <td style="max-width:95px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(transportDisplay)}"><code style="font-size:10.5px;color:var(--text-muted);">${escapeHtml(transportDisplay)}</code></td>
+                        <td style="text-align:right;white-space:nowrap;">${ping}</td>
                     </tr>
                 `;
             }).join('');
+        }
+
+        const revealedKeyTimers = {};
+
+        function revealAndCopyKey(keyCode, el) {
+            navigator.clipboard.writeText(keyCode);
+            showToast(`Ключ ${keyCode} скопирован! Скроется через 10 сек.`);
+
+            if (revealedKeyTimers[keyCode]) {
+                clearTimeout(revealedKeyTimers[keyCode]);
+            }
+
+            if (el) {
+                el.innerHTML = `<span>🔓 ${escapeHtml(keyCode)}</span> <span class="key-countdown">10с</span>`;
+                el.className = 'key-code-chip revealed';
+            }
+
+            revealedKeyTimers[keyCode] = setTimeout(() => {
+                delete revealedKeyTimers[keyCode];
+                const cur = document.getElementById('chip-' + keyCode) || el;
+                if (cur && document.body.contains(cur)) {
+                    cur.innerHTML = `<span>👁️ ••••-••••-••••-••••</span>`;
+                    cur.className = 'key-code-chip masked';
+                }
+            }, 10000);
+        }
+
+        async function manualRefreshServers(btn) {
+            if (btn) {
+                btn.classList.add('rotating');
+                btn.disabled = true;
+            }
+            await loadCloudState(false);
+            showToast('Таблица серверов обновлена!');
+            if (btn) {
+                setTimeout(() => {
+                    btn.classList.remove('rotating');
+                    btn.disabled = false;
+                }, 500);
+            }
         }
 
         checkExistingAuth();
