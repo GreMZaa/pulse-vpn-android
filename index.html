@@ -26,20 +26,19 @@
 
   <style>
     :root {
-      --bg-dark: #0B141B;
-      --bg-surface: #101B24;
-      --bg-card: #15222E;
-      --bg-card-hover: #1A2B3B;
+      --bg-dark: #0A0D14;
+      --bg-surface: #121622;
+      --bg-card: #181D2B;
+      --bg-card-hover: #1E2436;
       --border-subtle: rgba(255, 255, 255, 0.08);
-      --border-focus: #0284C7;
+      --border-focus: #8B5CF6;
+      
+      --brand-primary: #7C3AED;
+      --brand-primary-hover: #6D28D9;
+      --brand-pink: #EC4899;
       
       --pulse-green: #22C55E;
       --pulse-green-dark: #16A34A;
-      --pulse-green-glow: rgba(34, 197, 94, 0.25);
-      
-      --pulse-blue: #0284C7;
-      --pulse-blue-hover: #0369A1;
-      --pulse-blue-glow: rgba(2, 132, 199, 0.35);
       
       --hazard-amber: #F59E0B;
       --alert-red: #EF4444;
@@ -70,16 +69,11 @@
       display: flex;
       flex-direction: column;
       overflow-x: hidden;
-      background-image: 
-        radial-gradient(circle at 50% 0%, rgba(34, 197, 94, 0.07) 0%, transparent 55%),
-        linear-gradient(to bottom, #0B141B, #070D12);
     }
 
     /* ШАПКА В СТИЛЕ ПРИЛОЖЕНИЯ */
     header {
-      background: rgba(11, 20, 27, 0.94);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      background: #0D111A;
       border-bottom: 1px solid var(--border-subtle);
       padding-top: max(14px, calc(10px + env(safe-area-inset-top, 0px)));
       padding-bottom: 14px;
@@ -94,7 +88,6 @@
       box-sizing: border-box;
     }
 
-    /* На iOS / Android в режиме PWA (с рабочего стола) учитываем Dynamic Island / вырез */
     @media all and (display-mode: standalone) {
       header {
         padding-top: max(50px, calc(14px + env(safe-area-inset-top, 44px)));
@@ -108,39 +101,41 @@
     .brand-box {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       cursor: pointer;
     }
 
     .brand-icon-box {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      background: #111A16;
-      border: 1px solid rgba(34, 197, 94, 0.4);
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #EC4899 0%, #8B5CF6 100%);
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 12px var(--pulse-green-glow);
-    }
-
-    .brand-icon-box svg {
-      width: 22px;
-      height: 22px;
+      color: #FFFFFF;
+      flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(236, 72, 153, 0.35);
     }
 
     .brand-title {
-      font-size: 17px;
-      font-weight: 700;
+      font-size: 18px;
+      font-weight: 800;
       color: var(--text-white);
       display: flex;
       align-items: center;
-      gap: 6px;
-      letter-spacing: -0.2px;
+      gap: 8px;
+      letter-spacing: -0.3px;
     }
 
-    .brand-title span {
-      color: var(--pulse-green);
+    .brand-badge-tag {
+      background: rgba(236, 72, 153, 0.16);
+      color: #F472B6;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 6px;
+      letter-spacing: 0.2px;
     }
 
     .header-badges {
@@ -149,90 +144,25 @@
       gap: 8px;
     }
 
-    .badge-e2e {
-      background: rgba(34, 197, 94, 0.12);
-      border: 1px solid rgba(34, 197, 94, 0.3);
-      color: #4ADE80;
-      font-size: 11px;
-      font-weight: 600;
-      padding: 5px 10px;
-      border-radius: 20px;
-      letter-spacing: 0.3px;
-      white-space: nowrap;
-    }
-
     .btn-install-header {
-      background: var(--pulse-blue);
-      border: none;
-      color: #FFF;
+      background: #1E2436;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
       font-size: 12px;
       font-weight: 600;
-      padding: 5px 12px;
-      border-radius: 16px;
+      padding: 6px 12px;
+      border-radius: 10px;
       cursor: pointer;
       display: none;
       align-items: center;
-      gap: 5px;
-      transition: all 0.2s;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .btn-install-header:hover {
+      background: #252D42;
     }
     .btn-install-header:active {
-      transform: scale(0.95);
-    }
-
-    /* PWA ИНСТАЛЛ-БАННЕР ДЛЯ РАБОЧЕГО СТОЛА */
-    #pwa-install-banner {
-      background: linear-gradient(90deg, #0F2333 0%, #102A24 100%);
-      border-bottom: 1px solid rgba(34, 197, 94, 0.3);
-      padding: 10px 16px;
-      display: none;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      z-index: 45;
-      font-size: 13px;
-    }
-
-    .pwa-banner-content {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .pwa-banner-text {
-      color: #E2E8F0;
-      line-height: 1.3;
-    }
-    .pwa-banner-text strong {
-      color: #FFF;
-      display: block;
-      font-size: 13.5px;
-    }
-
-    .pwa-banner-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn-pwa-action {
-      background: var(--pulse-green-dark);
-      color: #FFF;
-      border: none;
-      font-size: 12px;
-      font-weight: 700;
-      padding: 6px 14px;
-      border-radius: 12px;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    .btn-pwa-dismiss {
-      background: transparent;
-      border: none;
-      color: var(--text-secondary);
-      font-size: 16px;
-      cursor: pointer;
-      padding: 4px;
+      transform: scale(0.96);
     }
 
     /* ОСНОВНОЙ КОНТЕЙНЕР (PRE-JOIN) */
@@ -241,24 +171,23 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 20px 16px 40px;
-      max-width: 480px;
+      padding: 32px 16px 40px;
+      max-width: 440px;
       margin: 0 auto;
       width: 100%;
-      gap: 18px;
+      gap: 20px;
     }
 
     /* КАРТОЧКА ГЛАВНОГО ВХОДА */
     .hero-card {
       background: var(--bg-surface);
       border: 1px solid var(--border-subtle);
-      border-radius: 20px;
-      padding: 22px 18px;
+      border-radius: 18px;
+      padding: 20px 18px;
       width: 100%;
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      gap: 16px;
     }
 
     .hero-header {
@@ -268,29 +197,25 @@
     }
 
     .hero-title-group h2 {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 700;
       color: var(--text-white);
-      letter-spacing: -0.3px;
-    }
-
-    .hero-title-group p {
-      font-size: 12.5px;
-      color: var(--text-secondary);
-      margin-top: 2px;
+      letter-spacing: -0.2px;
     }
 
     /* ПОЛЕ ВВОДА КОМНАТЫ */
     .input-field-group {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 7px;
     }
 
     .input-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
     }
 
     .input-wrapper {
@@ -302,8 +227,8 @@
     .input-icon {
       position: absolute;
       left: 14px;
-      font-size: 16px;
-      color: var(--text-secondary);
+      font-size: 15px;
+      color: var(--text-muted);
       pointer-events: none;
     }
 
@@ -311,20 +236,20 @@
       width: 100%;
       height: 48px;
       background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 12px;
       padding: 0 42px 0 42px;
       color: var(--text-white);
       font-family: var(--font-mono);
-      font-size: 15px;
+      font-size: 14.5px;
       font-weight: 600;
       outline: none;
-      transition: all 0.2s;
+      transition: all 0.15s;
     }
 
     .app-input:focus {
-      border-color: var(--pulse-blue);
-      box-shadow: 0 0 0 3px var(--pulse-blue-glow);
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
     }
 
     .input-clear-btn {
@@ -332,8 +257,8 @@
       right: 12px;
       background: none;
       border: none;
-      color: var(--text-secondary);
-      font-size: 15px;
+      color: var(--text-muted);
+      font-size: 14px;
       cursor: pointer;
       width: 24px;
       height: 24px;
@@ -342,64 +267,45 @@
       justify-content: center;
     }
 
-    /* ЧЕКБОКС КАМЕРЫ */
-    .camera-toggle-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-      padding: 2px 0;
-    }
-
-    .camera-toggle-row input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      accent-color: var(--pulse-green-dark);
-      cursor: pointer;
-    }
-
-    .camera-toggle-row span {
-      font-size: 13px;
-      color: var(--text-secondary);
-    }
-
     /* ГЛАВНАЯ КНОПКА ЗВОНКА */
     .btn-primary-call {
-      height: 50px;
-      background: var(--pulse-blue);
+      height: 48px;
+      background: var(--brand-primary);
       border: none;
-      border-radius: 14px;
+      border-radius: 12px;
       color: #FFF;
       font-family: var(--font-main);
-      font-size: 15px;
-      font-weight: 700;
+      font-size: 14.5px;
+      font-weight: 600;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
       cursor: pointer;
-      box-shadow: 0 4px 14px var(--pulse-blue-glow);
-      transition: all 0.2s;
+      transition: all 0.15s;
+    }
+
+    .btn-primary-call:hover {
+      background: var(--brand-primary-hover);
     }
 
     .btn-primary-call:active {
       transform: scale(0.98);
-      background: var(--pulse-blue-hover);
     }
 
-    /* СЕКЦИЯ ПОСТОЯННЫХ КОМНАТ (КАК В ПРИЛОЖЕНИИ) */
+    /* СЕКЦИЯ ПОСТОЯННЫХ КОМНАТ */
     .rooms-section {
       width: 100%;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
     }
 
     .section-header-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 4px;
+      padding: 0 2px;
     }
 
     .section-title {
@@ -412,14 +318,18 @@
     }
 
     .btn-create-room-small {
-      background: rgba(2, 132, 199, 0.15);
-      border: 1px solid rgba(2, 132, 199, 0.3);
-      color: #38BDF8;
+      background: rgba(124, 58, 237, 0.12);
+      border: 1px solid rgba(124, 58, 237, 0.25);
+      color: #C4B5FD;
       font-size: 11.5px;
       font-weight: 600;
-      padding: 4px 10px;
+      padding: 5px 11px;
       border-radius: 8px;
       cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-create-room-small:hover {
+      background: rgba(124, 58, 237, 0.22);
     }
 
     .rooms-list {
@@ -432,16 +342,17 @@
     .room-card-app {
       background: var(--bg-surface);
       border: 1px solid var(--border-subtle);
-      border-radius: 16px;
+      border-radius: 14px;
       padding: 12px 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      transition: background 0.2s;
+      transition: background 0.15s, border-color 0.15s;
     }
     .room-card-app:hover {
       background: var(--bg-card);
+      border-color: rgba(255, 255, 255, 0.12);
     }
 
     .room-left-group {
@@ -450,20 +361,22 @@
       gap: 12px;
       flex: 1;
       min-width: 0;
+      cursor: pointer;
     }
 
     .room-avatar {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      background: var(--pulse-green-dark);
-      color: #FFF;
-      font-size: 17px;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: #1E2436;
+      color: #E2E8F0;
+      font-size: 15px;
       font-weight: 700;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      border: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .room-info {
@@ -474,7 +387,7 @@
     }
 
     .room-name-text {
-      font-size: 14.5px;
+      font-size: 14px;
       font-weight: 600;
       color: #FFF;
       white-space: nowrap;
@@ -486,9 +399,10 @@
       font-family: var(--font-mono);
       font-size: 11px;
       color: var(--text-secondary);
-      background: rgba(255, 255, 255, 0.05);
-      padding: 1px 6px;
-      border-radius: 6px;
+      background: #181D2B;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 2px 6px;
+      border-radius: 5px;
       align-self: flex-start;
     }
 
@@ -502,18 +416,21 @@
       background: var(--pulse-green-dark);
       color: #FFF;
       border: none;
-      padding: 7px 13px;
-      border-radius: 10px;
+      padding: 7px 12px;
+      border-radius: 9px;
       font-size: 12.5px;
-      font-weight: 700;
+      font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
       transition: all 0.15s;
     }
+    .btn-room-call:hover {
+      background: #15803D;
+    }
     .btn-room-call:active {
-      transform: scale(0.95);
+      transform: scale(0.96);
     }
 
     .btn-room-icon {
@@ -527,8 +444,12 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 13px;
       transition: all 0.15s;
+    }
+    .btn-room-icon:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #FFF;
     }
 
     .btn-room-delete {
@@ -541,10 +462,10 @@
     }
 
     .rooms-empty-card {
-      background: rgba(16, 27, 36, 0.45);
+      background: rgba(18, 22, 34, 0.6);
       border: 1px dashed var(--border-subtle);
       border-radius: 14px;
-      padding: 22px 16px;
+      padding: 24px 16px;
       text-align: center;
       display: flex;
       flex-direction: column;
@@ -553,7 +474,7 @@
       gap: 6px;
     }
     .empty-icon {
-      font-size: 26px;
+      font-size: 24px;
       opacity: 0.6;
     }
     .empty-title {
@@ -567,27 +488,6 @@
       line-height: 1.4;
       max-width: 270px;
     }
-
-    /* ТЕЛЕМЕТРИЯ / БЕЗОПАСНОСТЬ */
-    .security-notice-card {
-      background: rgba(16, 27, 36, 0.6);
-      border: 1px solid var(--border-subtle);
-      border-radius: 14px;
-      padding: 12px 14px;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .sec-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 11.5px;
-    }
-    .sec-lbl { color: var(--text-muted); }
-    .sec-val { color: var(--pulse-green); font-weight: 600; font-family: var(--font-mono); }
 
     /* ЭКРАН АКТИВНОГО ЗВОНКА (CALL VIEW) */
     #call-view {
@@ -825,37 +725,21 @@
   <header>
     <div class="brand-box" onclick="location.reload()">
       <div class="brand-icon-box">
-        <svg viewBox="0 0 108 108" fill="none">
-          <path d="M20,54 L36,54 L44,28 L56,80 L66,42 L76,64 L82,54 L92,54" stroke="#22C55E" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
         </svg>
       </div>
       <div class="brand-title">
-        ПУЛЬС <span>Связь</span>
+        ПУЛЬС <span class="brand-badge-tag">Связь</span>
       </div>
     </div>
 
     <div class="header-badges">
-      <span class="badge-e2e">🔒 Direct E2E</span>
       <button class="btn-install-header" id="btn-header-install" onclick="triggerPwaInstall()">
         <span>📲</span> На экран
       </button>
     </div>
   </header>
-
-  <!-- БАННЕР УСТАНОВКИ НА РАБОЧИЙ СТОЛ (IOS / ANDROID) -->
-  <div id="pwa-install-banner">
-    <div class="pwa-banner-content">
-      <span style="font-size: 22px;">📲</span>
-      <div class="pwa-banner-text" id="pwa-banner-text">
-        <strong>Добавить на рабочий стол</strong>
-        Звоните как через отдельное приложение
-      </div>
-    </div>
-    <div class="pwa-banner-actions">
-      <button class="btn-pwa-action" id="btn-pwa-action-cta" onclick="triggerPwaInstall()">Установить</button>
-      <button class="btn-pwa-dismiss" onclick="dismissPwaBanner()">✕</button>
-    </div>
-  </div>
 
   <!-- ЭКРАН ВЫБОРА И ПОДКЛЮЧЕНИЯ (PRE-JOIN) -->
   <main id="prejoin-view">
@@ -865,7 +749,6 @@
       <div class="hero-header">
         <div class="hero-title-group">
           <h2>Вход в защищённую комнату</h2>
-          <p>Введите код или перейдите по ссылке собеседника</p>
         </div>
       </div>
 
@@ -886,11 +769,6 @@
         </div>
       </div>
 
-      <label class="camera-toggle-row">
-        <input type="checkbox" id="camera-pref-checkbox" checked />
-        <span>📹 Включить видеокамеру при входе</span>
-      </label>
-
       <button class="btn-primary-call" onclick="handleJoinSubmit()">
         <span>📞</span> ВОЙТИ В ЗВОНОК
       </button>
@@ -907,26 +785,6 @@
 
       <div class="rooms-list" id="rooms-list-container">
         <!-- Комнаты генерируются через JS из localStorage -->
-      </div>
-    </div>
-
-    <!-- ИНФОРМАЦИЯ О БЕЗОПАСНОСТИ -->
-    <div class="security-notice-card">
-      <div class="sec-row">
-        <span class="sec-lbl">Шифрование звонка</span>
-        <span class="sec-val">E2E WebRTC Opus HD</span>
-      </div>
-      <div class="sec-row">
-        <span class="sec-lbl">Топология сети</span>
-        <span class="sec-val">P2P Mesh + Relay</span>
-      </div>
-      <div class="sec-row">
-        <span class="sec-lbl">Серверы записи</span>
-        <span class="sec-val">Отсутствуют (Direct)</span>
-      </div>
-      <div class="sec-row">
-        <span class="sec-lbl">Установка</span>
-        <span class="sec-val">PWA (iPhone & Android)</span>
       </div>
     </div>
 
@@ -1002,17 +860,17 @@
     if (!isStandalone) {
       if (isIos) {
         // iOS Safari инструкция
-        bannerText.innerHTML = '<strong>Добавить на экран iPhone:</strong> Нажмите «Поделиться» ⎋ и «На экран „Домой“» ➕';
-        bannerCta.textContent = 'Инструкция';
-        pwaBanner.style.display = 'flex';
-        headerInstallBtn.style.display = 'inline-flex';
+        if (bannerText) bannerText.innerHTML = '<strong>Добавить на экран iPhone:</strong> Нажмите «Поделиться» ⎋ и «На экран „Домой“» ➕';
+        if (bannerCta) bannerCta.textContent = 'Инструкция';
+        if (pwaBanner) pwaBanner.style.display = 'flex';
+        if (headerInstallBtn) headerInstallBtn.style.display = 'inline-flex';
       } else {
         // Android Chrome
         window.addEventListener('beforeinstallprompt', (e) => {
           e.preventDefault();
           deferredPrompt = e;
-          pwaBanner.style.display = 'flex';
-          headerInstallBtn.style.display = 'inline-flex';
+          if (pwaBanner) pwaBanner.style.display = 'flex';
+          if (headerInstallBtn) headerInstallBtn.style.display = 'inline-flex';
         });
       }
     }
@@ -1024,8 +882,8 @@
         deferredPrompt.prompt();
         deferredPrompt.userChoice.then(() => {
           deferredPrompt = null;
-          pwaBanner.style.display = 'none';
-          headerInstallBtn.style.display = 'none';
+          if (pwaBanner) pwaBanner.style.display = 'none';
+          if (headerInstallBtn) headerInstallBtn.style.display = 'none';
         });
       } else {
         alert('Для установки приложения нажмите в меню браузера (три точки) ➔ «Установить приложение» или «Добавить на главный экран».');
@@ -1033,7 +891,7 @@
     }
 
     function dismissPwaBanner() {
-      pwaBanner.style.display = 'none';
+      if (pwaBanner) pwaBanner.style.display = 'none';
     }
 
     // --- 3. ХРАНЕНИЕ ПОСТОЯННЫХ КОМНАТ (LOCALSTORAGE) ---
@@ -1254,7 +1112,8 @@
     function handleJoinSubmit() {
       const raw = inputField.value.trim() || 'PulseCall';
       activeCleanRoom = toSafeRoomId(raw);
-      const withVideo = document.getElementById('camera-pref-checkbox').checked;
+      const prefEl = document.getElementById('camera-pref-checkbox');
+      const withVideo = prefEl ? prefEl.checked : true;
       isCamActive = withVideo;
 
       document.getElementById('call-room-label').textContent = raw.toUpperCase();
