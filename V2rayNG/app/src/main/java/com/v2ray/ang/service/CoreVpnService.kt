@@ -33,6 +33,36 @@ class CoreVpnService : VpnService(), ServiceControl {
     private var isRunning = false
     private var tun2SocksService: Tun2SocksControl? = null
     private val isStartingLock = AtomicBoolean(false)
+    private var wakeLock: android.os.PowerManager.WakeLock? = null
+
+    private fun acquireWakeLock() {
+        try {
+            if (wakeLock == null) {
+                val powerManager = getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+                wakeLock = powerManager?.newWakeLock(
+                    android.os.PowerManager.PARTIAL_WAKE_LOCK,
+                    "PulseVPN:CoreVpnKeepAlive"
+                )?.apply {
+                    setReferenceCounted(false)
+                }
+            }
+            wakeLock?.acquire(24 * 60 * 60 * 1000L)
+            LogUtil.i(AppConfig.TAG, "StartCore-VPN: Partial wake lock acquired")
+        } catch (e: Exception) {
+            LogUtil.e(AppConfig.TAG, "StartCore-VPN: Failed to acquire wake lock", e)
+        }
+    }
+
+    private fun releaseWakeLock() {
+        try {
+            if (wakeLock?.isHeld == true) {
+                wakeLock?.release()
+                LogUtil.i(AppConfig.TAG, "StartCore-VPN: Partial wake lock released")
+            }
+        } catch (e: Exception) {
+            LogUtil.e(AppConfig.TAG, "StartCore-VPN: Failed to release wake lock", e)
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -75,6 +105,7 @@ class CoreVpnService : VpnService(), ServiceControl {
         }
 
         unlockStart()
+        releaseWakeLock()
         NotificationManager.cancelNotification()
     }
 
@@ -110,8 +141,10 @@ class CoreVpnService : VpnService(), ServiceControl {
             LogUtil.e(AppConfig.TAG, "StartCore-VPN: Interface not initialized")
             return
         }
+        acquireWakeLock()
         if (!CoreServiceManager.startCoreLoop(mInterface)) {
             LogUtil.e(AppConfig.TAG, "StartCore-VPN: Failed to start core loop")
+            releaseWakeLock()
             stopAllService()
             return
         }
@@ -328,6 +361,7 @@ class CoreVpnService : VpnService(), ServiceControl {
 //        saveVpnNetworkInfo(configName, info)
         unlockStart()
         isRunning = false
+        releaseWakeLock()
 
         tun2SocksService?.stopTun2Socks()
         tun2SocksService = null

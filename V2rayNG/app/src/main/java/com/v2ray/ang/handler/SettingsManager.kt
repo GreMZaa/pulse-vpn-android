@@ -465,7 +465,7 @@ object SettingsManager {
     /**
      * Ensure default settings are present in MMKV.
      */
-    private fun ensureDefaultSettings() {
+    fun ensureDefaultSettings() {
         // Write defaults in the exact order requested by the user
         ensureDefaultValue(AppConfig.PREF_MODE, VPN)
         ensureDefaultValue(AppConfig.PREF_VPN_DNS, AppConfig.DNS_VPN)
@@ -488,8 +488,13 @@ object SettingsManager {
         ensureDefaultValue(AppConfig.PREF_OBSERVATORY_LEAST_LOAD_SAMPLING, AppConfig.OBSERVATORY_LEAST_LOAD_SAMPLING)
         ensureDefaultValue(AppConfig.PREF_OBSERVATORY_LEAST_LOAD_TIMEOUT, AppConfig.OBSERVATORY_LEAST_LOAD_TIMEOUT)
 
+        // Automatically upgrade any legacy 300s timeout (which caused 5-minute Telegram disconnects)
+        if (MmkvManager.decodeSettingsString(AppConfig.PREF_HEV_TUNNEL_RW_TIMEOUT) == "300,60") {
+            MmkvManager.encodeSettings(AppConfig.PREF_HEV_TUNNEL_RW_TIMEOUT, AppConfig.HEVTUN_RW_TIMEOUT)
+        }
+
         // Ensure critical anti-censorship, Smart Routing RU & AdBlock flags are enabled by default
-        val initKey = "pulse_anti_dpi_defaults_v4"
+        val initKey = "pulse_anti_dpi_defaults_v5"
         if (!MmkvManager.decodeSettingsBool(initKey, false)) {
             MmkvManager.encodeSettings(AppConfig.PREF_FRAGMENT_ENABLED, true)
             MmkvManager.encodeSettings(AppConfig.PREF_SNIFFING_ENABLED, true)
@@ -500,6 +505,7 @@ object SettingsManager {
             MmkvManager.encodeSettings(AppConfig.PREF_ADBLOCK_DNS_ENABLED, true)
             MmkvManager.encodeSettings(AppConfig.PREF_REMOTE_DNS, "${AppConfig.DNS_PROXY},1.1.1.1,8.8.8.8")
             MmkvManager.encodeSettings(AppConfig.PREF_DELAY_TEST_URL, AppConfig.DELAY_TEST_URL)
+            MmkvManager.encodeSettings(AppConfig.PREF_HEV_TUNNEL_RW_TIMEOUT, AppConfig.HEVTUN_RW_TIMEOUT)
             MmkvManager.encodeSettings(initKey, true)
         }
     }

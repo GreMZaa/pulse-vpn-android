@@ -56,6 +56,11 @@ class AngApplication : Application() {
         } catch (_: Throwable) {
         }
 
+        try {
+            SettingsManager.ensureDefaultSettings()
+        } catch (_: Throwable) {
+        }
+
         // Only run UI / Activity / Worker initialization in the main application process
         if (isMainProcess()) {
             try {

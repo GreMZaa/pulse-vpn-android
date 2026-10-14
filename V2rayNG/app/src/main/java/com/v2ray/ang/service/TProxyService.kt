@@ -91,8 +91,8 @@ class TProxyService(
             val parts = timeoutSetting.split(",")
                 .map { it.trim() }
                 .filter { it.isNotEmpty() }
-            val tcpTimeout = parts.getOrNull(0)?.toIntOrNull() ?: 300
-            val udpTimeout = parts.getOrNull(1)?.toIntOrNull() ?: 60
+            val tcpTimeout = parts.getOrNull(0)?.toIntOrNull() ?: 86400
+            val udpTimeout = parts.getOrNull(1)?.toIntOrNull() ?: 300
 
             appendLine("misc:")
             appendLine("  tcp-read-write-timeout: ${tcpTimeout * 1000}")

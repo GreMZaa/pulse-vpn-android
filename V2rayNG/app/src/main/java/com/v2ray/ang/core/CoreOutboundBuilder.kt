@@ -73,6 +73,13 @@ object CoreOutboundBuilder {
                 outbound.mux?.concurrency = -1
             }
 
+            // Configure TCP KeepAlive on streamSettings sockopt to prevent mobile carrier NAT timeout and connection drops
+            val stream = outbound.streamSettings
+            if (stream != null) {
+                val sockopt = stream.sockopt ?: OutboundBean.StreamSettingsBean.SockoptBean().also { stream.sockopt = it }
+                sockopt.tcpKeepAliveIdle = 15
+                sockopt.tcpKeepAliveInterval = 15
+            }
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "Failed to update outbound with global settings", e)
             return false

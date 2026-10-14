@@ -259,8 +259,8 @@ object AppConfig {
     const val ROOT_LAN_DNS = "1.1.1.1"          // fallback resolver for tethered clients when no plain-IPv4 DNS is configured
     const val ROOT_OOM_SCORE = "-1000"          // oom_score_adj that makes the LMK never kill us
 
-    /** hev-sock5-tunnel read-write-timeout value */
-    const val HEVTUN_RW_TIMEOUT = "300,60"
+    /** hev-sock5-tunnel read-write-timeout value: 24h for TCP (prevents dropping persistent sockets like Telegram), 5m for UDP */
+    const val HEVTUN_RW_TIMEOUT = "86400,300"
 
     // Google API rule constants
     const val GOOGLEAPIS_CN_DOMAIN = "domain:googleapis.cn"

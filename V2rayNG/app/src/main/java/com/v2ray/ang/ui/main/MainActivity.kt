@@ -1,9 +1,12 @@
 package com.v2ray.ang.ui.main
 
 import android.content.Intent
+import android.net.Uri
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import android.view.KeyEvent
 import androidx.activity.compose.BackHandler
 import androidx.activity.result.contract.ActivityResultContracts
@@ -313,7 +316,28 @@ class MainActivity : HelperBaseComponentActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN) {
                 checkAndRequestPermission(PermissionType.ACCESS_LOCAL_NETWORK) {}
             }
+            checkAndRequestBatteryOptimization()
             LauncherManager.startService(this@MainActivity)
+        }
+    }
+
+    private fun checkAndRequestBatteryOptimization() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                val powerManager = getSystemService(POWER_SERVICE) as? PowerManager
+                if (powerManager != null && !powerManager.isIgnoringBatteryOptimizations(packageName)) {
+                    val alreadyAsked = MmkvManager.decodeSettingsBool("battery_opt_prompted", false)
+                    if (!alreadyAsked) {
+                        MmkvManager.encodeSettings("battery_opt_prompted", true)
+                        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                            data = Uri.parse("package:$packageName")
+                        }
+                        startActivity(intent)
+                    }
+                }
+            } catch (e: Exception) {
+                LogUtil.d(AppConfig.TAG, "Battery optimization request: ${e.message}")
+            }
         }
     }
 
