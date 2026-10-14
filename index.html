@@ -620,7 +620,7 @@
 
     <!-- ЧЕКБОКС: ВКЛЮЧИТЬ КАМЕРУ -->
     <label class="camera-opt-label">
-      <input type="checkbox" id="camera-pref-checkbox" />
+      <input type="checkbox" id="camera-pref-checkbox" checked />
       <span>Включить видеокамеру при входе</span>
     </label>
 
@@ -660,41 +660,22 @@
       <div class="hud-chip" id="active-room-chip">
         КОД: <span id="active-room-display">PULSECALL</span>
       </div>
+      <div class="hud-chip" style="cursor:pointer;" onclick="copyInviteLink()">
+        <span>📋</span> ССЫЛКА
+      </div>
       <div class="hud-chip" style="cursor:pointer;" onclick="openDirectSafari()">
         <span>↗️</span> В БРАУЗЕР
       </div>
     </div>
 
-    <!-- ГОЛОСОВОЙ ИНТЕРФЕЙС (ЕСЛИ КАМЕРА ВЫКЛЮЧЕНА, НЕТ ПУСТОГО ЧЁРНОГО ЭКРАНА) -->
-    <div id="voice-overlay" class="voice-call-overlay">
-      <div class="voice-avatar-rings">
-        <div class="avatar-ring-pulse"></div>
-        <div class="avatar-ring-outer"></div>
-        <div class="avatar-core">
-          <span class="avatar-mic-icon" id="voice-avatar-icon">🎙️</span>
-        </div>
-      </div>
-
-      <div class="voice-status-title" id="voice-room-title">КОМНАТА АКТИВНА</div>
-      <div class="voice-status-sub">Шифрование WebRTC Opus • P2P Mesh</div>
-
-      <div class="voice-hint-badge">
-        <span>💡</span> Ожидание собеседника (из приложения ПУЛЬС или по ссылке)
-      </div>
-
-      <button class="voice-copy-btn" onclick="copyInviteLink()">
-        <span>📋</span> Скопировать ссылку для родных
-      </button>
-    </div>
-
-    <!-- IFRAME VDO.NINJA (ЗВУК И ВИДЕО) -->
+    <!-- IFRAME VDO.NINJA (ЗВУК И ВИДЕО - НА ВЕСЬ ЭКРАН) -->
     <iframe id="call-frame" allow="camera; microphone; autoplay; display-capture; fullscreen" allowfullscreen></iframe>
 
     <!-- НИЖНЯЯ ПАНЕЛЬ УПРАВЛЕНИЯ -->
     <div class="call-hud-bottom">
       <button class="dock-btn" title="Перевернуть камеру" onclick="flipCam()">🔄</button>
       <button class="dock-btn active" id="btn-mic-toggle" title="Микрофон" onclick="toggleMic()">🎙️</button>
-      <button class="dock-btn" id="btn-cam-toggle" title="Камера" onclick="toggleCam()">📷</button>
+      <button class="dock-btn active" id="btn-cam-toggle" title="Камера" onclick="toggleCam()">📹</button>
       <button class="dock-btn" title="На весь экран" onclick="toggleFullscreen()">⛶</button>
       <button class="dock-btn danger" title="Завершить вызов" onclick="hangupCall()">📞</button>
     </div>
@@ -781,11 +762,11 @@
     }
 
     let activeCleanRoom = 'pulse_call';
-    let isCamActive = false;
+    let isCamActive = true;
     let isMicActive = true;
 
     function buildNinjaUrl(cleanRoom, withVideo) {
-      let base = `https://vdo.ninja/?room=${cleanRoom}&label=Web&autostart&darkmode&cleanish&webcam&largepreview&showpreview&mesh&relay&aec&agc&denoise`;
+      let base = `https://vdo.ninja/?room=${cleanRoom}&label=Web&autostart&darkmode&cleanish&webcam&largepreview&showpreview&mesh&relay&aec&agc&denoise&beepvolume=0`;
       if (!withVideo) {
         base += '&videomute';
       }
@@ -800,11 +781,6 @@
 
       // Обновляем бейджи
       document.getElementById('active-room-display').textContent = raw.toUpperCase();
-      document.getElementById('voice-room-title').textContent = `КОМНАТА: ${raw.toUpperCase()}`;
-
-      // Показываем голосовой экран или видео
-      const voiceOverlay = document.getElementById('voice-overlay');
-      voiceOverlay.style.display = withVideo ? 'none' : 'flex';
 
       document.getElementById('prejoin-view').style.display = 'none';
       document.getElementById('call-view').style.display = 'flex';
@@ -819,7 +795,7 @@
     }
 
     function openDirectSafari() {
-      const directUrl = buildNinjaUrl(activeCleanRoom, false);
+      const directUrl = buildNinjaUrl(activeCleanRoom, isCamActive);
       window.open(directUrl, '_blank') || (window.location.href = directUrl);
     }
 
@@ -842,7 +818,6 @@
       const btn = document.getElementById('btn-mic-toggle');
       btn.textContent = isMicActive ? '🎙️' : '🔇';
       btn.classList.toggle('active', isMicActive);
-      document.getElementById('voice-avatar-icon').textContent = isMicActive ? '🎙️' : '🔇';
     }
 
     function toggleCam() {
@@ -855,10 +830,6 @@
       const btn = document.getElementById('btn-cam-toggle');
       btn.textContent = isCamActive ? '📹' : '📷';
       btn.classList.toggle('active', isCamActive);
-
-      // Если включили камеру — убираем голосовой оверлей, показываем видеосетку
-      const voiceOverlay = document.getElementById('voice-overlay');
-      voiceOverlay.style.display = isCamActive ? 'none' : 'flex';
     }
 
     function toggleFullscreen() {
@@ -874,12 +845,6 @@
       document.getElementById('call-frame').src = 'about:blank';
       document.getElementById('call-view').style.display = 'none';
       document.getElementById('prejoin-view').style.display = 'flex';
-      const hint = document.querySelector('.voice-hint-badge');
-      if (hint) {
-        hint.innerHTML = '<span>💡</span> Ожидание собеседника (из приложения ПУЛЬС или по ссылке)';
-        hint.style.background = '';
-        hint.style.borderColor = '';
-      }
     }
 
     window.addEventListener('message', (e) => {
