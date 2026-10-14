@@ -155,16 +155,16 @@ jobs:
           CHANGES=$(git log -n 5 --pretty=format:"- %s" | grep -v -E "Merge branch" || true)
         fi
 
-        cat > release_body.md << EOF
-Официальный релиз приложения **ПУЛЬС** (v${VERSION}).
-
-### 📋 Что нового в этой версии:
-${CHANGES}
-
-### 📱 Файлы для установки:
-- **PulseVPN_${VERSION}_arm64-v8a.apk** — Рекомендуется (для современных смартфонов Android).
-- **PulseVPN_${VERSION}_universal.apk** — Универсальная версия (для любых устройств и ТВ-приставок).
-EOF
+        {
+          echo "Официальный релиз приложения **ПУЛЬС** (v${VERSION})."
+          echo ""
+          echo "### 📋 Что нового в этой версии:"
+          echo "$CHANGES"
+          echo ""
+          echo "### 📱 Файлы для установки:"
+          echo "- **PulseVPN_${VERSION}_arm64-v8a.apk** — Рекомендуется (для современных смартфонов Android)."
+          echo "- **PulseVPN_${VERSION}_universal.apk** — Универсальная версия (для любых устройств и ТВ-приставок)."
+        } > release_body.md
 
         echo "Generated release body:"
         cat release_body.md
