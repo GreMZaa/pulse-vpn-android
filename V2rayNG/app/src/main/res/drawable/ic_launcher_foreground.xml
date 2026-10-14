@@ -3,12 +3,12 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Clean, minimalist white pulse line on dark backdrop -->
+    <!-- Exact brand pulse line on adaptive launcher icon -->
     <path
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="5"
+        android:strokeWidth="6"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:fillColor="#00000000"
-        android:pathData="M20,54 L36,54 L44,28 L56,80 L66,42 L76,64 L82,54 L92,54" />
+        android:pathData="M30,54 L40,54 L47,33 L61,75 L68,54 L78,54" />
 </vector>

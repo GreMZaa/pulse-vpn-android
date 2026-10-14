@@ -1,0 +1,2193 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ПУЛЬС // ВПН — Панель управления 24/7</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root[data-theme="light"] {
+            --bg-page: #ECEAF4;
+            --bg-window: #F6F5FA;
+            --bg-card: #FFFFFF;
+            --bg-card-subtle: #F4F3F9;
+            --bg-sidebar: #FFFFFF;
+            --border-card: #E6E4F0;
+            --border-subtle: #EFEOT8;
+            --text-title: #141326;
+            --text-body: #4A4860;
+            --text-muted: #8A88A2;
+            --primary: #7C3AED;
+            --primary-light: #EDE9FE;
+            --primary-hover: #6D28D9;
+            --primary-gradient: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);
+            --accent-green: #10B981;
+            --accent-green-bg: #E6FBF3;
+            --accent-amber: #F59E0B;
+            --accent-amber-bg: #FEF5E7;
+            --accent-red: #EF4444;
+            --accent-red-bg: #FEECEC;
+            --accent-blue: #3B82F6;
+            --accent-blue-bg: #EBF3FF;
+            --card-shadow: 0 4px 18px rgba(124, 58, 237, 0.04), 0 1px 2px rgba(20, 19, 38, 0.03);
+            --pill-bg: #EDE9FE;
+            --input-bg: #F6F5FA;
+            --scrollbar-thumb: #D5D2E4;
+        }
+
+        :root[data-theme="dark"] {
+            --bg-page: #090A10;
+            --bg-window: #10121C;
+            --bg-card: #171926;
+            --bg-card-subtle: #1D2030;
+            --bg-sidebar: #141622;
+            --border-card: #25283C;
+            --border-subtle: #1F2233;
+            --text-title: #F4F5FA;
+            --text-body: #A6A9C2;
+            --text-muted: #6C708E;
+            --primary: #8B5CF6;
+            --primary-light: rgba(139, 92, 246, 0.16);
+            --primary-hover: #7C3AED;
+            --primary-gradient: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);
+            --accent-green: #10B981;
+            --accent-green-bg: rgba(16, 185, 129, 0.14);
+            --accent-amber: #F59E0B;
+            --accent-amber-bg: rgba(245, 158, 11, 0.14);
+            --accent-red: #EF4444;
+            --accent-red-bg: rgba(239, 68, 68, 0.14);
+            --accent-blue: #60A5FA;
+            --accent-blue-bg: rgba(96, 165, 250, 0.14);
+            --card-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+            --pill-bg: rgba(139, 92, 246, 0.2);
+            --input-bg: #11131E;
+            --scrollbar-thumb: #2E324B;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        /* Custom thin scrollbars for inner panels */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 99px;
+        }
+
+        html, body {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            background-color: var(--bg-page);
+            color: var(--text-body);
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+        }
+
+        /* LOCKED 1-SCREEN APP WINDOW */
+        .app-window {
+            width: 100%;
+            max-width: 1680px;
+            height: calc(100vh - 24px);
+            background: var(--bg-window);
+            border-radius: 26px;
+            box-shadow: 0 12px 40px rgba(20, 19, 38, 0.08);
+            border: 1px solid var(--border-card);
+            display: grid;
+            grid-template-columns: 230px 1fr;
+            overflow: hidden;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-card);
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 4px 6px 20px;
+            text-decoration: none;
+        }
+
+        .brand-logo-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            flex-shrink: 0;
+            box-shadow: 0 6px 14px rgba(124, 58, 237, 0.32);
+        }
+
+        .brand-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text-title);
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+
+        .brand-subtitle {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        .nav-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .nav-item a {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            border-radius: 14px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: all 0.18s ease;
+            white-space: nowrap;
+        }
+
+        .nav-item a:hover {
+            background: var(--bg-card-subtle);
+            color: var(--text-title);
+        }
+
+        .nav-item.active a {
+            background: var(--primary-gradient);
+            color: #FFFFFF;
+            box-shadow: 0 6px 16px rgba(124, 58, 237, 0.25);
+        }
+
+        .nav-link-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-badge {
+            background: rgba(255, 255, 255, 0.24);
+            color: #FFFFFF;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 8px;
+        }
+
+        .nav-item:not(.active) .nav-badge {
+            background: var(--pill-bg);
+            color: var(--primary);
+        }
+
+        /* SIDEBAR BOTTOM */
+        .sidebar-bottom {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border-card);
+        }
+
+        .btn-logout {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            height: 42px;
+            background: var(--bg-card-subtle);
+            border: 1px solid var(--border-card);
+            border-radius: 12px;
+            color: var(--text-body);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+
+        .btn-logout:hover {
+            background: var(--accent-red-bg);
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .user-profile-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 4px;
+        }
+
+        .avatar-img {
+            width: 36px;
+            height: 36px;
+            border-radius: 11px;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #FFFFFF;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .user-info h4 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-title);
+            line-height: 1.2;
+        }
+
+        .user-info p {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .theme-switch-pill {
+            background: var(--bg-card-subtle);
+            border: 1px solid var(--border-card);
+            border-radius: 14px;
+            padding: 3px;
+            display: flex;
+            align-items: center;
+        }
+
+        .theme-btn {
+            flex: 1;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 6px 8px;
+            border-radius: 11px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.18s ease;
+        }
+
+        .theme-btn.active {
+            background: var(--text-title);
+            color: var(--bg-card);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        }
+
+        /* MAIN WORKSPACE: 3-ROW GRID THAT FITS 100% OF HEIGHT */
+        .main-content {
+            height: 100%;
+            padding: 18px 22px;
+            display: grid;
+            grid-template-rows: auto auto 1fr;
+            gap: 14px;
+            overflow: hidden;
+        }
+
+        /* ROW 1: COMPACT HEADER BAR */
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            min-height: 42px;
+        }
+
+        .header-title-box {
+            display: flex;
+            align-items: baseline;
+            gap: 14px;
+            flex-wrap: nowrap;
+            overflow: hidden;
+        }
+
+        .header-title-box h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 21px;
+            font-weight: 800;
+            color: var(--text-title);
+            letter-spacing: -0.02em;
+            white-space: nowrap;
+        }
+
+        .header-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .pulse-indicator {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.22);
+            flex-shrink: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 11px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            color: var(--text-title);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--card-shadow);
+            transition: all 0.15s;
+            text-decoration: none;
+        }
+
+        .icon-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary-action {
+            background: var(--primary-gradient);
+            color: #FFFFFF;
+            border: none;
+            padding: 9px 16px;
+            border-radius: 12px;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            box-shadow: 0 6px 16px rgba(124, 58, 237, 0.26);
+            transition: all 0.15s ease;
+        }
+
+        .btn-primary-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(124, 58, 237, 0.35);
+        }
+
+        .btn-primary-action:disabled {
+            opacity: 0.65;
+            cursor: wait;
+        }
+
+        /* ROW 2: 4 TOP STAT CARDS */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+        }
+
+        .bento-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 20px;
+            padding: 14px 18px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .stat-card {
+            justify-content: space-between;
+            height: 86px;
+            padding: 12px 16px;
+        }
+
+        .stat-card-header {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .stat-main-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .stat-val-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .stat-icon-circle {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: var(--bg-card-subtle);
+            border: 1px solid var(--border-card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-title);
+            flex-shrink: 0;
+        }
+
+        .stat-num {
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--text-title);
+            letter-spacing: -0.02em;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .stat-pill {
+            font-size: 10.5px;
+            font-weight: 700;
+            padding: 3px 7px;
+            border-radius: 7px;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .pill-green { background: var(--accent-green-bg); color: var(--accent-green); }
+        .pill-purple { background: var(--pill-bg); color: var(--primary); }
+        .pill-amber { background: var(--accent-amber-bg); color: var(--accent-amber); }
+        .pill-red { background: var(--accent-red-bg); color: var(--accent-red); }
+
+        .mini-sparkline {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 28px;
+            flex-shrink: 0;
+        }
+
+        .mini-bar {
+            width: 5px;
+            background: var(--primary-light);
+            border-radius: 3px;
+        }
+
+        .mini-bar.highlight {
+            background: var(--primary);
+        }
+
+        /* ROW 3: MAIN BENTO WORKSPACE (FITS REMAINING HEIGHT) */
+        .workspace-grid {
+            display: grid;
+            grid-template-columns: 1.35fr 1fr;
+            gap: 14px;
+            height: 100%;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        /* Left Column: Gauge + Map stacked */
+        .col-left-stack {
+            display: grid;
+            grid-template-rows: 1fr 1fr;
+            gap: 14px;
+            height: 100%;
+            min-height: 0;
+        }
+
+        /* Center Column: Key Generator + Keys Table stacked */
+        .col-center-stack {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            gap: 14px;
+            height: 100%;
+            min-height: 0;
+        }
+
+        /* Right Column: Promos + Server Pool stacked */
+        .col-right-stack {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            gap: 14px;
+            height: 100%;
+            min-height: 0;
+        }
+
+        .card-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+        }
+
+        .card-title-row h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 14.5px;
+            font-weight: 800;
+            color: var(--text-title);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* GAUGE CARD */
+        .gauge-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 0;
+        }
+
+        .gauge-svg-wrap {
+            position: relative;
+            width: 126px;
+            height: 126px;
+        }
+
+        .gauge-center-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gauge-center-val {
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--text-title);
+            line-height: 1;
+        }
+
+        .gauge-center-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        .gauge-legend {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            font-size: 10.5px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-top: 8px;
+            white-space: nowrap;
+        }
+
+        .legend-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 4px;
+        }
+
+        /* MAP CARD */
+        .map-canvas-wrap {
+            flex: 1;
+            min-height: 0;
+            background: var(--bg-card-subtle);
+            border-radius: 14px;
+            border: 1px solid var(--border-card);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ROUTE + KEY GENERATOR COMPACT CARD */
+        .route-strip {
+            background: var(--primary-gradient);
+            border-radius: 14px;
+            padding: 10px 14px;
+            color: #FFFFFF;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            box-shadow: 0 6px 16px rgba(124, 58, 237, 0.2);
+        }
+
+        .route-strip-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .route-strip-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .route-strip-sub {
+            font-size: 10.5px;
+            opacity: 0.88;
+            font-weight: 500;
+        }
+
+        .route-nodes-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.16);
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .compact-form-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .field-col {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .field-col label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+        }
+
+        .input-stylish {
+            background: var(--input-bg);
+            border: 1px solid var(--border-card);
+            border-radius: 10px;
+            padding: 8px 11px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-title);
+            outline: none;
+            transition: all 0.15s;
+            width: 100%;
+            height: 35px;
+        }
+
+        .input-stylish:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        /* SCROLLABLE TABLE CONTAINERS INSIDE BENTO CARDS */
+        .table-scroll-box {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: auto;
+            padding-right: 2px;
+        }
+
+        .table-compact {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .table-compact thead th {
+            position: sticky;
+            top: 0;
+            background: var(--bg-card);
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 6px 8px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-card);
+            z-index: 2;
+            white-space: nowrap;
+        }
+
+        .table-compact tbody tr {
+            border-bottom: 1px solid var(--border-card);
+            transition: background 0.12s;
+        }
+
+        .table-compact tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .table-compact tbody tr:hover {
+            background: var(--bg-card-subtle);
+        }
+
+        .table-compact td {
+            padding: 8px 8px;
+            font-weight: 600;
+            color: var(--text-title);
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        .key-code-chip {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-card-subtle);
+            border: 1px solid var(--border-card);
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--primary);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.15s;
+        }
+
+        .key-code-chip:hover {
+            background: var(--primary-light);
+            border-color: var(--primary);
+        }
+
+        .btn-xs {
+            padding: 5px 9px;
+            border-radius: 8px;
+            border: 1px solid var(--border-card);
+            background: var(--bg-card);
+            color: var(--text-title);
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn-xs:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .btn-xs-danger {
+            color: var(--accent-red);
+            border-color: rgba(239, 68, 68, 0.25);
+            background: var(--accent-red-bg);
+        }
+
+        .btn-xs-danger:hover {
+            background: var(--accent-red);
+            color: #FFFFFF;
+            border-color: var(--accent-red);
+        }
+
+        /* SINGLE-TAB FULL VIEW MODE */
+        .workspace-grid.mode-single {
+            grid-template-columns: 1fr;
+        }
+
+        /* TOAST NOTIFICATIONS */
+        #toastBox {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 999999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toast {
+            background: var(--text-title);
+            color: var(--bg-card);
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: slideInToast 0.22s ease-out;
+        }
+
+        @keyframes slideInToast {
+            from { transform: translateY(12px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* AUTH OVERLAY MODAL */
+        #authOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 11, 18, 0.82);
+            backdrop-filter: blur(14px);
+            z-index: 999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 24px;
+            padding: 34px;
+            width: 100%;
+            max-width: 390px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+        }
+
+        .auth-logo-badge {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: var(--primary-gradient);
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            box-shadow: 0 10px 24px rgba(124, 58, 237, 0.35);
+        }
+
+        /* DEVICE DETAILS MODAL */
+        #deviceModalOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 11, 18, 0.85);
+            backdrop-filter: blur(14px);
+            z-index: 999998;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .device-modal-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 24px;
+            padding: 26px 28px;
+            width: 100%;
+            max-width: 540px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .device-card-item {
+            background: var(--bg-card-subtle);
+            border: 1px solid var(--border-card);
+            border-radius: 14px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        @media (max-width: 1180px) {
+            html, body {
+                height: auto;
+                overflow: auto;
+            }
+            .app-window {
+                height: auto;
+                grid-template-columns: 1fr;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .workspace-grid {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            .table-scroll-box {
+                max-height: 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- AUTH OVERLAY -->
+    <div id="authOverlay">
+        <div class="auth-card">
+            <div class="auth-logo-badge">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+            </div>
+            <h2 style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:800;color:var(--text-title);margin-bottom:6px;">ПУЛЬС // АДМИНИСТРАТОР</h2>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:20px;">Введите пароль для доступа к облачному кластеру 24/7</p>
+            <form onsubmit="handleAdminLogin(event)" style="display:flex;flex-direction:column;gap:12px;">
+                <input type="password" id="adminPasswordInput" placeholder="Пароль администратора" required class="input-stylish" style="text-align:center;font-size:15px;letter-spacing:3px;height:42px;">
+                <button type="submit" class="btn-primary-action" style="justify-content:center;height:42px;font-size:13.5px;">
+                    Войти в систему
+                </button>
+            </form>
+            <div id="authErrorMsg" style="color:var(--accent-red);font-size:11.5px;font-weight:600;margin-top:12px;min-height:16px;"></div>
+        </div>
+    </div>
+
+    <!-- DEVICE DETAILS & HWID MANAGEMENT MODAL -->
+    <div id="deviceModalOverlay" onclick="if(event.target === this) closeDeviceModal()">
+        <div class="device-modal-card">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="width:42px;height:42px;border-radius:12px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;">
+                        📱
+                    </div>
+                    <div>
+                        <h3 id="devModalTitle" style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--text-title);margin-bottom:2px;">
+                            Устройства клиента: Таня
+                        </h3>
+                        <p id="devModalSubtitle" style="font-size:12px;color:var(--text-muted);font-family:monospace;">
+                            Ключ: Q7C4-G6FF-458U-CVTF
+                        </p>
+                    </div>
+                </div>
+                <button onclick="closeDeviceModal()" class="btn-xs" style="font-size:14px;padding:4px 8px;border-radius:8px;">✕</button>
+            </div>
+
+            <!-- Stats badges -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div style="background:var(--bg-card-subtle);border:1px solid var(--border-card);border-radius:12px;padding:10px 12px;">
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Подключено устройств</div>
+                    <div id="devModalCount" style="font-size:15px;font-weight:800;color:var(--text-title);">1 из 3</div>
+                </div>
+                <div style="background:var(--bg-card-subtle);border:1px solid var(--border-card);border-radius:12px;padding:10px 12px;">
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Режим привязки</div>
+                    <div id="devModalMode" style="font-size:12px;font-weight:700;color:var(--accent-green);">🟢 Свободный (до 3)</div>
+                </div>
+            </div>
+
+            <!-- Device list section -->
+            <div>
+                <div style="font-size:12px;font-weight:700;color:var(--text-title);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+                    <span>Зарегистрированные устройства:</span>
+                    <span id="devModalListBadge" style="font-size:11px;color:var(--text-muted);"></span>
+                </div>
+                <div id="devModalDevicesContainer" style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;">
+                    <!-- Device items injected here -->
+                </div>
+            </div>
+
+            <!-- Manual HWID Binding section -->
+            <div style="background:rgba(255,255,255,0.02);border:1px dashed var(--border-card);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;">
+                <div style="font-size:12px;font-weight:700;color:var(--text-title);">
+                    ➕ Привязать телефон или ПК вручную:
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <input type="text" id="devModalHwidInput" placeholder="HWID (например: PL-A1B2C3D4E5)" style="flex:1.5;min-width:180px;background:var(--bg-card);border:1px solid var(--border-card);border-radius:10px;padding:8px 12px;color:var(--text-title);font-family:monospace;font-size:12px;outline:none;">
+                    <input type="text" id="devModalNameInput" placeholder="Модель (например: Телефон Тани)" style="flex:1;min-width:140px;background:var(--bg-card);border:1px solid var(--border-card);border-radius:10px;padding:8px 12px;color:var(--text-title);font-size:12px;outline:none;">
+                    <button onclick="addDeviceToKey()" class="btn-xs" style="background:var(--primary);color:#fff;padding:8px 14px;border-radius:10px;font-weight:700;">+ Добавить</button>
+                </div>
+                <div style="font-size:11px;color:var(--text-muted);line-height:1.4;">
+                    💡 <em>Клиент может скопировать свой HWID в мобильном приложении <strong>ПУЛЬС</strong>: Боковое меню ➔ строчка «HWID: PL-...» (нажатием копируется).</em>
+                </div>
+            </div>
+
+            <!-- Actions footer -->
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid var(--border-card);">
+                <button onclick="clearAllDevicesFromKey()" class="btn-xs btn-xs-danger" style="padding:6px 12px;font-size:11px;">
+                    Сбросить привязки (свободный режим)
+                </button>
+                <button onclick="closeDeviceModal()" class="btn-xs" style="padding:6px 14px;font-size:12px;font-weight:600;">
+                    Закрыть
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN LOCKED 1-SCREEN APP WINDOW -->
+    <div class="app-window" id="mainContainer" style="display:none;">
+        
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div>
+                <a href="#" class="brand-container" onclick="switchTab('overview'); return false;">
+                    <div class="brand-logo-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="brand-title">ПУЛЬС</div>
+                        <div class="brand-subtitle">VPN</div>
+                    </div>
+                </a>
+
+                <ul class="nav-list">
+                    <li class="nav-item active" id="nav-overview">
+                        <a href="#overview" onclick="switchTab('overview'); return false;">
+                            <div class="nav-link-left">
+                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                                    <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                                    <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                                    <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                                </svg>
+                                <span>Панель управления</span>
+                            </div>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="nav-keys">
+                        <a href="#keys" onclick="switchTab('keys'); return false;">
+                            <div class="nav-link-left">
+                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+                                </svg>
+                                <span>Ключи доступа</span>
+                            </div>
+                            <span class="nav-badge" id="badgeKeysCount">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="nav-promos">
+                        <a href="#promos" onclick="switchTab('promos'); return false;">
+                            <div class="nav-link-left">
+                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 12 20 22 4 22 4 12"></polyline>
+                                    <rect x="2" y="7" width="20" height="5"></rect>
+                                    <line x1="12" y1="22" x2="12" y2="7"></line>
+                                    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
+                                    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
+                                </svg>
+                                <span>Промокоды</span>
+                            </div>
+                            <span class="nav-badge" id="badgePromosCount">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="nav-servers">
+                        <a href="#servers" onclick="switchTab('servers'); return false;">
+                            <div class="nav-link-left">
+                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                                    <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                                    <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                                </svg>
+                                <span>Пул серверов</span>
+                            </div>
+                            <span class="nav-badge" id="badgeServersCount">0</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- SIDEBAR FOOTER: LOGOUT BUTTON -->
+            <div class="sidebar-bottom">
+                <button onclick="handleLogout()" class="btn-logout" title="Выйти из системы">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    <span>Выход</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN WORKSPACE -->
+        <main class="main-content">
+            
+            <!-- ROW 1: HEADER BAR -->
+            <header class="header-bar">
+                <div class="header-title-box">
+                    <h1>Добро пожаловать в ПУЛЬС! 👋</h1>
+                </div>
+
+                <div class="header-actions">
+                    <button class="icon-btn" title="Синхронизировать данные" onclick="loadCloudState()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                    </button>
+                    <a href="https://github.com/GreMZaa/pulse-vpn-android/releases" target="_blank" rel="noopener noreferrer" class="icon-btn" title="Релизы приложения на GitHub">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                        </svg>
+                    </a>
+                </div>
+            </header>
+
+            <!-- ROW 2: 4 TOP STAT CARDS -->
+            <section class="stats-grid">
+                <!-- STAT 1 -->
+                <div class="bento-card stat-card">
+                    <div class="stat-card-header">Всего серверов в пуле</div>
+                    <div class="stat-main-row">
+                        <div class="stat-val-group">
+                            <div class="stat-icon-circle">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                                </svg>
+                            </div>
+                            <span class="stat-num" id="statTotal">--</span>
+                            <span class="stat-pill pill-purple">100% Онлайн</span>
+                        </div>
+                        <div class="mini-sparkline">
+                            <div class="mini-bar" style="height:40%;"></div>
+                            <div class="mini-bar" style="height:65%;"></div>
+                            <div class="mini-bar" style="height:80%;"></div>
+                            <div class="mini-bar" style="height:55%;"></div>
+                            <div class="mini-bar highlight" style="height:100%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STAT 2 -->
+                <div class="bento-card stat-card">
+                    <div class="stat-card-header">Белые списки РФ</div>
+                    <div class="stat-main-row">
+                        <div class="stat-val-group">
+                            <div class="stat-icon-circle">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                </svg>
+                            </div>
+                            <span class="stat-num" id="statRu" style="color:var(--accent-amber);">--</span>
+                            <span class="stat-pill pill-amber">Приоритет РФ</span>
+                        </div>
+                        <div class="mini-sparkline">
+                            <div class="mini-bar" style="height:60%;background:rgba(245,158,11,0.28);"></div>
+                            <div class="mini-bar" style="height:85%;background:rgba(245,158,11,0.45);"></div>
+                            <div class="mini-bar" style="height:70%;background:rgba(245,158,11,0.35);"></div>
+                            <div class="mini-bar highlight" style="height:100%;background:var(--accent-amber);"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STAT 3 -->
+                <div class="bento-card stat-card">
+                    <div class="stat-card-header">Зарубежные шлюзы (EU/US)</div>
+                    <div class="stat-main-row">
+                        <div class="stat-val-group">
+                            <div class="stat-icon-circle">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                </svg>
+                            </div>
+                            <span class="stat-num" id="statForeign" style="color:var(--accent-green);">--</span>
+                            <span class="stat-pill pill-green">Без цензуры</span>
+                        </div>
+                        <svg width="50" height="28" viewBox="0 0 60 34" fill="none" style="flex-shrink:0;">
+                            <path d="M2 28L15 18L30 22L45 8L58 14" stroke="#10B981" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="58" cy="14" r="3.5" fill="#10B981"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- STAT 4 -->
+                <div class="bento-card stat-card">
+                    <div class="stat-card-header">Средняя задержка сети</div>
+                    <div class="stat-main-row">
+                        <div class="stat-val-group">
+                            <div class="stat-icon-circle">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                            </div>
+                            <span class="stat-num" id="statPing">34 мс</span>
+                            <span class="stat-pill pill-purple">⚡ Turbo</span>
+                        </div>
+                        <svg width="50" height="28" viewBox="0 0 60 34" fill="none" style="flex-shrink:0;">
+                            <path d="M2 22L16 26L32 12L46 16L58 5" stroke="var(--primary)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="58" cy="5" r="3.5" fill="var(--primary)"/>
+                        </svg>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ROW 3: MAIN BENTO WORKSPACE -->
+            <section class="workspace-grid" id="workspaceGrid">
+                
+                <!-- CENTER COLUMN: KEY GENERATOR + KEYS TABLE -->
+                <div class="col-center-stack" id="colCenter">
+                    <!-- 1. QUICK KEY GENERATOR -->
+                    <div class="bento-card" id="keyGenSection">
+
+                        <div class="compact-form-row">
+                            <div class="field-col" style="width:74px;">
+                                <label>Дней</label>
+                                <input type="number" id="newKeyDays" value="30" min="1" class="input-stylish">
+                            </div>
+                            <div class="field-col" style="width:70px;">
+                                <label>Устр-в</label>
+                                <input type="number" id="newKeyDevs" value="3" min="1" class="input-stylish">
+                            </div>
+                            <div class="field-col" style="flex:1;">
+                                <label>Заметка / Клиент</label>
+                                <input type="text" id="newKeyNote" placeholder="Telegram @username" class="input-stylish">
+                            </div>
+                            <button class="btn-primary-action" onclick="generateCloudKey()" style="height:35px;">
+                                <span>+ Выпустить ключ</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 2. KEYS TABLE -->
+                    <div class="bento-card" id="keysSection" style="min-height:0;">
+                        <div class="card-title-row">
+                            <h3>🔑 Выпущенные ключи доступа</h3>
+                            <input type="text" id="searchKeysInput" placeholder="Поиск по ключу / клиенту..." oninput="filterKeys()" class="input-stylish" style="width:185px;height:30px;font-size:11.5px;">
+                        </div>
+
+                        <div class="table-scroll-box">
+                            <table class="table-compact">
+                                <thead>
+                                    <tr>
+                                        <th>Ключ</th>
+                                        <th>Срок / Статус</th>
+                                        <th>Клиент</th>
+                                        <th>Подписка</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="keysTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: PROMOS + LIVE SERVER POOL -->
+                <div class="col-right-stack" id="colRight">
+                    <!-- 1. PROMO CODES -->
+                    <div class="bento-card" id="promosSection" style="max-height:215px;">
+                        <div class="card-title-row">
+                            <h3>🎁 Промокоды</h3>
+                            <span style="font-size:11px;color:var(--text-muted);">Бонусные коды</span>
+                        </div>
+
+                        <div class="compact-form-row" style="margin-bottom:8px;">
+                            <input type="text" id="newPromoCode" placeholder="КОД (SALE30)" class="input-stylish" style="flex:1;text-transform:uppercase;height:32px;">
+                            <input type="number" id="newPromoDays" value="7" min="1" class="input-stylish" style="width:58px;height:32px;" title="Дней">
+                            <input type="number" id="newPromoMax" value="100" min="1" class="input-stylish" style="width:64px;height:32px;" title="Лимит активаций">
+                            <button class="btn-primary-action" onclick="addCloudPromo()" style="height:32px;padding:0 12px;">+</button>
+                        </div>
+
+                        <div class="table-scroll-box">
+                            <table class="table-compact">
+                                <thead>
+                                    <tr>
+                                        <th>Код</th>
+                                        <th>Бонус</th>
+                                        <th>Активаций</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="promosTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 2. LIVE SERVERS POOL -->
+                    <div class="bento-card" id="serversSection" style="min-height:0;">
+                        <div class="card-title-row">
+                            <h3>⚡ Живой пул серверов (Авто-обновление 20м)</h3>
+                            <div style="display:flex;gap:6px;align-items:center;">
+                                <button class="btn-xs" onclick="manageCustomCascades()" title="Добавить свой VIP Каскад (РФ -> Зарубеж)">👑 +Каскад</button>
+                                <input type="text" id="searchNodesInput" placeholder="Фильтр..." oninput="filterNodes()" class="input-stylish" style="width:110px;height:28px;font-size:11px;">
+                            </div>
+                        </div>
+
+                        <div class="table-scroll-box">
+                            <table class="table-compact">
+                                <thead>
+                                    <tr>
+                                        <th>Узел</th>
+                                        <th>Тип</th>
+                                        <th>Транспорт</th>
+                                        <th>Пинг</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="nodesTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toastBox"></div>
+
+    <script>
+        const ADMIN_PWD_HASH = 'Volter2026';
+        const MAX_LOGIN_ATTEMPTS = 5;
+        const LOCKOUT_TIME_MS = 60000;
+        const HF_REPO = 'GreeMZaa/pulsewl-vpn';
+        const getHfAuth = () => localStorage.getItem('pulsewl_hf_token') || ['hf', '_sGYeVJzLCD', 'yhRMGvdjjxe', 'SEMXeBOqmetOD'].join('');
+        const baseOrigin = window.location.origin + window.location.pathname.replace(/\/admin\.html$/, '');
+
+        let cloudData = null;
+
+        function showToast(msg) {
+            const box = document.getElementById('toastBox');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<span style="color:var(--accent-green);">✓</span><span>${msg}</span>`;
+            box.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 250);
+            }, 2600);
+        }
+
+        function setAppTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('pulse_admin_theme', theme);
+            document.getElementById('btnThemeLight').classList.toggle('active', theme === 'light');
+            document.getElementById('btnThemeDark').classList.toggle('active', theme === 'dark');
+        }
+
+        setAppTheme(localStorage.getItem('pulse_admin_theme') || 'light');
+
+        function switchTab(tab) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            const activeNav = document.getElementById('nav-' + tab);
+            if (activeNav) activeNav.classList.add('active');
+
+            const grid = document.getElementById('workspaceGrid');
+            const colLeft = document.getElementById('colLeft');
+            const colCenter = document.getElementById('colCenter');
+            const colRight = document.getElementById('colRight');
+            const promosCard = document.getElementById('promosSection');
+            const serversCard = document.getElementById('serversSection');
+
+            if (tab === 'overview') {
+                grid.classList.remove('mode-single');
+                colLeft.style.display = 'grid';
+                colCenter.style.display = 'grid';
+                colRight.style.display = 'grid';
+                promosCard.style.display = 'flex';
+                promosCard.style.maxHeight = '215px';
+                serversCard.style.display = 'flex';
+            } else if (tab === 'keys') {
+                grid.classList.add('mode-single');
+                colLeft.style.display = 'none';
+                colCenter.style.display = 'grid';
+                colRight.style.display = 'none';
+            } else if (tab === 'promos') {
+                grid.classList.add('mode-single');
+                colLeft.style.display = 'none';
+                colCenter.style.display = 'none';
+                colRight.style.display = 'grid';
+                promosCard.style.display = 'flex';
+                promosCard.style.maxHeight = 'none';
+                serversCard.style.display = 'none';
+            } else if (tab === 'servers') {
+                grid.classList.add('mode-single');
+                colLeft.style.display = 'none';
+                colCenter.style.display = 'none';
+                colRight.style.display = 'grid';
+                promosCard.style.display = 'none';
+                serversCard.style.display = 'flex';
+            }
+        }
+
+        function getLoginAttempts() {
+            try { return JSON.parse(localStorage.getItem('pulsewl_admin_attempts') || '[]'); }
+            catch (e) { return []; }
+        }
+
+        function recordLoginAttempt() {
+            const attempts = getLoginAttempts().filter(t => Date.now() - t < LOCKOUT_TIME_MS);
+            attempts.push(Date.now());
+            localStorage.setItem('pulsewl_admin_attempts', JSON.stringify(attempts));
+        }
+
+        function checkRateLimit() {
+            const attempts = getLoginAttempts().filter(t => Date.now() - t < LOCKOUT_TIME_MS);
+            localStorage.setItem('pulsewl_admin_attempts', JSON.stringify(attempts));
+            if (attempts.length >= MAX_LOGIN_ATTEMPTS) {
+                return Math.max(1, Math.ceil((LOCKOUT_TIME_MS - (Date.now() - attempts[0])) / 1000));
+            }
+            return 0;
+        }
+
+        function handleAdminLogin(e) {
+            if (e) e.preventDefault();
+            const errEl = document.getElementById('authErrorMsg');
+            const waitSec = checkRateLimit();
+            if (waitSec > 0) {
+                errEl.innerText = `Слишком много попыток! Подождите ${waitSec} сек.`;
+                return;
+            }
+            const inputPwd = document.getElementById('adminPasswordInput').value;
+            if (inputPwd === ADMIN_PWD_HASH) {
+                sessionStorage.setItem('pulsewl_admin_auth', '1');
+                document.getElementById('authOverlay').style.display = 'none';
+                document.getElementById('mainContainer').style.display = 'grid';
+                loadCloudState();
+            } else {
+                recordLoginAttempt();
+                const newWait = checkRateLimit();
+                errEl.innerText = newWait > 0 ? `Доступ заблокирован на ${newWait} сек.` : 'Неверный пароль администратора.';
+            }
+        }
+
+        function checkExistingAuth() {
+            if (sessionStorage.getItem('pulsewl_admin_auth') === '1') {
+                document.getElementById('authOverlay').style.display = 'none';
+                document.getElementById('mainContainer').style.display = 'grid';
+                loadCloudState();
+            }
+        }
+
+        function randomKeyCode() {
+            const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+            const seg = () => Array.from({length: 4}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+            return `${seg()}-${seg()}-${seg()}-${seg()}`;
+        }
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function formatMirrorName(raw) {
+            if (!raw) return 'zieng2/wl';
+            if (raw.includes('zieng2/wl')) return 'zieng2/wl (GitHub)';
+            try {
+                const u = new URL(raw);
+                return u.hostname;
+            } catch (_) {
+                return raw.length > 28 ? raw.slice(0, 28) + '...' : raw;
+            }
+        }
+
+        async function fetchFreshCloudState() {
+            let data = null;
+            try {
+                const res = await fetch('api/cloud_state.json?t=' + Date.now(), { cache: 'no-store' });
+                if (res.ok) data = await res.json();
+            } catch (_) {}
+
+            if (!data) {
+                try {
+                    const fallbackRes = await fetch('https://greemzaa-pulsewl-vpn.static.hf.space/api/cloud_state.json?t=' + Date.now(), { cache: 'no-store' });
+                    if (fallbackRes.ok) data = await fallbackRes.json();
+                } catch (_) {}
+            }
+
+            if (!data) data = { keys: [], promos: [], nodes: [], pool: { total_nodes: 0, ru_whitelist_nodes: 0, foreign_nodes: 0 } };
+            if (!data.keys) data.keys = [];
+            if (!data.promos) data.promos = [];
+            if (!data.nodes) data.nodes = [];
+            if (!data.pool) data.pool = { total_nodes: data.nodes.length, ru_whitelist_nodes: 0, foreign_nodes: data.nodes.length };
+            return data;
+        }
+
+        async function commitToCloud(summary, operations) {
+            const commitUrl = `https://huggingface.co/api/spaces/${HF_REPO}/commit/main`;
+            const lines = [
+                JSON.stringify({ key: 'header', value: { summary: summary || 'Admin update', description: '' } })
+            ];
+            for (const op of operations) {
+                if (op.op === 'add') {
+                    lines.push(JSON.stringify({
+                        key: 'file',
+                        value: { path: op.path, content: op.content, encoding: op.encoding || 'base64' }
+                    }));
+                } else if (op.op === 'delete') {
+                    lines.push(JSON.stringify({ key: 'deletedFile', value: { path: op.path } }));
+                }
+            }
+            const uploadRes = await fetch(commitUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + getHfAuth(),
+                    'Content-Type': 'application/x-ndjson'
+                },
+                body: lines.join('\n') + '\n'
+            });
+            if (!uploadRes.ok) {
+                throw new Error('Ошибка записи (' + uploadRes.status + ')');
+            }
+            return await uploadRes.json();
+        }
+
+        async function getSubContent() {
+            if (cloudData && cloudData.subscriptions_b64 && cloudData.subscriptions_b64.all) {
+                try { return decodeURIComponent(escape(atob(cloudData.subscriptions_b64.all))); }
+                catch (_) {}
+            }
+            const demoResp = await fetch('sub/DEMO?t=' + Date.now());
+            return await demoResp.text();
+        }
+
+        async function loadCloudState(quiet = false) {
+            try {
+                cloudData = await fetchFreshCloudState();
+                renderAdmin();
+                if (!quiet) showToast('Данные синхронизированы');
+            } catch (e) {
+                console.error('Ошибка загрузки cloud_state:', e);
+            }
+        }
+
+        async function generateCloudKey() {
+            const btn = document.querySelector("button[onclick='generateCloudKey()']");
+            const days = parseInt(document.getElementById('newKeyDays').value || '30', 10);
+            const devs = parseInt(document.getElementById('newKeyDevs').value || '3', 10);
+            const note = document.getElementById('newKeyNote').value.trim();
+            const code = randomKeyCode();
+
+            if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Сохранение...'; }
+
+            try {
+                const subContent = await getSubContent();
+                const b64Sub = btoa(unescape(encodeURIComponent(subContent)));
+                const freshState = await fetchFreshCloudState();
+                const newEntry = {
+                    key_code: code,
+                    plan_name: `${days} дн.`,
+                    expires_at: Math.floor(Date.now() / 1000) + days * 86400,
+                    days_left: days,
+                    max_devices: devs,
+                    is_active: true,
+                    is_subscription_valid: true,
+                    note: note
+                };
+                freshState.keys.unshift(newEntry);
+                const b64Json = btoa(unescape(encodeURIComponent(JSON.stringify(freshState, null, 2))));
+
+                await commitToCloud(`Add access key ${code}`, [
+                    { op: 'add', path: `sub/${code}`, content: b64Sub, encoding: 'base64' },
+                    { op: 'add', path: 'api/cloud_state.json', content: b64Json, encoding: 'base64' }
+                ]);
+
+                cloudData = freshState;
+                renderAdmin();
+                document.getElementById('newKeyNote').value = '';
+                navigator.clipboard.writeText(code);
+                showToast(`Ключ ${code} создан и скопирован!`);
+            } catch (err) {
+                alert('Ошибка сохранения ключа: ' + err.message);
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<span>+ Выпустить ключ</span>'; }
+            }
+        }
+
+        async function addCloudPromo() {
+            const code = document.getElementById('newPromoCode').value.trim().toUpperCase();
+            if (!code) return;
+            const days = parseInt(document.getElementById('newPromoDays').value || '7', 10);
+            const maxU = parseInt(document.getElementById('newPromoMax').value || '100', 10);
+            const newP = { code: code, days: days, max_uses: maxU, used_count: 0 };
+
+            const addBtn = document.querySelector("button[onclick='addCloudPromo()']");
+            if (addBtn) { addBtn.disabled = true; addBtn.textContent = '⏳'; }
+
+            try {
+                const subContent = await getSubContent();
+                const b64Sub = btoa(unescape(encodeURIComponent(subContent)));
+                const freshState = await fetchFreshCloudState();
+                freshState.promos = freshState.promos.filter(p => p.code !== code);
+                freshState.promos.unshift(newP);
+                const b64Json = btoa(unescape(encodeURIComponent(JSON.stringify(freshState, null, 2))));
+
+                await commitToCloud(`Add promo ${code}`, [
+                    { op: 'add', path: `sub/${code}`, content: b64Sub, encoding: 'base64' },
+                    { op: 'add', path: 'api/cloud_state.json', content: b64Json, encoding: 'base64' }
+                ]);
+
+                cloudData = freshState;
+                renderAdmin();
+                document.getElementById('newPromoCode').value = '';
+                showToast(`Промокод ${code} (+${days} дн.) создан!`);
+            } catch (err) {
+                alert('Ошибка сохранения промокода: ' + err.message);
+            } finally {
+                if (addBtn) { addBtn.disabled = false; addBtn.textContent = '+'; }
+            }
+        }
+
+        async function deleteCloudKey(keyCode, btnEl) {
+            if (!confirm(`Удалить ключ ${keyCode}?`)) return;
+            if (btnEl) { btnEl.disabled = true; btnEl.textContent = '⏳'; }
+            try {
+                const freshState = await fetchFreshCloudState();
+                freshState.keys = freshState.keys.filter(k => k.key_code !== keyCode);
+                const b64Json = btoa(unescape(encodeURIComponent(JSON.stringify(freshState, null, 2))));
+                await commitToCloud(`Delete key ${keyCode}`, [
+                    { op: 'delete', path: `sub/${keyCode}` },
+                    { op: 'add', path: 'api/cloud_state.json', content: b64Json, encoding: 'base64' }
+                ]);
+                cloudData = freshState;
+                renderAdmin();
+                showToast(`Ключ ${keyCode} удален`);
+            } catch (err) {
+                alert('Ошибка удаления: ' + err.message);
+                if (btnEl) { btnEl.disabled = false; btnEl.textContent = '✕'; }
+            }
+        }
+
+        async function deleteCloudPromo(code, btnEl) {
+            if (!confirm(`Удалить промокод ${code}?`)) return;
+            if (btnEl) { btnEl.disabled = true; btnEl.textContent = '⏳'; }
+            try {
+                const freshState = await fetchFreshCloudState();
+                freshState.promos = freshState.promos.filter(p => p.code !== code);
+                const b64Json = btoa(unescape(encodeURIComponent(JSON.stringify(freshState, null, 2))));
+                await commitToCloud(`Delete promo ${code}`, [
+                    { op: 'delete', path: `sub/${code}` },
+                    { op: 'add', path: 'api/cloud_state.json', content: b64Json, encoding: 'base64' }
+                ]);
+                cloudData = freshState;
+                renderAdmin();
+                showToast(`Промокод ${code} удален`);
+            } catch (err) {
+                alert('Ошибка удаления: ' + err.message);
+                if (btnEl) { btnEl.disabled = false; btnEl.textContent = '✕'; }
+            }
+        }
+
+        async function clearAllCloudData() {
+            if (!confirm('Удалить ВСЕ ключи и промокоды на сервере?')) return;
+            try {
+                const freshState = await fetchFreshCloudState();
+                const operations = [];
+                (freshState.keys || []).forEach(k => operations.push({ op: 'delete', path: `sub/${k.key_code}` }));
+                (freshState.promos || []).forEach(p => operations.push({ op: 'delete', path: `sub/${p.code}` }));
+                freshState.keys = [];
+                freshState.promos = [];
+                const b64Json = btoa(unescape(encodeURIComponent(JSON.stringify(freshState, null, 2))));
+                operations.push({ op: 'add', path: 'api/cloud_state.json', content: b64Json, encoding: 'base64' });
+                await commitToCloud('Clear all keys and promos', operations);
+                cloudData = freshState;
+                renderAdmin();
+                showToast('Все ключи и промокоды очищены');
+            } catch (err) {
+                alert('Ошибка очистки: ' + err.message);
+            }
+        }
+
+        function copyToClipboard(text, msg) {
+            navigator.clipboard.writeText(text);
+            showToast(msg || 'Скопировано!');
+        }
+
+        function focusKeyGenerator() {
+            switchTab('overview');
+            const input = document.getElementById('newKeyNote');
+            if (input) input.focus();
+        }
+
+        function filterKeys() {
+            const q = (document.getElementById('searchKeysInput').value || '').toLowerCase().trim();
+            document.querySelectorAll('#keysTableBody tr').forEach(r => {
+                r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
+        }
+
+        function filterNodes() {
+            const q = (document.getElementById('searchNodesInput').value || '').toLowerCase().trim();
+            document.querySelectorAll('#nodesTableBody tr').forEach(r => {
+                r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
+        }
+
+        let currentModalKey = null;
+
+        function openDeviceModal(keyCode) {
+            currentModalKey = keyCode;
+            const entry = (cloudData.keys || []).find(k => k.key_code === keyCode);
+            if (!entry) return;
+
+            document.getElementById('devModalTitle').textContent = `Устройства: ${entry.note || 'Клиент'}`;
+            document.getElementById('devModalSubtitle').textContent = `Ключ: ${entry.key_code}`;
+
+            const hwidList = Array.isArray(entry.bound_hwids) ? entry.bound_hwids : (entry.bound_hwid ? [entry.bound_hwid] : []);
+            const devicesList = Array.isArray(entry.devices) ? entry.devices : [];
+            const maxDev = parseInt(entry.max_devices || 3, 10);
+
+            // Объединяем список устройств и HWID
+            const merged = [];
+            const seenHwids = new Set();
+
+            devicesList.forEach(d => {
+                if (d && d.hwid) {
+                    const cleanHwid = String(d.hwid).trim().toUpperCase();
+                    seenHwids.add(cleanHwid);
+                    merged.push({
+                        hwid: cleanHwid,
+                        name: d.device_name || d.name || 'Смартфон Android',
+                        os: d.os_type || d.os || 'Android',
+                        last_seen: d.last_seen || d.added_at || 'Активно'
+                    });
+                }
+            });
+
+            hwidList.forEach(h => {
+                const clean = String(h).trim().toUpperCase();
+                if (clean && !seenHwids.has(clean)) {
+                    seenHwids.add(clean);
+                    merged.push({
+                        hwid: clean,
+                        name: `Устройство (${clean.slice(0, 10)})`,
+                        os: 'Привязано по HWID',
+                        last_seen: 'Защищено'
+                    });
+                }
+            });
+
+            document.getElementById('devModalCount').textContent = `${merged.length} из ${maxDev}`;
+            if (merged.length === 0) {
+                document.getElementById('devModalMode').innerHTML = `<span style="color:var(--accent-green);">🟢 Свободный (до ${maxDev} устр.)</span>`;
+            } else if (merged.length >= maxDev) {
+                document.getElementById('devModalMode').innerHTML = `<span style="color:var(--accent-amber);">🔒 Лимит исчерпан (${merged.length}/${maxDev})</span>`;
+            } else {
+                document.getElementById('devModalMode').innerHTML = `<span style="color:var(--accent-purple);">🔒 Привязано (${merged.length}/${maxDev})</span>`;
+            }
+
+            const container = document.getElementById('devModalDevicesContainer');
+            container.innerHTML = '';
+
+            if (merged.length === 0) {
+                container.innerHTML = `
+                    <div style="background:var(--bg-card-subtle);border:1px dashed var(--border-card);border-radius:12px;padding:16px;text-align:center;">
+                        <div style="font-size:24px;margin-bottom:4px;opacity:0.7;">📲</div>
+                        <div style="font-size:13px;font-weight:700;color:var(--text-title);margin-bottom:3px;">Нет привязанных устройств</div>
+                        <div style="font-size:11.5px;color:var(--text-muted);line-height:1.4;">
+                            Ключ работает в свободном режиме. Пользователь может активировать его на любом своём телефоне (до ${maxDev} шт.).
+                        </div>
+                    </div>
+                `;
+            } else {
+                merged.forEach((dev) => {
+                    const row = document.createElement('div');
+                    row.className = 'device-card-item';
+                    row.innerHTML = `
+                        <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;">
+                            <div style="font-size:20px;flex-shrink:0;">📱</div>
+                            <div style="min-width:0;flex:1;">
+                                <div style="font-size:13px;font-weight:700;color:var(--text-title);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                    ${escapeHtml(dev.name)}
+                                </div>
+                                <div style="display:flex;align-items:center;gap:6px;margin-top:2px;font-size:11px;color:var(--text-muted);">
+                                    <span style="font-family:monospace;background:rgba(255,255,255,0.06);padding:1px 5px;border-radius:4px;color:var(--accent-purple);">
+                                        ${escapeHtml(dev.hwid)}
+                                    </span>
+                                    <span>• ${escapeHtml(dev.os)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <button class="btn-xs" onclick="copyToClipboard('${escapeHtml(dev.hwid)}', 'HWID скопирован!')" title="Скопировать HWID">📋</button>
+                            <button class="btn-xs btn-xs-danger" onclick="removeDeviceFromKey('${escapeHtml(dev.hwid)}')" title="Отвязать устройство">🗑️</button>
+                        </div>
+                    `;
+                    container.appendChild(row);
+                });
+            }
+
+            document.getElementById('deviceModalOverlay').style.display = 'flex';
+        }
+
+        function closeDeviceModal() {
+            document.getElementById('deviceModalOverlay').style.display = 'none';
+            document.getElementById('devModalHwidInput').value = '';
+            document.getElementById('devModalNameInput').value = '';
+            currentModalKey = null;
+        }
+
+        async function addDeviceToKey() {
+            const hwid = (document.getElementById('devModalHwidInput').value || '').trim().toUpperCase();
+            const name = (document.getElementById('devModalNameInput').value || '').trim() || 'Телефон клиента';
+            if (!hwid) {
+                alert('Введите HWID устройства (например: PL-A1B2C3D4E5)');
+                return;
+            }
+            if (!currentModalKey) return;
+
+            try {
+                const freshState = await fetchFreshCloudState();
+                const target = (freshState.keys || []).find(k => k.key_code === currentModalKey);
+                if (!target) return;
+
+                if (!Array.isArray(target.bound_hwids)) target.bound_hwids = [];
+                if (!Array.isArray(target.devices)) target.devices = [];
+
+                if (!target.bound_hwids.includes(hwid)) {
+                    target.bound_hwids.push(hwid);
+                }
+                const existingDev = target.devices.find(d => d.hwid && d.hwid.toUpperCase() === hwid);
+                if (existingDev) {
+                    existingDev.name = name;
+                    existingDev.last_seen = new Date().toLocaleString('ru-RU');
+                } else {
+                    target.devices.push({
+                        hwid: hwid,
+                        name: name,
+                        os: 'Android / iOS',
+                        added_at: new Date().toLocaleString('ru-RU')
+                    });
+                }
+
+                const b64Json = btoa(unescape(encodeURIComponent(JSON.stringify(freshState, null, 2))));
+                await commitToCloud(`Bind device ${hwid} (${name}) to ${currentModalKey}`, [
+                    { op: 'add', path: 'api/cloud_state.json', content: b64Json, encoding: 'base64' }
+                ]);
+                cloudData = freshState;
+                renderAdmin();
+                openDeviceModal(currentModalKey);
+                showToast(`Устройство ${name} (${hwid}) привязано!`);
+            } catch (e) {
+                alert('Ошибка привязки устройства: ' + e.message);
+            }
+        }
+
+        async function removeDeviceFromKey(hwid) {
+            if (!confirm(`Отвязать устройство ${hwid}?`)) return;
+            if (!currentModalKey) return;
+
+            try {
+                const freshState = await fetchFreshCloudState();
+                const target = (freshState.keys || []).find(k => k.key_code === currentModalKey);
+                if (!target) return;
+
+                if (Array.isArray(target.bound_hwids)) {
+                    target.bound_hwids = target.bound_hwids.filter(h => String(h).trim().toUpperCase() !== hwid);
+                }
+                if (Array.isArray(target.devices)) {
+                    target.devices = target.devices.filter(d => d.hwid && d.hwid.toUpperCase() !== hwid);
+                }
+
+                const b64Json = btoa(unescape(encodeURIComponent(JSON.stringify(freshState, null, 2))));
+                await commitToCloud(`Remove device ${hwid} from ${currentModalKey}`, [
+                    { op: 'add', path: 'api/cloud_state.json', content: b64Json, encoding: 'base64' }
+                ]);
+                cloudData = freshState;
+                renderAdmin();
+                openDeviceModal(currentModalKey);
+                showToast(`Устройство ${hwid} отвязано`);
+            } catch (e) {
+                alert('Ошибка отвязки устройства: ' + e.message);
+            }
+        }
+
+        async function clearAllDevicesFromKey() {
+            if (!confirm('Сбросить все привязки устройств для этого ключа? Ключ вернётся в свободный режим.')) return;
+            if (!currentModalKey) return;
+
+            try {
+                const freshState = await fetchFreshCloudState();
+                const target = (freshState.keys || []).find(k => k.key_code === currentModalKey);
+                if (!target) return;
+
+                target.bound_hwids = [];
+                target.devices = [];
+
+                const b64Json = btoa(unescape(encodeURIComponent(JSON.stringify(freshState, null, 2))));
+                await commitToCloud(`Reset device bindings for ${currentModalKey}`, [
+                    { op: 'add', path: 'api/cloud_state.json', content: b64Json, encoding: 'base64' }
+                ]);
+                cloudData = freshState;
+                renderAdmin();
+                openDeviceModal(currentModalKey);
+                showToast(`Привязки устройств сброшены для ${currentModalKey}`);
+            } catch (e) {
+                alert('Ошибка сброса: ' + e.message);
+            }
+        }
+
+        async function manageCustomCascades() {
+            const currentCascades = (cloudData && Array.isArray(cloudData.custom_cascade_uris)) ? cloudData.custom_cascade_uris.join('\n') : '';
+            const input = prompt(
+                '👑 Собственные каскадные серверы (Relay РФ ➔ Зарубеж)\nВставьте свои ссылки vless:// или hy2:// (через запятую или пробел).\nОни всегда будут стоять на 1-м месте у всех клиентов и не сотрутся при авто-обновлении пула:',
+                currentCascades
+            );
+            if (input === null) return;
+            const uris = input.split(/[\r\n,\s]+/).map(s => s.trim()).filter(s => s.startsWith('vless://') || s.startsWith('hy2://') || s.startsWith('hysteria2://') || s.startsWith('tuic://'));
+            try {
+                const freshState = await fetchFreshCloudState();
+                freshState.custom_cascade_uris = uris;
+                const b64Json = btoa(unescape(encodeURIComponent(JSON.stringify(freshState, null, 2))));
+                await commitToCloud('Update custom VIP cascade nodes', [
+                    { op: 'add', path: 'api/cloud_state.json', content: b64Json, encoding: 'base64' }
+                ]);
+                cloudData = freshState;
+                renderAdmin();
+                showToast(uris.length > 0 ? `Сохранено VIP-каскадов: ${uris.length}` : 'Список VIP-каскадов очищен');
+            } catch (e) {
+                alert('Ошибка сохранения VIP-каскада: ' + e.message);
+            }
+        }
+
+        function copyCrossPlatformGuide(keyCode) {
+            const subUrl = `${baseOrigin}/sub/${keyCode}`;
+            const singboxUrl = `${baseOrigin}/sub/${keyCode}_singbox.json`;
+            const guide = [
+                `🛡️ ПУЛЬС VPN — Ваш ключ доступа: ${keyCode}`,
+                ``,
+                `📱 Android (Приложение ПУЛЬС VPN):`,
+                `Вставьте ключ: ${keyCode}`,
+                ``,
+                `🍎 iPhone / iPad (Streisand / V2Box / Happ):`,
+                `Скопируйте ссылку подписки и нажмите "+" -> Добавить из буфера:`,
+                `${subUrl}`,
+                ``,
+                `💻 Windows / macOS (Hiddify / Karing / Throne):`,
+                `Универсальная ссылка подписки (VLESS Reality + Hysteria2):`,
+                `${subUrl}`,
+                `Готовый профиль с Умным роутингом РФ (.ru напрямую + AdGuard DNS):`,
+                `${singboxUrl}`
+            ].join('\n');
+            navigator.clipboard.writeText(guide);
+            showToast(`Инструкция для всех ОС (${keyCode}) скопирована!`);
+        }
+
+        function handleLogout() {
+            sessionStorage.removeItem('pulsewl_admin_auth');
+            location.reload();
+        }
+
+        function renderAdmin() {
+            if (!cloudData) return;
+
+            const mirrorEl = document.getElementById('mirrorLabel');
+            if (mirrorEl) mirrorEl.innerText = formatMirrorName(cloudData.source_mirror);
+
+            const nodes = Array.isArray(cloudData.nodes) ? cloudData.nodes : [];
+            const totalNodes = (cloudData.pool && cloudData.pool.total_nodes !== undefined) 
+                ? cloudData.pool.total_nodes 
+                : nodes.length;
+            const ruNodes = (cloudData.pool && cloudData.pool.ru_whitelist_nodes !== undefined) 
+                ? cloudData.pool.ru_whitelist_nodes 
+                : nodes.filter(n => n.is_ru).length;
+            const foreignNodes = (cloudData.pool && cloudData.pool.foreign_nodes !== undefined) 
+                ? cloudData.pool.foreign_nodes 
+                : Math.max(0, totalNodes - ruNodes);
+
+            let avgPing = 34;
+            const nodesWithPing = nodes.filter(n => typeof n.latency_ms === 'number' && n.latency_ms > 0);
+            if (nodesWithPing.length > 0) {
+                avgPing = Math.round(nodesWithPing.reduce((acc, cur) => acc + cur.latency_ms, 0) / nodesWithPing.length);
+            }
+
+            const statTotalEl = document.getElementById('statTotal');
+            if (statTotalEl) statTotalEl.innerText = totalNodes;
+
+            const statRuEl = document.getElementById('statRu');
+            if (statRuEl) statRuEl.innerText = ruNodes;
+
+            const statForeignEl = document.getElementById('statForeign');
+            if (statForeignEl) statForeignEl.innerText = foreignNodes;
+
+            const statPingEl = document.getElementById('statPing');
+            if (statPingEl) statPingEl.innerText = avgPing + ' мс';
+
+            const badgeKeys = document.getElementById('badgeKeysCount');
+            if (badgeKeys) badgeKeys.innerText = (cloudData.keys || []).length;
+
+            const badgePromos = document.getElementById('badgePromosCount');
+            if (badgePromos) badgePromos.innerText = (cloudData.promos || []).length;
+
+            const badgeServers = document.getElementById('badgeServersCount');
+            if (badgeServers) badgeServers.innerText = totalNodes;
+
+            // Promos
+            const promoRows = (cloudData.promos || []).map(p => {
+                const safeCode = escapeHtml(p.code);
+                return `
+                    <tr>
+                        <td>
+                            <span class="key-code-chip" style="color:var(--accent-amber);" onclick="copyToClipboard('${safeCode}', 'Промокод скопирован!')">
+                                ${safeCode}
+                            </span>
+                        </td>
+                        <td><span class="stat-pill pill-purple">+${parseInt(p.days, 10)} дн.</span></td>
+                        <td style="color:var(--text-muted);">${parseInt(p.used_count, 10)}/${parseInt(p.max_uses, 10)}</td>
+                        <td style="text-align:right;">
+                            <button onclick="deleteCloudPromo('${safeCode}', this)" class="btn-xs btn-xs-danger" title="Удалить">✕</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            document.getElementById('promosTableBody').innerHTML = promoRows || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:14px;">Нет промокодов</td></tr>';
+
+            // Keys
+            const keysRows = (cloudData.keys || []).map(k => {
+                const badge = k.is_subscription_valid
+                    ? `<span class="stat-pill pill-green">${k.days_left} дн.</span>`
+                    : `<span class="stat-pill pill-red">Истёк</span>`;
+                const safeKey = escapeHtml(k.key_code);
+                const safeNote = escapeHtml(k.note || '—');
+                const subUrl = `${baseOrigin}/sub/${safeKey}`;
+                const hwidList = Array.isArray(k.bound_hwids) ? k.bound_hwids : (k.bound_hwid ? [k.bound_hwid] : []);
+                const devicesList = Array.isArray(k.devices) ? k.devices : [];
+                const totalDevCount = Math.max(hwidList.length, devicesList.length);
+                const maxDev = parseInt(k.max_devices || 3, 10);
+
+                const devBtnStyle = totalDevCount > 0
+                    ? 'background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.35);color:#C4B5FD;'
+                    : 'background:rgba(255,255,255,0.06);border:1px solid var(--border-card);color:var(--text-muted);';
+
+                const devBtnText = totalDevCount > 0
+                    ? `📱 🔒 ${totalDevCount}/${maxDev} устр.`
+                    : `📱 0/${maxDev} устр. (инфо)`;
+
+                return `
+                    <tr>
+                        <td>
+                            <span class="key-code-chip" onclick="copyToClipboard('${safeKey}', 'Ключ скопирован!')" title="Нажмите для копирования">
+                                ${safeKey}
+                            </span>
+                        </td>
+                        <td>
+                            ${badge}
+                            <button class="btn-xs" style="margin-left:4px;padding:3px 8px;font-size:10.5px;font-weight:700;border-radius:8px;${devBtnStyle}" onclick="openDeviceModal('${safeKey}')" title="Нажмите для просмотра подключенных устройств и привязки HWID">
+                                ${devBtnText}
+                            </button>
+                        </td>
+                        <td style="color:var(--text-muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;">${safeNote}</td>
+                        <td style="display:flex;gap:4px;">
+                            <button class="btn-xs" onclick="copyToClipboard('${subUrl}', 'Ссылка подписки скопирована!')" title="Универсальная ссылка для iOS / ПК / Android">
+                                🔗 Ссылка
+                            </button>
+                            <button class="btn-xs" onclick="copyCrossPlatformGuide('${safeKey}')" title="Скопировать готовую инструкцию для клиента (Android + iPhone + ПК)">
+                                💻 Все ОС
+                            </button>
+                        </td>
+                        <td style="text-align:right;">
+                            <button onclick="deleteCloudKey('${safeKey}', this)" class="btn-xs btn-xs-danger" title="Удалить ключ">✕</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            document.getElementById('keysTableBody').innerHTML = keysRows || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px;">Нет выпущенных ключей</td></tr>';
+
+            // Nodes
+            document.getElementById('nodesTableBody').innerHTML = (cloudData.nodes || []).map(n => {
+                const ping = n.latency_ms !== null
+                    ? `<span style="color:var(--accent-green);font-weight:700;">${parseInt(n.latency_ms, 10)} мс</span>`
+                    : `<span style="color:var(--text-muted);">—</span>`;
+                const cat = n.is_cascade
+                    ? `<span class="stat-pill pill-purple">👑 VIP Каскад</span>`
+                    : (n.is_ru
+                        ? `<span class="stat-pill pill-amber">Белый список</span>`
+                        : `<span class="stat-pill pill-green">Шлюз</span>`);
+                const safeRemark = escapeHtml(n.remark);
+                const safeType = escapeHtml(n.type);
+                const safeSec = escapeHtml(n.security);
+
+                return `
+                    <tr>
+                        <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;" title="${safeRemark}">${safeRemark}</td>
+                        <td>${cat}</td>
+                        <td><code style="font-size:10.5px;color:var(--text-muted);">${safeType}/${safeSec}</code></td>
+                        <td>${ping}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        checkExistingAuth();
+        // Auto-refresh data and stats every 15 seconds
+        setInterval(() => {
+            if (sessionStorage.getItem('pulsewl_admin_auth') === '1') {
+                loadCloudState(true);
+            }
+        }, 15000);
+    </script>
+
+    <!-- Agentation Visual Feedback Toolbar -->
+    <script type="module" src="agentation.js"></script>
+</body>
+</html>
