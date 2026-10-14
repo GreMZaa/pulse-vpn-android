@@ -84,18 +84,24 @@ object CallRoomManager {
         saveRooms(list)
     }
 
+    fun getCanonicalRoomId(codeOrId: String): String {
+        val clean = codeOrId.replace(Regex("[^a-zA-Z0-9]"), "").lowercase()
+        val raw = if (clean.startsWith("pulse")) clean.substring(5) else clean
+        return "pulse_" + raw.ifEmpty { "call" }
+    }
+
     /**
      * Ссылка открывает НАШ ОФИЦИАЛЬНЫЙ САЙТ ПУЛЬС:
      * https://gremzaa.github.io/pulse-vpn-android/
      */
     fun getWebCallUrl(room: CallRoom): String {
-        val cleanId = room.id.replace(Regex("[^a-zA-Z0-9]"), "")
+        val canonicalId = getCanonicalRoomId(room.code)
         val encodedName = try {
             URLEncoder.encode(room.name, "UTF-8")
         } catch (_: Exception) {
-            cleanId
+            room.code
         }
-        return "https://gremzaa.github.io/pulse-vpn-android/?room=$cleanId&name=$encodedName"
+        return "https://gremzaa.github.io/pulse-vpn-android/?room=$canonicalId&name=$encodedName"
     }
 
     fun getShareText(room: CallRoom): String {

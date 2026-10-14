@@ -692,6 +692,7 @@
 
     <!-- НИЖНЯЯ ПАНЕЛЬ УПРАВЛЕНИЯ -->
     <div class="call-hud-bottom">
+      <button class="dock-btn" title="Перевернуть камеру" onclick="flipCam()">🔄</button>
       <button class="dock-btn active" id="btn-mic-toggle" title="Микрофон" onclick="toggleMic()">🎙️</button>
       <button class="dock-btn" id="btn-cam-toggle" title="Камера" onclick="toggleCam()">📷</button>
       <button class="dock-btn" title="На весь экран" onclick="toggleFullscreen()">⛶</button>
@@ -710,7 +711,7 @@
       inputField.value = initialRoom;
     }
 
-    // Транслитерация русских букв для совместимости с WebRTC
+    // Транслитерация и единая каноническая нормализация имени комнаты для 100% соединения Web и Android
     function toSafeRoomId(text) {
       const cyrMap = {
         'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z',
@@ -723,7 +724,10 @@
       for (let ch of s) {
         res += cyrMap[ch] !== undefined ? cyrMap[ch] : ch;
       }
-      return res.replace(/[^a-zA-Z0-9]/g, '') || 'PulseCall';
+      let clean = res.replace(/[^a-zA-Z0-9]/g, '');
+      if (clean.startsWith('pulse_')) clean = clean.substring(6);
+      else if (clean.startsWith('pulse')) clean = clean.substring(5);
+      return 'pulse_' + (clean || 'call');
     }
 
     function clearRoomInput() {
@@ -776,12 +780,12 @@
       }, 1000);
     }
 
-    let activeCleanRoom = 'PulseCall';
+    let activeCleanRoom = 'pulse_call';
     let isCamActive = false;
     let isMicActive = true;
 
     function buildNinjaUrl(cleanRoom, withVideo) {
-      let base = `https://vdo.ninja/?room=${cleanRoom}&label=Web&autostart&darkmode&cleanish&webcam&largepreview&showpreview`;
+      let base = `https://vdo.ninja/?room=${cleanRoom}&label=Web&autostart&darkmode&cleanish&webcam&largepreview&showpreview&mesh`;
       if (!withVideo) {
         base += '&videomute';
       }
@@ -817,6 +821,15 @@
     function openDirectSafari() {
       const directUrl = buildNinjaUrl(activeCleanRoom, false);
       window.open(directUrl, '_blank') || (window.location.href = directUrl);
+    }
+
+    function flipCam() {
+      const frame = document.getElementById('call-frame');
+      try {
+        frame.contentWindow.postMessage({ changeVideoDevice: true }, '*');
+        frame.contentWindow.postMessage({ action: 'changeVideoDevice' }, '*');
+      } catch(e){}
+      showToast('Переключение камеры...');
     }
 
     function toggleMic() {

@@ -39,12 +39,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -134,12 +136,12 @@ class CallActivity : ComponentActivity() {
         } catch (_: Exception) {}
 
         val rawRoomId = intent.getStringExtra(EXTRA_ROOM_ID) ?: "PulseCall"
-        val cleanRoomId = rawRoomId.replace(Regex("[^a-zA-Z0-9]"), "").ifEmpty { "PulseCall" }
         val roomName = intent.getStringExtra(EXTRA_ROOM_NAME) ?: "Защищённая комната"
         val roomCode = (intent.getStringExtra(EXTRA_ROOM_CODE) ?: "").replace(Regex("[^a-zA-Z0-9]"), "")
 
-        // Включаем largepreview и showpreview для отображения собственного видеопотока камеры без чёрного экрана
-        val callUrl = "https://vdo.ninja/?room=$cleanRoomId&label=Android&autostart&darkmode&cleanish&webcam&largepreview&showpreview"
+        // Единый канонический идентификатор комнаты для 100% соединения Web и Android
+        val canonicalRoomId = CallRoomManager.getCanonicalRoomId(roomCode.ifEmpty { rawRoomId })
+        val callUrl = "https://vdo.ninja/?room=$canonicalRoomId&label=Android&autostart&darkmode&cleanish&webcam&largepreview&showpreview&mesh"
 
         setContent {
             CallScreenContent(
@@ -153,8 +155,9 @@ class CallActivity : ComponentActivity() {
                 onEndCall = { endCall() },
                 onToggleMic = { toggleMic() },
                 onToggleCamera = { toggleCamera() },
+                onFlipCamera = { flipCamera() },
                 onToggleSpeaker = { toggleSpeaker() },
-                onShare = { shareRoom(roomName, roomCode, cleanRoomId) }
+                onShare = { shareRoom(roomName, roomCode, canonicalRoomId) }
             )
         }
 
@@ -241,6 +244,33 @@ class CallActivity : ComponentActivity() {
         setCameraState(next)
     }
 
+    private fun flipCamera() {
+        try {
+            val js = """
+                (function() {
+                    try { window.postMessage({ changeVideoDevice: true }, '*'); } catch(e){}
+                    try { window.postMessage({ action: 'changeVideoDevice' }, '*'); } catch(e){}
+                    try { window.postMessage({ action: 'facingMode', value: 'toggle' }, '*'); } catch(e){}
+                    try {
+                        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+                            navigator.mediaDevices.enumerateDevices().then(function(devices) {
+                                var videoDevs = devices.filter(function(d) { return d.kind === 'videoinput'; });
+                                if (videoDevs.length > 1) {
+                                    window._camIdx = ((window._camIdx || 0) + 1) % videoDevs.length;
+                                    var dev = videoDevs[window._camIdx];
+                                    try { window.postMessage({ changeVideoDevice: dev.deviceId }, '*'); } catch(e){}
+                                    try { window.postMessage({ action: 'camera', value: dev.deviceId }, '*'); } catch(e){}
+                                }
+                            });
+                        }
+                    } catch(e){}
+                })();
+            """.trimIndent()
+            webViewInstance?.evaluateJavascript(js, null)
+            Toast.makeText(this, "Переключение камеры...", Toast.LENGTH_SHORT).show()
+        } catch (_: Exception) {}
+    }
+
     private fun setCameraState(enabled: Boolean) {
         isCameraOn = enabled
         try {
@@ -322,6 +352,7 @@ class CallActivity : ComponentActivity() {
         onEndCall: () -> Unit,
         onToggleMic: () -> Unit,
         onToggleCamera: () -> Unit,
+        onFlipCamera: () -> Unit,
         onToggleSpeaker: () -> Unit,
         onShare: () -> Unit
     ) {
@@ -351,375 +382,338 @@ class CallActivity : ComponentActivity() {
             label = "pulseScale"
         )
 
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFF0F0F0F))
-                .statusBarsPadding()
-                .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+                .background(Color(0xFF0B141B))
         ) {
-            // ВЕРХНЯЯ ПАНЕЛЬ: ЗАГОЛОВОК И ДЛИТЕЛЬНОСТЬ
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+            // 1. ПОЛНОЭКРАННОЕ ВИДЕО WEBRTC (EDGE-TO-EDGE, БЕЗ РАМОК И БЕЗ ОТСТУПОВ)
+            if (hasPermissions) {
+                AndroidView(
+                    factory = { ctx ->
+                        WebView(ctx).apply {
+                            setLayerType(View.LAYER_TYPE_HARDWARE, null)
+                            layoutParams = ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT
+                            )
+                            settings.apply {
+                                javaScriptEnabled = true
+                                domStorageEnabled = true
+                                mediaPlaybackRequiresUserGesture = false
+                                databaseEnabled = true
+                                allowFileAccess = true
+                                allowContentAccess = true
+                                cacheMode = WebSettings.LOAD_DEFAULT
+                            }
+                            webChromeClient = object : WebChromeClient() {
+                                override fun onPermissionRequest(request: PermissionRequest?) {
+                                    runOnUiThread {
+                                        try {
+                                            request?.grant(request.resources ?: arrayOf(
+                                                PermissionRequest.RESOURCE_AUDIO_CAPTURE,
+                                                PermissionRequest.RESOURCE_VIDEO_CAPTURE
+                                            ))
+                                        } catch (_: Exception) {}
+                                    }
+                                }
+                            }
+                            webViewClient = object : WebViewClient() {
+                                override fun onPageFinished(view: WebView?, url: String?) {
+                                    super.onPageFinished(view, url)
+                                    // Авто-воспроизведение удаленного звука и видео без пауз
+                                    val watchdogJs = """
+                                        setInterval(function() {
+                                            document.querySelectorAll('video, audio').forEach(function(el) {
+                                                el.setAttribute('playsinline', 'true');
+                                                el.setAttribute('webkit-playsinline', 'true');
+                                                if (el.paused) {
+                                                    el.play().catch(function(){});
+                                                }
+                                            });
+                                        }, 1000);
+                                    """.trimIndent()
+                                    evaluateJavascript(watchdogJs, null)
+                                }
+                            }
+                            loadUrl(callUrl)
+                            webViewInstance = this
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF222222))
-                            .clickable { onEndCall() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_close_24dp),
-                            contentDescription = "Закрыть",
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "ПУЛЬС СВЯЗЬ",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF4CAF50),
-                            letterSpacing = 1.5.sp
-                        )
-                        Text(
-                            text = "Код: $roomCode",
-                            fontSize = 12.sp,
-                            color = Color(0xFF888888)
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF222222))
-                            .clickable { onShare() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_share_24dp),
-                            contentDescription = "Поделиться",
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
+                    Text(
+                        text = "Подключение к защищённому каналу...",
+                        fontSize = 14.sp,
+                        color = Color(0xFF94A3B8)
+                    )
                 }
-
-                Spacer(modifier = Modifier.height(28.dp))
-
-                Text(
-                    text = roomName,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Text(
-                    text = formattedDuration,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFFAAAAAA)
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "🔒 Сквозное шифрование WebRTC Opus",
-                    fontSize = 11.sp,
-                    color = Color(0xFF66BB6A)
-                )
             }
 
-            // ЦЕНТР: РЕЖИМ АУДИО ИЛИ РЕЖИМ ВИДЕОСВЯЗИ
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(vertical = 12.dp)
-                    .background(Color.Black, RoundedCornerShape(16.dp))
-                    .border(1.5.dp, if (isCameraOn) Color(0xFF2E7D32) else Color(0xFF222222), RoundedCornerShape(16.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                // 1. ПОЛНОРАЗМЕРНЫЙ WEBVIEW ДЛЯ WebRTC (АУДИО + ВИДЕОСЕТКА)
-                // Всегда держит полный размер контейнера, чтобы WebRTC не сжимался до 1px
-                if (hasPermissions) {
-                    AndroidView(
-                        factory = { ctx ->
-                            WebView(ctx).apply {
-                                setLayerType(View.LAYER_TYPE_HARDWARE, null)
-                                layoutParams = ViewGroup.LayoutParams(
-                                    ViewGroup.LayoutParams.MATCH_PARENT,
-                                    ViewGroup.LayoutParams.MATCH_PARENT
-                                )
-                                settings.apply {
-                                    javaScriptEnabled = true
-                                    domStorageEnabled = true
-                                    mediaPlaybackRequiresUserGesture = false
-                                    databaseEnabled = true
-                                    allowFileAccess = true
-                                    allowContentAccess = true
-                                    cacheMode = WebSettings.LOAD_DEFAULT
-                                }
-                                webChromeClient = object : WebChromeClient() {
-                                    override fun onPermissionRequest(request: PermissionRequest?) {
-                                        runOnUiThread {
-                                            try {
-                                                request?.grant(request.resources ?: arrayOf(
-                                                    PermissionRequest.RESOURCE_AUDIO_CAPTURE,
-                                                    PermissionRequest.RESOURCE_VIDEO_CAPTURE
-                                                ))
-                                            } catch (_: Exception) {}
-                                        }
-                                    }
-                                }
-                                webViewClient = object : WebViewClient() {
-                                    override fun onPageFinished(view: WebView?, url: String?) {
-                                        super.onPageFinished(view, url)
-                                        if (!isCameraOn) {
-                                            setCameraState(false)
-                                        }
-                                    }
-                                }
-                                loadUrl(callUrl)
-                                webViewInstance = this
-                            }
-                        },
+            // 2. ГОЛОСОВОЙ ЭКРАН В СТИЛЕ TELEGRAM (ОТОБРАЖАЕТСЯ, ЕСЛИ КАМЕРА ВЫКЛЮЧЕНА)
+            if (!isCameraOn) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color(0xFF1E293B), Color(0xFF0F172A), Color(0xFF020617))
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
                         modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    Text(
-                        text = "Ожидание разрешений...",
-                        fontSize = 13.sp,
-                        color = Color(0xFF888888)
-                    )
-                }
-
-                // Индикатор активной камеры поверх видео
-                if (isCameraOn) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(top = 12.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(Color(0xDD111111))
-                            .border(1.dp, Color(0xFF2E7D32), RoundedCornerShape(20.dp))
-                            .padding(horizontal = 14.dp, vertical = 6.dp)
                     ) {
-                        Text(
-                            text = "🟢 Камера включена • Прямой эфир",
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF81C784)
-                        )
-                    }
-                }
-
-                // 2. ГОЛОСОВОЙ ОВЕРЛЕЙ (ПОКАЗЫВАЕТСЯ ТОЛЬКО КОГДА КАМЕРА ВЫКЛЮЧЕНА)
-                if (!isCameraOn) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFF0F0F0F)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                            modifier = Modifier.fillMaxSize()
+                        // Пульсирующий круг аватара
+                        Box(
+                            modifier = Modifier
+                                .size(140.dp)
+                                .scale(pulseScale)
+                                .clip(CircleShape)
+                                .background(Color(0x2222C55E)),
+                            contentAlignment = Alignment.Center
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(130.dp)
-                                    .scale(pulseScale)
+                                    .size(108.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFF1E3A24)),
+                                    .background(Color(0xFF16A34A)),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(100.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(0xFF2E7D32)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_call_24dp),
-                                        contentDescription = null,
-                                        tint = Color.White,
-                                        modifier = Modifier.size(50.dp)
-                                    )
-                                }
+                                Text(
+                                    text = roomName.take(1).uppercase().ifEmpty { "П" },
+                                    fontSize = 44.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
                             }
+                        }
 
-                            Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(26.dp))
 
+                        Text(
+                            text = roomName,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = formattedDuration,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF94A3B8)
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0x3310B981))
+                                .padding(horizontal = 12.dp, vertical = 4.dp)
+                        ) {
                             Text(
-                                text = "Постоянная защищённая комната",
-                                fontSize = 13.sp,
-                                color = Color(0xFF999999)
+                                text = "🟢 Прямой канал связи P2P",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF34D399)
                             )
-
-                            Spacer(modifier = Modifier.height(14.dp))
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(0.9f)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(Color(0xFF161616))
-                                    .border(1.dp, Color(0xFF242424), RoundedCornerShape(12.dp))
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        text = "🟢 Канал связи активен",
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF81C784)
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = "Говорите • Трафик идёт через ПУЛЬС",
-                                        fontSize = 11.5.sp,
-                                        color = Color(0xFF888888)
-                                    )
-                                }
-                            }
                         }
                     }
                 }
             }
 
-            // НИЖНЯЯ ПАНЕЛЬ: УПРАВЛЕНИЕ ВЫЗОВОМ (МИКРОФОН, КАМЕРА, ДИНАМИК, СБРОС)
+            // 3. ВЕРХНЯЯ ПАНЕЛЬ TELEGRAM (ПЛАВАЮЩАЯ)
             Row(
                 modifier = Modifier
+                    .align(Alignment.TopCenter)
                     .fillMaxWidth()
-                    .padding(bottom = 20.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // КНОПКА МИКРОФОНА
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable { onToggleMic() }
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color(0x66000000))
+                        .clickable { onEndCall() },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(54.dp)
-                            .clip(CircleShape)
-                            .background(if (isMicMuted) Color(0xFFD32F2F) else Color(0xFF2E7D32))
-                            .border(1.dp, if (isMicMuted) Color(0xFFEF5350) else Color(0xFF4CAF50), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = if (isMicMuted) "🔇" else "🎙️",
-                            fontSize = 22.sp
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = if (isMicMuted) "Выключен" else "Микрофон",
-                        fontSize = 11.sp,
-                        color = if (isMicMuted) Color(0xFFEF5350) else Color(0xFF81C784)
+                    Icon(
+                        painter = painterResource(R.drawable.ic_close_24dp),
+                        contentDescription = "Закрыть",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
-                // КНОПКА КАМЕРЫ
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable { onToggleCamera() }
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(54.dp)
-                            .clip(CircleShape)
-                            .background(if (isCameraOn) Color(0xFF2E7D32) else Color(0xFF242424))
-                            .border(1.dp, if (isCameraOn) Color(0xFF4CAF50) else Color(0xFF333333), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = if (isCameraOn) "📹" else "📷",
-                            fontSize = 22.sp
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = if (isCameraOn) "Камера вкл" else "Камера",
-                        fontSize = 11.sp,
-                        color = if (isCameraOn) Color(0xFF81C784) else Color(0xFFCCCCCC)
-                    )
-                }
-
-                // КНОПКА ДИНАМИКА (ГРОМКАЯ СВЯЗЬ)
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable { onToggleSpeaker() }
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(54.dp)
-                            .clip(CircleShape)
-                            .background(if (isSpeakerOn) Color(0xFF2E7D32) else Color(0xFF242424))
-                            .border(1.dp, Color(0xFF333333), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = if (isSpeakerOn) "📢" else "👂",
-                            fontSize = 22.sp
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = if (isSpeakerOn) "Динамик" else "В ухо",
-                        fontSize = 11.sp,
-                        color = if (isSpeakerOn) Color(0xFF81C784) else Color(0xFFCCCCCC)
-                    )
-                }
-
-                // КРАСНАЯ КНОПКА ЗАВЕРШИТЬ ВЫЗОВ
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable { onEndCall() }
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(64.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFE53935)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_call_end_24dp),
-                            contentDescription = "Завершить",
-                            tint = Color.White,
-                            modifier = Modifier.size(30.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "Сброс",
-                        fontSize = 11.sp,
+                        text = roomName,
+                        fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
+                    Text(
+                        text = "Код: $roomCode • $formattedDuration",
+                        fontSize = 12.sp,
+                        color = Color(0xFFCBD5E1)
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color(0x66000000))
+                        .clickable { onShare() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_share_24dp),
+                        contentDescription = "Поделиться",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
+
+            // 4. НИЖНЯЯ ПАНЕЛЬ УПРАВЛЕНИЯ В СТИЛЕ TELEGRAM
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 20.dp)
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(Color(0xDD0F172A))
+                    .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(32.dp))
+                    .padding(vertical = 12.dp, horizontal = 8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // 1. ПОВОРОТ КАМЕРЫ (FLIP)
+                    TelegramCallButton(
+                        iconText = "🔄",
+                        label = "Поворот",
+                        isActive = false,
+                        activeColor = Color(0xFF3B82F6),
+                        inactiveColor = Color(0x33FFFFFF),
+                        onClick = onFlipCamera
+                    )
+
+                    // 2. КАМЕРА (ВКЛ / ВЫКЛ)
+                    TelegramCallButton(
+                        iconText = if (isCameraOn) "📹" else "📷",
+                        label = if (isCameraOn) "Камера вкл" else "Камера",
+                        isActive = isCameraOn,
+                        activeColor = Color(0xFF16A34A),
+                        inactiveColor = Color(0x33FFFFFF),
+                        onClick = onToggleCamera
+                    )
+
+                    // 3. МИКРОФОН (ВКЛ / ВЫКЛ)
+                    TelegramCallButton(
+                        iconText = if (isMicMuted) "🔇" else "🎙️",
+                        label = if (isMicMuted) "Выключен" else "Микрофон",
+                        isActive = !isMicMuted,
+                        isDanger = isMicMuted,
+                        activeColor = Color(0xFF16A34A),
+                        inactiveColor = Color(0xFFEF4444),
+                        onClick = onToggleMic
+                    )
+
+                    // 4. ДИНАМИК (ГРОМКАЯ / В УХО)
+                    TelegramCallButton(
+                        iconText = if (isSpeakerOn) "📢" else "👂",
+                        label = if (isSpeakerOn) "Динамик" else "В ухо",
+                        isActive = isSpeakerOn,
+                        activeColor = Color(0xFF16A34A),
+                        inactiveColor = Color(0x33FFFFFF),
+                        onClick = onToggleSpeaker
+                    )
+
+                    // 5. СБРОС (КРАСНАЯ ТРУБКА)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.clickable { onEndCall() }
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(52.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFEF4444)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_call_end_24dp),
+                                contentDescription = "Завершить",
+                                tint = Color.White,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Сброс",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFFEF4444)
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun TelegramCallButton(
+        iconText: String,
+        label: String,
+        isActive: Boolean,
+        isDanger: Boolean = false,
+        activeColor: Color = Color(0xFF16A34A),
+        inactiveColor: Color = Color(0x33FFFFFF),
+        onClick: () -> Unit
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.clickable { onClick() }
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(if (isDanger) inactiveColor else if (isActive) activeColor else inactiveColor),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = iconText,
+                    fontSize = 22.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = label,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = if (isDanger) Color(0xFFEF4444) else if (isActive) Color(0xFF4ADE80) else Color(0xFFCBD5E1)
+            )
         }
     }
 }

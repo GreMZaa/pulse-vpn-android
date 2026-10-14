@@ -13,8 +13,8 @@ android {
         applicationId = "com.pulse.vpn.app"
         minSdk = 24
         targetSdk = 37
-        versionCode = 132
-        versionName = "0.2.12"
+        versionCode = 133
+        versionName = "0.2.13"
 
         val abiFilterList = (properties["ABI_FILTERS"] as? String)?.split(';')
         splits {
