@@ -638,7 +638,8 @@ class MainViewModel(
                 var currentGuid = dataSource.getSelectServer()
                 if (currentGuid.isNullOrEmpty() || dataSource.decodeServerConfig(currentGuid) == null) {
                     val fallbackGuid = selectedServers.firstOrNull()?.guid
-                        ?: dataSource.getServerGuidList("").firstOrNull()
+                        ?: dataSource.getServerGuidList("").firstOrNull { dataSource.decodeServerConfig(it) != null }
+                        ?: com.v2ray.ang.handler.MmkvManager.decodeAllServerList().firstOrNull { dataSource.decodeServerConfig(it) != null }
                     if (!fallbackGuid.isNullOrEmpty()) {
                         dataSource.setSelectServer(fallbackGuid)
                         currentGuid = fallbackGuid
@@ -1104,7 +1105,7 @@ class MainViewModel(
 
     fun findSmartConnectBestServerGuid(): String? {
         val selectedGroup = uiState.value.selectedGroupId
-        val cached = groupDataCache[selectedGroup] ?: emptyList()
+        val cached = groupDataCache[selectedGroup]?.filter { dataSource.decodeServerConfig(it.guid) != null } ?: emptyList()
         val allList = if (cached.isNotEmpty()) cached else {
             val guids = dataSource.getServerGuidList(selectedGroup).ifEmpty { com.v2ray.ang.handler.MmkvManager.decodeAllServerList() }
             guids.mapNotNull { guid -> dataSource.decodeServerConfig(guid)?.let { ServersCache(guid, it, 0L) } }

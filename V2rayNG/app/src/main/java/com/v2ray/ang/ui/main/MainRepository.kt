@@ -141,6 +141,14 @@ class MainRepository(
             )
         }
         result += MmkvManager.decodeSubscriptions()
+        if (result.isEmpty() && MmkvManager.decodeAllServerList().isNotEmpty()) {
+            result += SubscriptionCache(
+                guid = "",
+                subscription = SubscriptionItem().apply {
+                    remarks = localizedContext.getString(R.string.filter_config_all)
+                }
+            )
+        }
         return result
     }
 

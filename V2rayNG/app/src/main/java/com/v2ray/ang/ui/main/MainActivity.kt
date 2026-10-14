@@ -268,18 +268,47 @@ class MainActivity : HelperBaseComponentActivity() {
             }
 
             var guid = mainViewModel.uiState.value.selectedGuid
-            val currentConfig = guid?.let { MmkvManager.decodeServerConfig(it) }
+            var currentConfig = guid?.let { MmkvManager.decodeServerConfig(it) }
+
+            // 1. Если guid в uiState невалиден, проверяем сохраненный в MMKV
             if (guid.isNullOrEmpty() || currentConfig == null) {
-                val fallbackGuid = mainViewModel.findSmartConnectBestServerGuid()
-                    ?: MmkvManager.decodeAllServerList().firstOrNull { MmkvManager.decodeServerConfig(it) != null }
-                if (!fallbackGuid.isNullOrEmpty() && MmkvManager.decodeServerConfig(fallbackGuid) != null) {
-                    guid = fallbackGuid
-                    mainViewModel.updateSelectedGuid(guid)
-                    MmkvManager.setSelectServer(guid)
-                } else {
-                    toast("Серверы не найдены. Пожалуйста, введите промокод или выберите сервер.")
-                    return@launch
+                val mmkvGuid = MmkvManager.getSelectServer()
+                val mmkvConfig = mmkvGuid?.let { MmkvManager.decodeServerConfig(it) }
+                if (!mmkvGuid.isNullOrEmpty() && mmkvConfig != null) {
+                    guid = mmkvGuid
+                    currentConfig = mmkvConfig
+                    mainViewModel.updateSelectedGuid(mmkvGuid)
                 }
+            }
+
+            // 2. Если всё ещё нет — ищем лучший живой сервер через smart connect
+            if (guid.isNullOrEmpty() || currentConfig == null) {
+                val bestGuid = mainViewModel.findSmartConnectBestServerGuid()
+                val bestConfig = bestGuid?.let { MmkvManager.decodeServerConfig(it) }
+                if (!bestGuid.isNullOrEmpty() && bestConfig != null) {
+                    guid = bestGuid
+                    currentConfig = bestConfig
+                    mainViewModel.updateSelectedGuid(bestGuid)
+                    MmkvManager.setSelectServer(bestGuid)
+                }
+            }
+
+            // 3. Если smart connect не вернул — берем первый валидный из списка всех серверов
+            if (guid.isNullOrEmpty() || currentConfig == null) {
+                val firstValid = MmkvManager.decodeAllServerList().firstOrNull { MmkvManager.decodeServerConfig(it) != null }
+                val firstConfig = firstValid?.let { MmkvManager.decodeServerConfig(it) }
+                if (!firstValid.isNullOrEmpty() && firstConfig != null) {
+                    guid = firstValid
+                    currentConfig = firstConfig
+                    mainViewModel.updateSelectedGuid(firstValid)
+                    MmkvManager.setSelectServer(firstValid)
+                }
+            }
+
+            // 4. Если вообще ни одного сервера в базе нет
+            if (guid.isNullOrEmpty() || currentConfig == null) {
+                toast("Серверы не найдены. Пожалуйста, введите промокод или выберите сервер.")
+                return@launch
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN) {
                 checkAndRequestPermission(PermissionType.ACCESS_LOCAL_NETWORK) {}

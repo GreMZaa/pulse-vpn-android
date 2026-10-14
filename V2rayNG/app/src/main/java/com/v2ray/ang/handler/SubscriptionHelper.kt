@@ -239,12 +239,14 @@ object SubscriptionHelper {
                 return@withContext true
             }
 
-            // Если код не задан (старая активация), но серверы есть — просто обновляем список живых серверов из облака
+            // Если код не задан (старая активация), но серверы есть — ничего не перезаписываем
             if (code.isNullOrBlank()) {
-                val subB64 = json.optJSONObject("subscriptions_b64")?.optString("all")
-                if (!subB64.isNullOrBlank()) {
-                    AngConfigManager.importBatchConfig(subB64, "", false)
-                    ensureSelectedServerValid()
+                if (MmkvManager.decodeAllServerList().isEmpty()) {
+                    val subB64 = json.optJSONObject("subscriptions_b64")?.optString("all")
+                    if (!subB64.isNullOrBlank()) {
+                        AngConfigManager.importBatchConfig(subB64, "", false)
+                        ensureSelectedServerValid()
+                    }
                 }
                 return@withContext true
             }
@@ -301,11 +303,13 @@ object SubscriptionHelper {
                 return@withContext false
             }
 
-            // Автоматически обновляем пул живых серверов из облака
-            val subB64 = json.optJSONObject("subscriptions_b64")?.optString("all")
-            if (!subB64.isNullOrBlank()) {
-                AngConfigManager.importBatchConfig(subB64, "", false)
-                ensureSelectedServerValid()
+            // Автоматически обновляем пул живых серверов из облака ТОЛЬКО если серверов нет в хранилище
+            if (MmkvManager.decodeAllServerList().isEmpty()) {
+                val subB64 = json.optJSONObject("subscriptions_b64")?.optString("all")
+                if (!subB64.isNullOrBlank()) {
+                    AngConfigManager.importBatchConfig(subB64, "", false)
+                    ensureSelectedServerValid()
+                }
             }
 
             MmkvManager.encodeSettings(AppConfig.PREF_SUBSCRIPTION_MAX_DEVICES, maxDev)
