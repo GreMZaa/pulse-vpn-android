@@ -152,7 +152,8 @@ class CallActivity : ComponentActivity() {
 
         // Единый канонический идентификатор комнаты для 100% соединения Web и Android
         val canonicalRoomId = CallRoomManager.getCanonicalRoomId(roomCode.ifEmpty { rawRoomId })
-        val callUrl = "https://vdo.ninja/?room=$canonicalRoomId&label=Android&autostart&darkmode&cleanish&webcam&largepreview&showpreview&mesh&relay&aec&agc&denoise&beepvolume=0"
+        val myStreamId = "pulse_and_" + (System.currentTimeMillis() % 1000000)
+        val callUrl = "https://vdo.ninja/?room=$canonicalRoomId&push=$myStreamId&label=Android&autostart&darkmode&clean&webcam&videodevice=1&audiodevice=1&mesh&relay&aec&agc&denoise&beepvolume=0"
 
         setContent {
             CallScreenContent(
@@ -255,32 +256,81 @@ class CallActivity : ComponentActivity() {
         setCameraState(next)
     }
 
+    private var currentCamIndex = 0
+
     private fun flipCamera() {
         try {
+            currentCamIndex = (currentCamIndex + 1) % 2
+            val nextIdx = currentCamIndex
+            val targetFacing = if (nextIdx == 0) "environment" else "user"
+            val targetLabel = if (nextIdx == 0) "Задняя камера" else "Фронтальная камера"
+
             val js = """
                 (function() {
-                    try { window.postMessage({ changeVideoDevice: true }, '*'); } catch(e){}
-                    try { window.postMessage({ action: 'changeVideoDevice' }, '*'); } catch(e){}
-                    try { window.postMessage({ action: 'facingMode', value: 'toggle' }, '*'); } catch(e){}
                     try {
-                        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-                            navigator.mediaDevices.enumerateDevices().then(function(devices) {
-                                var videoDevs = devices.filter(function(d) { return d.kind === 'videoinput'; });
-                                if (videoDevs.length > 1) {
-                                    window._camIdx = ((window._camIdx || 0) + 1) % videoDevs.length;
-                                    var dev = videoDevs[window._camIdx];
-                                    try { window.postMessage({ changeVideoDevice: dev.deviceId }, '*'); } catch(e){}
-                                    try { window.postMessage({ action: 'camera', value: dev.deviceId }, '*'); } catch(e){}
+                        var sel = document.getElementById("videoSource3");
+                        if (sel && sel.options && sel.options.length > 0) {
+                            var targetOptionIdx = $nextIdx % sel.options.length;
+                            sel.selectedIndex = targetOptionIdx;
+                            if (typeof changeVideoDevice === 'function') {
+                                changeVideoDevice(targetOptionIdx);
+                            }
+                            if (typeof changeVideoDeviceById === 'function' && sel.options[targetOptionIdx]) {
+                                changeVideoDeviceById(sel.options[targetOptionIdx].value);
+                            }
+                            return;
+                        }
+                    } catch(e){}
+
+                    try {
+                        if (typeof changeVideoDevice === 'function') {
+                            changeVideoDevice($nextIdx);
+                        }
+                        window.postMessage({ changeVideoDevice: $nextIdx }, '*');
+                        window.postMessage({ action: 'changeVideoDevice', value: $nextIdx }, '*');
+                    } catch(e){}
+
+                    try {
+                        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                            navigator.mediaDevices.getUserMedia({
+                                video: { facingMode: '$targetFacing' }
+                            }).then(function(newStream) {
+                                var newTrack = newStream.getVideoTracks()[0];
+                                if (!newTrack) return;
+                                if (window.localStream) {
+                                    var oldTrack = window.localStream.getVideoTracks()[0];
+                                    if (oldTrack) {
+                                        window.localStream.removeTrack(oldTrack);
+                                        oldTrack.stop();
+                                    }
+                                    window.localStream.addTrack(newTrack);
                                 }
-                            });
+                                if (window.session && window.session.pcs) {
+                                    for (var pid in window.session.pcs) {
+                                        var pc = window.session.pcs[pid];
+                                        if (pc.getSenders) {
+                                            pc.getSenders().forEach(function(s) {
+                                                if (s.track && s.track.kind === 'video') s.replaceTrack(newTrack).catch(function(){});
+                                            });
+                                        }
+                                    }
+                                }
+                                document.querySelectorAll('video').forEach(function(v) {
+                                    if (v.muted || v.classList.contains('local') || v.id === 'localVideo') {
+                                        v.srcObject = newStream;
+                                        v.play().catch(function(){});
+                                    }
+                                });
+                            }).catch(function(err){});
                         }
                     } catch(e){}
                 })();
             """.trimIndent()
             webViewInstance?.evaluateJavascript(js, null)
-            Toast.makeText(this, "Переключение камеры...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, targetLabel, Toast.LENGTH_SHORT).show()
         } catch (_: Exception) {}
     }
+
 
     private fun setCameraState(enabled: Boolean) {
         isCameraOn = enabled
@@ -443,6 +493,39 @@ class CallActivity : ComponentActivity() {
                             webViewClient = object : WebViewClient() {
                                 override fun onPageFinished(view: WebView?, url: String?) {
                                     super.onPageFinished(view, url)
+                                    val hideVdoUiCss = """
+                                        (function() {
+                                            var style = document.createElement('style');
+                                            style.innerHTML = `
+                                                #header, #footer, #sourceSelect, #deviceSelect, .prejoin, #joinButton,
+                                                #maincontrols, #centerControl, #subControlButtons, .join-room,
+                                                .directorControls, #backButton, #title, #headerContainer,
+                                                .popup, .modal, .notification, #notice, #watermark,
+                                                .joinRoom, #preview, #waiting, #quickInvite {
+                                                    display: none !important;
+                                                    visibility: hidden !important;
+                                                    opacity: 0 !important;
+                                                    pointer-events: none !important;
+                                                }
+                                                body, html {
+                                                    background-color: #0B141B !important;
+                                                    overflow: hidden !important;
+                                                    margin: 0 !important;
+                                                    padding: 0 !important;
+                                                    width: 100vw !important;
+                                                    height: 100vh !important;
+                                                }
+                                                video {
+                                                    object-fit: cover !important;
+                                                    width: 100vw !important;
+                                                    height: 100vh !important;
+                                                }
+                                            `;
+                                            document.head.appendChild(style);
+                                        })();
+                                    """.trimIndent()
+                                    evaluateJavascript(hideVdoUiCss, null)
+
                                     val watchdogJs = """
                                         (function() {
                                             try {
@@ -508,7 +591,9 @@ class CallActivity : ComponentActivity() {
             }
 
             // 2. ОВЕРЛЕЙ ОЖИДАНИЯ СОБЕСЕДНИКА (ОТОБРАЖАЕТСЯ ТОЛЬКО ПОКА СОБЕСЕДНИК НЕ ВОШЁЛ)
-            if (!isPeerConnected) {
+            var isWaitingDismissed by remember { mutableStateOf(false) }
+
+            if (!isPeerConnected && !isWaitingDismissed) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.Center)
@@ -589,15 +674,48 @@ class CallActivity : ComponentActivity() {
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Отправить ссылку собеседнику",
+                                text = "Отправить ссылку",
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp
                             )
                         }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = "Скрыть карточку",
+                            color = Color(0xFF64748B),
+                            fontSize = 12.sp,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { isWaitingDismissed = true }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
                     }
                 }
+            } else if (!isPeerConnected && isWaitingDismissed) {
+                // Маленький аккуратный бейдж вверху, позволяющий снова открыть карточку
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .statusBarsPadding()
+                        .padding(top = 64.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(0xCC0F172A))
+                        .border(1.dp, Color(0x33FBBF24), RoundedCornerShape(20.dp))
+                        .clickable { isWaitingDismissed = false }
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "⏳ Ожидание собеседника • Нажмите для ссылки",
+                        color = Color(0xFFFBBF24),
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
+
 
             // 3. ВЕРХНЯЯ ПАНЕЛЬ TELEGRAM (ПЛАВАЮЩАЯ)
             Row(
