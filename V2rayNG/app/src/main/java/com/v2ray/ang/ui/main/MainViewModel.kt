@@ -367,8 +367,17 @@ class MainViewModel(
             try {
                 val preRelease = MmkvManager.decodeSettingsBool(AppConfig.PREF_CHECK_UPDATE_PRE_RELEASE, false)
                 val result = UpdateCheckerManager.checkForUpdate(preRelease)
-                if (result.hasUpdate) {
+                if (result.hasUpdate && !result.latestVersion.isNullOrBlank()) {
                     _uiState.update { it.copy(appUpdateResult = result) }
+                    val lastNotified = MmkvManager.decodeSettingsString(AppConfig.PREF_LAST_NOTIFIED_UPDATE_VERSION, "")
+                    if (lastNotified != result.latestVersion) {
+                        com.v2ray.ang.handler.AppUpdateNotificationWorker.showUpdateNotification(
+                            getApplication(),
+                            result.latestVersion,
+                            result.downloadUrl
+                        )
+                        MmkvManager.encodeSettings(AppConfig.PREF_LAST_NOTIFIED_UPDATE_VERSION, result.latestVersion)
+                    }
                 }
             } catch (e: Exception) {
                 LogUtil.e(AppConfig.TAG, "Silent update check failed", e)

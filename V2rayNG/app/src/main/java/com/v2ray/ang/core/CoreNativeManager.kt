@@ -28,15 +28,21 @@ object CoreNativeManager {
     fun initCoreEnv(context: Context?) {
         if (initialized.compareAndSet(false, true)) {
             try {
+                if (context != null) {
+                    try {
+                        com.v2ray.ang.handler.SettingsManager.initAssets(context, context.assets)
+                    } catch (e: Throwable) {
+                        LogUtil.w(AppConfig.TAG, "initAssets in initCoreEnv: ${e.message}")
+                    }
+                }
                 Seq.setContext(context?.applicationContext)
                 val assetPath = Utils.userAssetPath(context)
                 val deviceId = Utils.getDeviceIdForXUDPBaseKey()
                 Libv2ray.initCoreEnv(assetPath, deviceId)
                 LogUtil.i(AppConfig.TAG, "V2Ray core environment initialized successfully")
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 LogUtil.e(AppConfig.TAG, "Failed to initialize V2Ray core environment", e)
                 initialized.set(false)
-                throw e
             }
         } else {
             LogUtil.d(AppConfig.TAG, "V2Ray core environment already initialized, skipping")

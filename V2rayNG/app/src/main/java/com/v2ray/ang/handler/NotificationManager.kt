@@ -63,8 +63,8 @@ object NotificationManager {
      * Shows the notification.
      * @param currentConfig The current profile configuration.
      */
-    fun showNotification(currentConfig: ProfileItem?) {
-        val service = getService() ?: return
+    fun showNotification(currentConfig: ProfileItem?, callerService: Service? = null) {
+        val service = callerService ?: getService() ?: return
 
         // Reset last query time to avoid querying stats too soon after showing the notification
         lastQueryTime = System.currentTimeMillis()
@@ -86,7 +86,7 @@ object NotificationManager {
 
         val channelId =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                createNotificationChannel()
+                createNotificationChannel(service)
             } else {
                 // If earlier version channel ID is not used
                 // https://developer.android.com/reference/android/support/v4/app/NotificationCompat.Builder.html#NotificationCompat.Builder(android.content.Context)
@@ -132,10 +132,10 @@ object NotificationManager {
      * return early. A duplicate startForegroundService call still requires the service
      * to enter foreground state promptly, even when the core is already running.
      */
-    fun ensureForeground() {
-        val service = getService() ?: return
+    fun ensureForeground(callerService: Service? = null) {
+        val service = callerService ?: getService() ?: return
         val notification = mBuilder?.build()
-        if (notification == null) showNotification(null) else startForegroundCompat(service, notification)
+        if (notification == null) showNotification(null, service) else startForegroundCompat(service, notification)
     }
 
     /**
@@ -197,11 +197,10 @@ object NotificationManager {
      * @return The channel ID.
      */
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun createNotificationChannel(): String {
+    private fun createNotificationChannel(context: Context): String {
         val channelId = AppConfig.RAY_NG_CHANNEL_ID
-        val service = getService() ?: return channelId
         NotificationHelper.ensureNotificationChannel(
-            context = service,
+            context = context,
             channelId = channelId,
             channelNameRes = R.string.notification_channel_service,
             // Foreground-service notifications must remain visible; LOW is silent but valid.

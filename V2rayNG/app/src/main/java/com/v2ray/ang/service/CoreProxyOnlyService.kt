@@ -30,7 +30,7 @@ class CoreProxyOnlyService : Service(), ServiceControl {
      * @return The start mode.
      */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        NotificationManager.ensureForeground()
+        NotificationManager.ensureForeground(this)
         LogUtil.i(AppConfig.TAG, "StartCore-Proxy: Service command received")
 
         if (CoreServiceManager.isRunning()) {

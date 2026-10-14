@@ -27,13 +27,22 @@ object LauncherManager {
             return false
         }
         try {
-            startContextService(context)
+            startServiceFromToggleInternal(context)
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "LauncherManager: ${e.message}", e)
-            context.toast(e.message ?: e.javaClass.simpleName)
+            val msg = e.message ?: e.javaClass.simpleName
+            if (msg.contains("process is", ignoreCase = true) || msg.contains("Unable to launch", ignoreCase = true)) {
+                context.toast("Служба VPN запускается... Повторите нажатие через пару секунд.")
+            } else {
+                context.toast(msg)
+            }
             return false
         }
         return true
+    }
+
+    private fun startServiceFromToggleInternal(context: Context) {
+        startContextService(context)
     }
 
     fun startService(context: Context, guid: String? = null) {
@@ -47,7 +56,12 @@ object LauncherManager {
             startContextService(context)
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "LauncherManager: ${e.message}", e)
-            context.toast(e.message ?: e.javaClass.simpleName)
+            val msg = e.message ?: e.javaClass.simpleName
+            if (msg.contains("process is", ignoreCase = true) || msg.contains("Unable to launch", ignoreCase = true)) {
+                context.toast("Служба VPN запускается... Повторите нажатие через пару секунд.")
+            } else {
+                context.toast(msg)
+            }
         }
     }
 

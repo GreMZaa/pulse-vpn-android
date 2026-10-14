@@ -141,7 +141,7 @@ class CallActivity : ComponentActivity() {
 
         // Единый канонический идентификатор комнаты для 100% соединения Web и Android
         val canonicalRoomId = CallRoomManager.getCanonicalRoomId(roomCode.ifEmpty { rawRoomId })
-        val callUrl = "https://vdo.ninja/?room=$canonicalRoomId&label=Android&autostart&darkmode&cleanish&webcam&largepreview&showpreview&mesh"
+        val callUrl = "https://vdo.ninja/?room=$canonicalRoomId&label=Android&autostart&darkmode&cleanish&webcam&largepreview&showpreview&mesh&relay&aec&agc&denoise&broadcast=0"
 
         setContent {
             CallScreenContent(
@@ -410,10 +410,9 @@ class CallActivity : ComponentActivity() {
                                 override fun onPermissionRequest(request: PermissionRequest?) {
                                     runOnUiThread {
                                         try {
-                                            request?.grant(request.resources ?: arrayOf(
-                                                PermissionRequest.RESOURCE_AUDIO_CAPTURE,
-                                                PermissionRequest.RESOURCE_VIDEO_CAPTURE
-                                            ))
+                                            if (request != null) {
+                                                request.grant(request.resources)
+                                            }
                                         } catch (_: Exception) {}
                                     }
                                 }

@@ -25,9 +25,20 @@ class AngApplication : Application() {
         application = this
     }
 
-    private val workManagerConfiguration: Configuration = Configuration.Builder()
-        .setDefaultProcessName("${ANG_PACKAGE}:bg")
-        .build()
+    private fun isMainProcess(): Boolean {
+        return try {
+            val processName = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                Application.getProcessName()
+            } else {
+                val pid = android.os.Process.myPid()
+                val am = getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
+                am?.runningAppProcesses?.firstOrNull { it.pid == pid }?.processName
+            }
+            processName == null || processName == packageName
+        } catch (_: Throwable) {
+            true
+        }
+    }
 
     /**
      * Initializes the application.
@@ -35,33 +46,41 @@ class AngApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        MmkvManager.initialize(this)
-
         try {
-            AppLocaleManager.initialize(this)
-        } catch (_: Exception) {
+            MmkvManager.initialize(this)
+        } catch (_: Throwable) {
         }
 
-        // Initialize WorkManager with the custom configuration safely across processes
         try {
-            if (!WorkManager.isInitialized()) {
-                WorkManager.initialize(this, workManagerConfiguration)
+            SettingsManager.initAssets(this, assets)
+        } catch (_: Throwable) {
+        }
+
+        // Only run UI / Activity / Worker initialization in the main application process
+        if (isMainProcess()) {
+            try {
+                AppLocaleManager.initialize(this)
+            } catch (_: Throwable) {
             }
-            com.v2ray.ang.handler.AppUpdateNotificationWorker.schedule(this)
-        } catch (_: Exception) {
-        }
 
-        // Ensure critical preference defaults are present in MMKV early
-        try {
-            SettingsManager.initApp(this)
-        } catch (_: Exception) {
-        }
+            try {
+                if (!WorkManager.isInitialized()) {
+                    WorkManager.initialize(this, Configuration.Builder().build())
+                }
+                com.v2ray.ang.handler.AppUpdateNotificationWorker.schedule(this)
+            } catch (_: Throwable) {
+            }
 
-        // Initialize theme state from MMKV
-        try {
-            androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES)
-            ThemeManager.refresh()
-        } catch (_: Exception) {
+            try {
+                SettingsManager.initApp(this)
+            } catch (_: Throwable) {
+            }
+
+            try {
+                androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES)
+                ThemeManager.refresh()
+            } catch (_: Throwable) {
+            }
         }
     }
 }
