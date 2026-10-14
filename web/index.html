@@ -712,10 +712,257 @@
       font-weight: 600;
       padding: 10px 20px;
       border-radius: 24px;
+    /* ОПОВЕЩЕНИЕ О РАЗРЕШЕНИИ ЗВОНКОВ В ФОНЕ */
+    .perm-banner {
+      background: rgba(124, 58, 237, 0.12);
+      border: 1px solid rgba(124, 58, 237, 0.3);
+      border-radius: 14px;
+      padding: 12px 14px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .perm-banner:hover {
+      background: rgba(124, 58, 237, 0.18);
+    }
+    .perm-icon {
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .perm-text {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      text-align: left;
+    }
+    .perm-text strong {
       font-size: 13px;
-      z-index: 300;
-      display: none;
-      box-shadow: 0 4px 20px rgba(2, 132, 199, 0.5);
+      font-weight: 700;
+      color: #FFF;
+    }
+    .perm-text span {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+    .perm-btn {
+      background: #7C3AED;
+      color: #FFF;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* АКТИВНЫЙ ВЫЗОВ В СПИСКЕ КОМНАТ */
+    .room-card-app.has-active-call {
+      border-color: rgba(16, 185, 129, 0.5) !important;
+      background: rgba(16, 185, 129, 0.08) !important;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.18);
+    }
+    .room-card-app.has-active-call .btn-room-call {
+      background: #10B981 !important;
+      animation: roomBtnPulse 1.6s infinite ease-in-out;
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.6);
+    }
+    @keyframes roomBtnPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
+    .badge-live-call {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #34D399;
+      background: rgba(16, 185, 129, 0.18);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      padding: 1px 7px;
+      border-radius: 5px;
+      margin-top: 3px;
+      width: fit-content;
+    }
+    .badge-live-call .pulse-green-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10B981;
+      box-shadow: 0 0 8px #10B981;
+      animation: dotPulse 1.2s infinite;
+    }
+    @keyframes dotPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    /* ПОЛНОЭКРАННЫЙ ЭКРАН ВХОДЯЩЕГО ЗВОНКА (CALL MODAL) */
+    .incoming-call-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 10, 16, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      animation: fadeInModal 0.25s ease-out;
+    }
+    @keyframes fadeInModal {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .incoming-call-card {
+      background: #121622;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 26px;
+      padding: 34px 26px 28px;
+      max-width: 380px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 20px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(124, 58, 237, 0.2);
+      animation: cardPopIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes cardPopIn {
+      from { transform: scale(0.92); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .incoming-avatar-wrap {
+      position: relative;
+      width: 96px;
+      height: 96px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .incoming-avatar-box {
+      width: 80px;
+      height: 80px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, #EC4899 0%, #8B5CF6 100%);
+      color: #FFF;
+      font-size: 34px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 28px rgba(236, 72, 153, 0.45);
+      position: relative;
+      z-index: 2;
+    }
+    .incoming-avatar-pulse {
+      position: absolute;
+      inset: -4px;
+      border-radius: 30px;
+      background: rgba(236, 72, 153, 0.28);
+      animation: incomingPulseRing 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+      z-index: 1;
+    }
+    .incoming-avatar-pulse.delay {
+      animation-delay: 0.9s;
+    }
+    @keyframes incomingPulseRing {
+      0% { transform: scale(0.85); opacity: 0.9; }
+      100% { transform: scale(1.6); opacity: 0; }
+    }
+    .incoming-info-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .incoming-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.16);
+      color: #34D399;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+    .incoming-status-pill .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10B981;
+      box-shadow: 0 0 8px #10B981;
+      animation: dotPulse 1s infinite;
+    }
+    .incoming-room-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #FFFFFF;
+      letter-spacing: -0.3px;
+      margin: 4px 0 0;
+    }
+    .incoming-subtitle {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin: 0;
+    }
+    .incoming-buttons-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      width: 100%;
+      margin-top: 8px;
+    }
+    .btn-incoming-decline, .btn-incoming-accept {
+      flex: 1;
+      height: 52px;
+      border-radius: 14px;
+      border: none;
+      font-family: var(--font-main);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.15s, opacity 0.15s, box-shadow 0.15s;
+    }
+    .btn-incoming-decline {
+      background: rgba(239, 68, 68, 0.14);
+      border: 1px solid rgba(239, 68, 68, 0.32);
+      color: #F87171;
+    }
+    .btn-incoming-decline:hover {
+      background: rgba(239, 68, 68, 0.22);
+      border-color: rgba(239, 68, 68, 0.5);
+    }
+    .btn-incoming-decline:active {
+      transform: scale(0.96);
+    }
+    .btn-incoming-accept {
+      background: #10B981;
+      color: #FFFFFF;
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    }
+    .btn-incoming-accept:hover {
+      background: #059669;
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.55);
+    }
+    .btn-incoming-accept:active {
+      transform: scale(0.96);
     }
   </style>
 </head>
@@ -744,6 +991,16 @@
   <!-- ЭКРАН ВЫБОРА И ПОДКЛЮЧЕНИЯ (PRE-JOIN) -->
   <main id="prejoin-view">
     
+    <!-- ОПОВЕЩЕНИЕ О РАЗРЕШЕНИИ ЗВОНКОВ В ФОНЕ (ДЛЯ РАБОЧЕГО СТОЛА И УВЕДОМЛЕНИЙ) -->
+    <div id="call-perm-banner" class="perm-banner" style="display: none;" onclick="requestCallNotificationPermission()">
+      <span class="perm-icon">🔔</span>
+      <div class="perm-text">
+        <strong>Включить звонки в фоне</strong>
+        <span>Чтобы слышать вызов, когда окно свернуто на рабочем столе</span>
+      </div>
+      <button class="perm-btn">Включить</button>
+    </div>
+
     <!-- КАРТОЧКА БЫСТРОГО ПОДКЛЮЧЕНИЯ ПО КОДУ -->
     <div class="hero-card">
       <div class="hero-header">
@@ -838,13 +1095,407 @@
     </div>
   </div>
 
+  <!-- ПОЛНОЭКРАННЫЙ ЭКРАН ВХОДЯЩЕГО ВЫЗОВА (CALL OVERLAY) -->
+  <div class="incoming-call-overlay" id="modal-incoming-call" style="display: none;">
+    <div class="incoming-call-card">
+      <div class="incoming-avatar-wrap">
+        <div class="incoming-avatar-pulse"></div>
+        <div class="incoming-avatar-pulse delay"></div>
+        <div class="incoming-avatar-box" id="incoming-avatar-box">
+          <span id="incoming-avatar-char">С</span>
+        </div>
+      </div>
+
+      <div class="incoming-info-block">
+        <div class="incoming-status-pill">
+          <span class="pulse-dot"></span> ВХОДЯЩИЙ ЗВОНОК
+        </div>
+        <h2 class="incoming-room-title" id="incoming-room-title">СЕМЬЯ</h2>
+        <p class="incoming-subtitle" id="incoming-subtitle">В комнате начался вызов, вас ожидают</p>
+      </div>
+
+      <div class="incoming-buttons-row">
+        <button class="btn-incoming-decline" onclick="declineIncomingCall()">
+          <span>✕</span> Отклонить
+        </button>
+        <button class="btn-incoming-accept" onclick="acceptIncomingCall()">
+          <span>📞</span> Ответить
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast-msg">Ссылка скопирована!</div>
 
+  <!-- MQTT БИБЛИОТЕКА СИГНАЛИНГА (ЛОКАЛЬНАЯ + CDN РЕЗЕРВ) -->
+  <script src="mqtt.min.js"></script>
   <script>
+    if (typeof mqtt === 'undefined') {
+      const s = document.createElement('script');
+      s.src = 'https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js';
+      document.head.appendChild(s);
+    }
+  </script>
+
+  <script>
+    // --- 0. СИСТЕМА ОПОВЕЩЕНИЙ И ВХОДЯЩИХ ЗВОНКОВ (DESKTOP & PWA CALLS) ---
+    const myClientId = (function() {
+      let id = sessionStorage.getItem('pulse_client_id');
+      if (!id) {
+        id = 'pc_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36).slice(-4);
+        sessionStorage.setItem('pulse_client_id', id);
+      }
+      return id;
+    })();
+
+    // Синтезатор рингтона (Web Audio API — мгновенный чистый звук без внешних mp3)
+    class RingtonePlayer {
+      constructor() {
+        this.ctx = null;
+        this.isPlaying = false;
+        this.timer = null;
+      }
+      init() {
+        try {
+          if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) this.ctx = new AudioCtx();
+          }
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(() => {});
+          }
+        } catch(e){}
+      }
+      play() {
+        if (this.isPlaying) return;
+        this.init();
+        this.isPlaying = true;
+
+        const playPattern = () => {
+          if (!this.isPlaying) return;
+          try {
+            if (!this.ctx) this.init();
+            if (this.ctx) {
+              const now = this.ctx.currentTime;
+              this._playBeep(now, 0.38, 440, 554.37);
+              this._playBeep(now + 0.48, 0.38, 480, 587.33);
+            }
+          } catch(e){}
+
+          this.timer = setTimeout(() => {
+            if (this.isPlaying) playPattern();
+          }, 2400);
+        };
+
+        playPattern();
+      }
+      _playBeep(t0, dur, f1, f2) {
+        if (!this.ctx) return;
+        try {
+          const osc1 = this.ctx.createOscillator();
+          const osc2 = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc1.type = 'sine';
+          osc1.frequency.setValueAtTime(f1, t0);
+
+          osc2.type = 'triangle';
+          osc2.frequency.setValueAtTime(f2, t0);
+
+          gain.gain.setValueAtTime(0.0001, t0);
+          gain.gain.exponentialRampToValueAtTime(0.32, t0 + 0.05);
+          gain.gain.setValueAtTime(0.28, t0 + dur - 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc1.start(t0);
+          osc2.start(t0);
+          osc1.stop(t0 + dur);
+          osc2.stop(t0 + dur);
+        } catch(e){}
+      }
+      stop() {
+        this.isPlaying = false;
+        if (this.timer) {
+          clearTimeout(this.timer);
+          this.timer = null;
+        }
+      }
+    }
+    const ringtone = new RingtonePlayer();
+    ['click', 'touchstart', 'keydown', 'pointerdown'].forEach(ev => {
+      window.addEventListener(ev, () => ringtone.init(), { passive: true });
+    });
+
+    // Состояние комнат и входящих звонков
+    let activeCallsMap = {};       // safeRoomId -> callData
+    let currentIncomingCall = null;
+    let declinedSessions = {};      // sessionId -> timestamp
+    let titleFlashingTimer = null;
+    const originalPageTitle = document.title || 'ПУЛЬС Связь';
+    let callerHeartbeatTimer = null;
+    let currentCallSessionId = null;
+
+    // Синхронизация между вкладками браузера (BroadcastChannel)
+    let callBroadcastChannel = null;
+    try {
+      callBroadcastChannel = new BroadcastChannel('pulse_calls_sync');
+      callBroadcastChannel.onmessage = (event) => {
+        if (!event.data) return;
+        if (event.data.action === 'accepted' || event.data.action === 'declined') {
+          dismissIncomingCall();
+        }
+      };
+    } catch(e){}
+
+    // Мигание заголовка страницы во время входящего звонка
+    function startTitleFlashing(alertText) {
+      stopTitleFlashing();
+      let toggle = false;
+      titleFlashingTimer = setInterval(() => {
+        document.title = toggle ? alertText : originalPageTitle;
+        toggle = !toggle;
+      }, 900);
+    }
+    function stopTitleFlashing() {
+      if (titleFlashingTimer) {
+        clearInterval(titleFlashingTimer);
+        titleFlashingTimer = null;
+      }
+      document.title = originalPageTitle;
+    }
+
+    // Проверка разрешений системных уведомлений для фоновых звонков
+    function checkCallNotificationPermission() {
+      const banner = document.getElementById('call-perm-banner');
+      if (!banner) return;
+      if ('Notification' in window) {
+        if (Notification.permission === 'default') {
+          banner.style.display = 'flex';
+        } else {
+          banner.style.display = 'none';
+        }
+      } else {
+        banner.style.display = 'none';
+      }
+    }
+    function requestCallNotificationPermission() {
+      ringtone.init();
+      if ('Notification' in window) {
+        Notification.requestPermission().then(() => {
+          checkCallNotificationPermission();
+          showToast('Оповещения о звонках настроены');
+        });
+      }
+    }
+
+    // Показ системного уведомления на рабочем столе (даже если браузер свернут)
+    function showCallDesktopNotification(callData) {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      try {
+        const title = `📞 Входящий вызов: ${callData.roomName || callData.roomCode}`;
+        const options = {
+          body: 'В комнате начался защищенный звонок. Нажмите, чтобы ответить.',
+          icon: './apple-touch-icon.png',
+          badge: './favicon.png',
+          tag: 'pulse_call_' + callData.safeRoomId,
+          renotify: true,
+          requireInteraction: true,
+          data: { roomCode: callData.roomCode, sessionId: callData.sessionId }
+        };
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.ready.then(reg => reg.showNotification(title, options).catch(() => {}));
+        } else {
+          const notif = new Notification(title, options);
+          notif.onclick = () => {
+            window.focus();
+            acceptIncomingCall();
+            notif.close();
+          };
+        }
+      } catch(e){}
+    }
+
+    // Отображение диалога входящего вызова
+    function triggerIncomingCall(callData) {
+      if (currentIncomingCall && currentIncomingCall.sessionId === callData.sessionId) {
+        return;
+      }
+      currentIncomingCall = callData;
+
+      const modal = document.getElementById('modal-incoming-call');
+      const titleEl = document.getElementById('incoming-room-title');
+      const avatarChar = document.getElementById('incoming-avatar-char');
+      const displayName = callData.roomName || callData.roomCode;
+
+      if (titleEl) titleEl.textContent = displayName.toUpperCase();
+      if (avatarChar) avatarChar.textContent = displayName.charAt(0).toUpperCase();
+      if (modal) modal.style.display = 'flex';
+
+      ringtone.play();
+
+      if ('vibrate' in navigator) {
+        try { navigator.vibrate([400, 250, 400, 250, 600]); } catch(e){}
+      }
+
+      startTitleFlashing('📞 ЗВОНОК: ' + displayName);
+      showCallDesktopNotification(callData);
+    }
+
+    function dismissIncomingCall() {
+      const modal = document.getElementById('modal-incoming-call');
+      if (modal) modal.style.display = 'none';
+      ringtone.stop();
+      stopTitleFlashing();
+      currentIncomingCall = null;
+    }
+
+    function acceptIncomingCall() {
+      if (!currentIncomingCall) return;
+      const code = currentIncomingCall.roomCode;
+      const sessId = currentIncomingCall.sessionId;
+      dismissIncomingCall();
+
+      if (callBroadcastChannel) {
+        try { callBroadcastChannel.postMessage({ action: 'accepted', sessionId: sessId }); } catch(e){}
+      }
+      quickJoin(code);
+    }
+
+    function declineIncomingCall() {
+      if (!currentIncomingCall) return;
+      const sessId = currentIncomingCall.sessionId;
+      declinedSessions[sessId] = Date.now();
+      dismissIncomingCall();
+
+      if (callBroadcastChannel) {
+        try { callBroadcastChannel.postMessage({ action: 'declined', sessionId: sessId }); } catch(e){}
+      }
+    }
+
+    // MQTT Сигналинг (EMQX / HiveMQ с автоматическим переключением)
+    const MQTT_BROKERS = [
+      'wss://broker.emqx.io:8084/mqtt',
+      'wss://broker.hivemq.com:8884/mqtt'
+    ];
+    let currentBrokerIdx = 0;
+    let mqttClient = null;
+
+    function initMqttSignaling() {
+      if (typeof mqtt === 'undefined') {
+        setTimeout(initMqttSignaling, 600);
+        return;
+      }
+      const brokerUrl = MQTT_BROKERS[currentBrokerIdx];
+      try {
+        mqttClient = mqtt.connect(brokerUrl, {
+          clientId: myClientId,
+          clean: true,
+          connectTimeout: 5000,
+          reconnectPeriod: 4000
+        });
+
+        mqttClient.on('connect', () => {
+          mqttClient.subscribe('pulse/v1/rooms/+/call', { qos: 0 });
+        });
+
+        mqttClient.on('message', (topic, payload) => {
+          try {
+            const msg = JSON.parse(payload.toString());
+            handleIncomingSignalingMessage(msg);
+          } catch(e){}
+        });
+
+        mqttClient.on('error', () => {
+          currentBrokerIdx = (currentBrokerIdx + 1) % MQTT_BROKERS.length;
+        });
+      } catch(e){}
+    }
+
+    function handleIncomingSignalingMessage(msg) {
+      if (!msg || !msg.safeRoomId) return;
+      const safeId = msg.safeRoomId;
+      const savedRooms = getSavedRooms();
+      const matchedSaved = savedRooms.find(r => toSafeRoomId(r.code) === safeId || (r.code && r.code.toUpperCase() === (msg.roomCode || '').toUpperCase()));
+
+      if (msg.action === 'ringing') {
+        activeCallsMap[safeId] = {
+          roomCode: msg.roomCode,
+          roomName: (matchedSaved && matchedSaved.name) || msg.roomName || msg.roomCode,
+          sessionId: msg.sessionId,
+          callerId: msg.callerId,
+          timestamp: msg.timestamp || Date.now(),
+          receivedAt: Date.now()
+        };
+        renderRoomsList();
+
+        // Если звонящий — НЕ этот клиент, и комната есть у нас в постоянных
+        if (matchedSaved && msg.callerId !== myClientId) {
+          const inCall = document.getElementById('call-view').style.display === 'flex';
+          if (inCall) return;
+
+          if (declinedSessions[msg.sessionId] && (Date.now() - declinedSessions[msg.sessionId] < 60000)) {
+            return;
+          }
+          triggerIncomingCall(activeCallsMap[safeId]);
+        }
+      } else if (msg.action === 'hangup') {
+        delete activeCallsMap[safeId];
+        renderRoomsList();
+
+        if (currentIncomingCall && currentIncomingCall.sessionId === msg.sessionId) {
+          dismissIncomingCall();
+        }
+      }
+    }
+
+    function publishCallEvent(action, roomCode, safeRoomId, sessionId) {
+      if (!mqttClient || !mqttClient.connected) return;
+      const topic = `pulse/v1/rooms/${safeRoomId}/call`;
+      const payload = JSON.stringify({
+        action: action,
+        roomCode: roomCode,
+        safeRoomId: safeRoomId,
+        callerId: myClientId,
+        sessionId: sessionId,
+        timestamp: Date.now()
+      });
+      try {
+        mqttClient.publish(topic, payload, { qos: 0 });
+      } catch(e){}
+    }
+
+    // Автоочистка завершённых вызовов
+    setInterval(() => {
+      const now = Date.now();
+      let changed = false;
+      for (const safeId in activeCallsMap) {
+        if (now - activeCallsMap[safeId].receivedAt > 8500) {
+          delete activeCallsMap[safeId];
+          changed = true;
+          if (currentIncomingCall && currentIncomingCall.safeRoomId === safeId) {
+            dismissIncomingCall();
+          }
+        }
+      }
+      if (changed) renderRoomsList();
+    }, 2500);
+
     // --- 1. РЕГИСТРАЦИЯ SERVICE WORKER (PWA) ---
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.action === 'answer_call') {
+          dismissIncomingCall();
+          if (event.data.roomCode) {
+            quickJoin(event.data.roomCode);
+          }
+        }
       });
     }
 
@@ -952,7 +1603,11 @@
 
       list.forEach((r, idx) => {
         const card = document.createElement('div');
-        card.className = 'room-card-app';
+        const safeId = toSafeRoomId(r.code);
+        const callInfo = activeCallsMap[safeId];
+        const hasCall = callInfo && (callInfo.callerId !== myClientId);
+
+        card.className = 'room-card-app' + (hasCall ? ' has-active-call' : '');
         
         const letter = (r.name || 'К').charAt(0).toUpperCase();
         card.innerHTML = `
@@ -961,11 +1616,12 @@
             <div class="room-info">
               <span class="room-name-text">${escapeHtml(r.name)}</span>
               <span class="room-code-badge">КОД: ${escapeHtml(r.code)}</span>
+              ${hasCall ? '<span class="badge-live-call"><span class="pulse-green-dot"></span> Идёт звонок</span>' : ''}
             </div>
           </div>
           <div class="room-actions">
             <button class="btn-room-call" onclick="quickJoin('${escapeHtml(r.code)}')">
-              <span>📞</span> Звонок
+              <span>📞</span> ${hasCall ? 'Ответить' : 'Звонок'}
             </button>
             <button class="btn-room-icon" title="Поделиться" onclick="event.stopPropagation(); shareRoomLink('${escapeHtml(r.code)}', '${escapeHtml(r.name)}')">
               📲
@@ -1001,6 +1657,11 @@
       saveRooms(list);
       closeCreateModal();
       showToast('Комната сохранена!');
+
+      // Запрашиваем разрешение на системные уведомления для фоновых звонков
+      if ('Notification' in window && Notification.permission === 'default') {
+        requestCallNotificationPermission();
+      }
     }
 
     function deleteRoom(idx) {
@@ -1125,6 +1786,15 @@
       btnCam.classList.toggle('active', isCamActive);
       btnCam.textContent = isCamActive ? '📹' : '📷';
 
+      // Публикуем событие начала звонка для оповещения всех участников
+      currentCallSessionId = 'cs_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+      publishCallEvent('ringing', raw, activeCleanRoom, currentCallSessionId);
+
+      if (callerHeartbeatTimer) clearInterval(callerHeartbeatTimer);
+      callerHeartbeatTimer = setInterval(() => {
+        publishCallEvent('ringing', raw, activeCleanRoom, currentCallSessionId);
+      }, 3000);
+
       const finalUrl = buildNinjaUrl(activeCleanRoom, withVideo);
       document.getElementById('call-frame').src = finalUrl;
       startTimer();
@@ -1183,7 +1853,6 @@
       btn.classList.toggle('active', isCamActive);
     }
 
-
     function toggleFullscreen() {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
@@ -1194,10 +1863,26 @@
 
     function hangupCall() {
       if (callInterval) clearInterval(callInterval);
+      if (callerHeartbeatTimer) {
+        clearInterval(callerHeartbeatTimer);
+        callerHeartbeatTimer = null;
+      }
+      if (currentCallSessionId && activeCleanRoom) {
+        publishCallEvent('hangup', inputField.value.trim() || activeCleanRoom, activeCleanRoom, currentCallSessionId);
+      }
+      currentCallSessionId = null;
+
       document.getElementById('call-frame').src = 'about:blank';
       document.getElementById('call-view').style.display = 'none';
       document.getElementById('prejoin-view').style.display = 'flex';
+      renderRoomsList();
     }
+
+    window.addEventListener('beforeunload', () => {
+      if (callerHeartbeatTimer && activeCleanRoom && currentCallSessionId) {
+        publishCallEvent('hangup', inputField.value.trim() || activeCleanRoom, activeCleanRoom, currentCallSessionId);
+      }
+    });
 
     function copyInviteLink() {
       const raw = inputField.value.trim() || activeCleanRoom;
@@ -1216,12 +1901,14 @@
       return (str || '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
     }
 
-    // Инициализация списка сохранённых комнат
+    // Инициализация интерфейса и сигналинга
     renderRoomsList();
+    checkCallNotificationPermission();
+    initMqttSignaling();
 
-    // Автостарт при ?autostart=1
-    if (urlParams.get('autostart') === '1' && initialRoom) {
-      handleJoinSubmit();
+    // Автостарт при ?autostart=1 или ?auto=1
+    if ((urlParams.get('autostart') === '1' || urlParams.get('auto') === '1') && initialRoom) {
+      setTimeout(() => handleJoinSubmit(), 350);
     }
   </script>
 
