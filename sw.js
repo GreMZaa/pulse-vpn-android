@@ -1,8 +1,9 @@
 // ПУЛЬС Связь Service Worker
-const CACHE_NAME = 'pulse-call-v2';
+const CACHE_NAME = 'pulse-call-v3';
 const ASSETS = [
   './',
   './index.html',
+  './mqtt.min.js',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',
@@ -29,13 +30,42 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Пропускаем внешние запросы к WebRTC / VDO.Ninja напрямую в сеть
-  if (event.request.url.includes('vdo.ninja') || event.request.url.includes('wss://') || event.request.method !== 'GET') {
+  // Пропускаем внешние запросы к WebRTC, MQTT брокерам и стримингу напрямую в сеть
+  const url = event.request.url;
+  if (
+    url.includes('vdo.ninja') ||
+    url.includes('emqx.io') ||
+    url.includes('hivemq.com') ||
+    url.includes('wss://') ||
+    url.includes('ws://') ||
+    event.request.method !== 'GET'
+  ) {
     return;
   }
   event.respondWith(
     fetch(event.request).catch(() => {
       return caches.match(event.request);
+    })
+  );
+});
+
+// КЛИК ПО УВЕДОМЛЕНИЮ О ЗВОНКЕ (РАЗВОРАЧИВАЕТ ОКНО НА РАБОЧЕМ СТОЛЕ И ВХОДИТ В ВЫЗОВ)
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const roomCode = (event.notification.data && event.notification.data.roomCode) || '';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) {
+          client.postMessage({ action: 'answer_call', roomCode: roomCode });
+          return client.focus();
+        }
+      }
+      if (self.clients.openWindow) {
+        const dest = roomCode ? './?room=' + encodeURIComponent(roomCode) + '&auto=1' : './';
+        return self.clients.openWindow(dest);
+      }
     })
   );
 });
