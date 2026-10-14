@@ -682,19 +682,20 @@
       z-index: 20;
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
       background: rgba(15, 23, 42, 0.9);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      padding: 10px 18px;
+      padding: 10px 16px;
       border-radius: 36px;
       border: 1px solid rgba(255, 255, 255, 0.14);
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      max-width: 96vw;
     }
 
     .dock-circle-btn {
-      width: 52px;
-      height: 52px;
+      width: 50px;
+      height: 50px;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.12);
       border: none;
@@ -706,6 +707,19 @@
       justify-content: center;
       cursor: pointer;
       transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 440px) {
+      .call-bottom-dock {
+        gap: 8px;
+        padding: 8px 12px;
+      }
+      .dock-circle-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 19px;
+      }
     }
 
     .dock-circle-btn:active {
@@ -723,6 +737,7 @@
       color: #FFF;
       box-shadow: 0 0 16px rgba(239, 68, 68, 0.4);
     }
+
 
     /* МОДАЛЬНОЕ ОКНО СОЗДАНИЯ КОМНАТЫ */
     .modal-backdrop {
@@ -941,11 +956,13 @@
     <!-- ПАНЕЛЬ УПРАВЛЕНИЯ В СТИЛЕ TELEGRAM -->
     <div class="call-bottom-dock">
       <button class="dock-circle-btn" title="Перевернуть камеру" onclick="flipCam()">🔄</button>
-      <button class="dock-circle-btn active" id="btn-mic-toggle" title="Микрофон" onclick="toggleMic()">🎙️</button>
       <button class="dock-circle-btn active" id="btn-cam-toggle" title="Камера" onclick="toggleCam()">📹</button>
+      <button class="dock-circle-btn active" id="btn-mic-toggle" title="Микрофон" onclick="toggleMic()">🎙️</button>
+      <button class="dock-circle-btn active" id="btn-speaker-toggle" title="Динамик" onclick="toggleSpeaker()">🔊</button>
       <button class="dock-circle-btn" title="На весь экран" onclick="toggleFullscreen()">⛶</button>
       <button class="dock-circle-btn danger" title="Завершить вызов" onclick="hangupCall()">📞</button>
     </div>
+
   </section>
 
   <!-- МОДАЛЬНОЕ ОКНО СОЗДАНИЯ КОМНАТЫ -->
@@ -1201,9 +1218,13 @@
     }
 
     function buildNinjaUrl(cleanRoom, withVideo) {
+      // &push — уникальный ID стрима гарантирует автоматический старт без экранов выбора устройств ("Join Room with Camera")
+      // &videodevice=1, &audiodevice=1 — моментальный захват камеры и микрофона
+      // &clean — чистый полноэкранный интерфейс без посторонних элементов
       // &beepvolume=0 — полное отключение зуммеров и гудков
       // &relay — гарантированное прохождение NAT и мобильных операторов РФ
-      let base = `https://vdo.ninja/?room=${cleanRoom}&label=Web&autostart&darkmode&cleanish&webcam&largepreview&showpreview&mesh&relay&aec&agc&denoise&beepvolume=0`;
+      const myStreamId = 'pulse_web_' + Math.random().toString(36).substring(2, 9);
+      let base = `https://vdo.ninja/?room=${cleanRoom}&push=${myStreamId}&label=Web&autostart&darkmode&clean&webcam&videodevice=1&audiodevice=1&mesh&relay&aec&agc&denoise&beepvolume=0`;
       if (!withVideo) {
         base += '&videomute';
       }
@@ -1214,6 +1235,8 @@
     let activeCleanRoom = 'pulse_call';
     let isCamActive = true;
     let isMicActive = true;
+    let isSpeakerActive = true;
+    let currentCamIndex = 0;
     let callTimerSeconds = 0;
     let callInterval = null;
 
@@ -1249,12 +1272,32 @@
     }
 
     function flipCam() {
+      currentCamIndex = (currentCamIndex + 1) % 2;
       const frame = document.getElementById('call-frame');
       try {
-        frame.contentWindow.postMessage({ changeVideoDevice: true }, '*');
-        frame.contentWindow.postMessage({ action: 'changeVideoDevice' }, '*');
+        frame.contentWindow.postMessage({ changeVideoDevice: currentCamIndex }, '*');
+        frame.contentWindow.postMessage({ action: 'changeVideoDevice', value: currentCamIndex }, '*');
       } catch(e){}
-      showToast('Переключение камеры...');
+      showToast(currentCamIndex === 0 ? 'Задняя камера' : 'Фронтальная камера');
+    }
+
+    function toggleSpeaker() {
+      isSpeakerActive = !isSpeakerActive;
+      const frame = document.getElementById('call-frame');
+      try {
+        frame.contentWindow.postMessage({ action: 'speaker', value: isSpeakerActive }, '*');
+        frame.contentWindow.postMessage({ action: 'volume', value: isSpeakerActive ? 100 : 0 }, '*');
+        frame.contentWindow.postMessage({ volume: isSpeakerActive ? 100 : 0 }, '*');
+      } catch(e){}
+
+      const btn = document.getElementById('btn-speaker-toggle');
+      if (btn) {
+        btn.textContent = isSpeakerActive ? '🔊' : '🔇';
+        btn.classList.toggle('active', isSpeakerActive);
+        btn.classList.toggle('danger', !isSpeakerActive);
+        btn.title = isSpeakerActive ? 'Выключить динамик' : 'Включить динамик';
+      }
+      showToast(isSpeakerActive ? 'Динамик включен' : 'Динамик выключен (Без звука)');
     }
 
     function toggleMic() {
@@ -1280,6 +1323,7 @@
       btn.textContent = isCamActive ? '📹' : '📷';
       btn.classList.toggle('active', isCamActive);
     }
+
 
     function toggleFullscreen() {
       if (!document.fullscreenElement) {
