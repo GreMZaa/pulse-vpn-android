@@ -100,7 +100,7 @@ class CallActivity : ComponentActivity() {
     private var webViewInstance: WebView? = null
     private var isMicMuted by mutableStateOf(false)
     private var isSpeakerOn by mutableStateOf(true)
-    private var isCameraOn by mutableStateOf(false)
+    private var isCameraOn by mutableStateOf(true)
     private var isPeerConnected by mutableStateOf(false)
     private var hasPermissions by mutableStateOf(false)
 
@@ -152,7 +152,7 @@ class CallActivity : ComponentActivity() {
 
         // Единый канонический идентификатор комнаты для 100% соединения Web и Android
         val canonicalRoomId = CallRoomManager.getCanonicalRoomId(roomCode.ifEmpty { rawRoomId })
-        val callUrl = "https://vdo.ninja/?room=$canonicalRoomId&label=Android&autostart&darkmode&cleanish&webcam&largepreview&showpreview&mesh&relay&aec&agc&denoise"
+        val callUrl = "https://vdo.ninja/?room=$canonicalRoomId&label=Android&autostart&darkmode&cleanish&webcam&largepreview&showpreview&mesh&relay&aec&agc&denoise&beepvolume=0"
 
         setContent {
             CallScreenContent(
@@ -196,6 +196,8 @@ class CallActivity : ComponentActivity() {
         val am = audioManager ?: return
         try {
             am.mode = AudioManager.MODE_IN_COMMUNICATION
+            @Suppress("DEPRECATION")
+            am.isSpeakerphoneOn = speakerOn
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 if (speakerOn) {
                     val speaker = am.availableCommunicationDevices.firstOrNull {
@@ -207,9 +209,6 @@ class CallActivity : ComponentActivity() {
                 } else {
                     am.clearCommunicationDevice()
                 }
-            } else {
-                @Suppress("DEPRECATION")
-                am.isSpeakerphoneOn = speakerOn
             }
         } catch (_: Exception) {}
     }
@@ -382,7 +381,7 @@ class CallActivity : ComponentActivity() {
 
         val formattedDuration = remember(callSeconds, isPeerConnected) {
             if (!isPeerConnected) {
-                "Гудки..."
+                "Ожидание..."
             } else {
                 val minutes = callSeconds / 60
                 val seconds = callSeconds % 60
@@ -508,56 +507,50 @@ class CallActivity : ComponentActivity() {
                 }
             }
 
-            // 2. ГОЛОСОВОЙ ЭКРАН В СТИЛЕ TELEGRAM (ОТОБРАЖАЕТСЯ, ЕСЛИ КАМЕРА ВЫКЛЮЧЕНА)
-            if (!isCameraOn) {
+            // 2. ОВЕРЛЕЙ ОЖИДАНИЯ СОБЕСЕДНИКА (ОТОБРАЖАЕТСЯ ТОЛЬКО ПОКА СОБЕСЕДНИК НЕ ВОШЁЛ)
+            if (!isPeerConnected) {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(Color(0xFF1E293B), Color(0xFF0F172A), Color(0xFF020617))
-                            )
-                        ),
+                        .align(Alignment.Center)
+                        .padding(horizontal = 24.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Color(0xD90B141B))
+                        .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(24.dp))
+                        .padding(24.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxSize()
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        val avatarGlowColor = if (isPeerConnected) Color(0x2222C55E) else Color(0x33F59E0B)
-                        val avatarBgColor = if (isPeerConnected) Color(0xFF16A34A) else Color(0xFFD97706)
-
-                        // Пульсирующий круг аватара
                         Box(
                             modifier = Modifier
-                                .size(140.dp)
+                                .size(80.dp)
                                 .scale(pulseScale)
                                 .clip(CircleShape)
-                                .background(avatarGlowColor),
+                                .background(Color(0x33F59E0B)),
                             contentAlignment = Alignment.Center
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(108.dp)
+                                    .size(60.dp)
                                     .clip(CircleShape)
-                                    .background(avatarBgColor),
+                                    .background(Color(0xFFD97706)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = roomName.take(1).uppercase().ifEmpty { "П" },
-                                    fontSize = 44.sp,
+                                    fontSize = 28.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
                                 )
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(26.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         Text(
                             text = roomName,
-                            fontSize = 24.sp,
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
@@ -565,84 +558,44 @@ class CallActivity : ComponentActivity() {
                         Spacer(modifier = Modifier.height(6.dp))
 
                         Text(
-                            text = if (isPeerConnected) formattedDuration else "📞 Вызов... Идут гудки",
-                            fontSize = 16.sp,
+                            text = "Ожидание собеседника...",
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = if (isPeerConnected) Color(0xFF94A3B8) else Color(0xFFFBBF24)
+                            color = Color(0xFFFBBF24)
                         )
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                        if (isPeerConnected) {
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(Color(0x3310B981))
-                                    .padding(horizontal = 12.dp, vertical = 4.dp)
-                            ) {
-                                Text(
-                                    text = "🟢 Прямой канал связи P2P",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color(0xFF34D399)
-                                )
-                            }
-                        } else {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.padding(horizontal = 24.dp)
-                            ) {
-                                Text(
-                                    text = "Собеседник ещё не вошёл в комнату.\nОтправьте ему ссылку, чтобы он подключился:",
-                                    textAlign = TextAlign.Center,
-                                    fontSize = 13.sp,
-                                    color = Color(0xFF94A3B8),
-                                    lineHeight = 18.sp
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Button(
-                                    onClick = onShare,
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
-                                    shape = RoundedCornerShape(16.dp)
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_share_24dp),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp),
-                                        tint = Color.White
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "Отправить ссылку собеседнику",
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 13.sp
-                                    )
-                                }
-                            }
+                        Text(
+                            text = "Собеседник ещё не вошёл в комнату.\nОтправьте ссылку, чтобы он подключился:",
+                            textAlign = TextAlign.Center,
+                            fontSize = 13.sp,
+                            color = Color(0xFF94A3B8),
+                            lineHeight = 18.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Button(
+                            onClick = onShare,
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_share_24dp),
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Отправить ссылку собеседнику",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
                         }
                     }
-                }
-            }
-
-            // Баннер вверху при включенной камере, если собеседник еще не подключился
-            if (isCameraOn && !isPeerConnected) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 74.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(Color(0xEE0F172A))
-                        .border(1.dp, Color(0xFFF59E0B), RoundedCornerShape(20.dp))
-                        .clickable { onShare() }
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    Text(
-                        text = "📞 Гудки... Нажмите, чтобы отправить ссылку 📲",
-                        fontSize = 13.sp,
-                        color = Color(0xFFFBBF24),
-                        fontWeight = FontWeight.Medium
-                    )
                 }
             }
 
