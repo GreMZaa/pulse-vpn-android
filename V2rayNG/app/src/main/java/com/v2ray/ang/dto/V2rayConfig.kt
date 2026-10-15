@@ -100,7 +100,17 @@ data class V2rayConfig(
             var reserved: List<Int>? = null,
             var mtu: Int? = null,
             var remoteDNS: List<String>? = null,
+            /*Freedom / Fragment*/
+            var domainStrategy: String? = null,
+            var fragment: FragmentBean? = null,
         ) {
+            data class FragmentBean(
+                var packets: String? = "tlshello",
+                var length: String? = "100-200",
+                var interval: String? = "10-20",
+                var maxSplit: String? = "10"
+            )
+
             data class WireGuardBean(
                 var publicKey: String = "",
                 var preSharedKey: String? = null,

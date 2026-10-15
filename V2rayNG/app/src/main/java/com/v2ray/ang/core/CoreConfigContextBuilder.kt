@@ -80,8 +80,18 @@ object CoreConfigContextBuilder {
 
             else -> {
                 val chainProfiles = resolveProxyChainProfilesFromGroup(profile)
-                val type = if (chainProfiles.size <= 1) CoreResolvedType.NORMAL else CoreResolvedType.PROXYCHAIN
-                Pair(chainProfiles, type)
+                val autoFailover = MmkvManager.decodeSettingsBool(AppConfig.PREF_AUTO_FAILOVER_ENABLED, true)
+                if (autoFailover && tag == AppConfig.TAG_PROXY && chainProfiles.size <= 1) {
+                    val failoverProfiles = resolveFailoverBackupProfiles(profile)
+                    if (failoverProfiles.size > 1) {
+                        Pair(failoverProfiles, CoreResolvedType.POLICYGROUP)
+                    } else {
+                        Pair(chainProfiles, CoreResolvedType.NORMAL)
+                    }
+                } else {
+                    val type = if (chainProfiles.size <= 1) CoreResolvedType.NORMAL else CoreResolvedType.PROXYCHAIN
+                    Pair(chainProfiles, type)
+                }
             }
         }
 
@@ -269,5 +279,34 @@ object CoreConfigContextBuilder {
                     ?.let { resolveOutbound(tag, it) }
             }
             .toList()
+    }
+
+    /**
+     * Build a resilient failover list for the main proxy outbound:
+     * Selected profile is placed first (index 0 / fallbackTag), followed by healthy
+     * backup servers (both VLESS Reality and Hysteria 2) from the server pool.
+     */
+    private fun resolveFailoverBackupProfiles(primaryProfile: ProfileItem): List<ProfileItem> {
+        try {
+            val serverList = MmkvManager.decodeAllServerList()
+            val backupCandidates = serverList
+                .asSequence()
+                .mapNotNull { id -> MmkvManager.decodeServerConfig(id) }
+                .filter { it.server.isNotNullEmpty() }
+                .filter { Utils.isPureIpAddress(it.server!!) || Utils.isValidUrl(it.server!!) }
+                .filter { !it.configType.isComplexType() }
+                .filter { it.server != primaryProfile.server || it.serverPort != primaryProfile.serverPort }
+                .toList()
+
+            // Separate into Hysteria 2 (QUIC) and VLESS (TCP/Reality) to ensure protocol diversity
+            val hy2Backups = backupCandidates.filter { it.configType == EConfigType.HYSTERIA2 }.take(3)
+            val vlessBackups = backupCandidates.filter { it.configType != EConfigType.HYSTERIA2 }.take(5)
+
+            val backups = (hy2Backups + vlessBackups).distinctBy { "${it.server}:${it.serverPort}" }.take(6)
+            return listOf(primaryProfile) + backups
+        } catch (e: Exception) {
+            LogUtil.e(AppConfig.TAG, "Failed to resolve failover backup profiles", e)
+            return listOf(primaryProfile)
+        }
     }
 }

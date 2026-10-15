@@ -230,6 +230,7 @@ object CoreConfigManager {
 
         applyObservability(v2rayConfig, balancerStrategies)
         applySpeedDisabled(v2rayConfig)
+        configureFragment(v2rayConfig)
         resolveOutboundDomainsToHosts(v2rayConfig)
 
         return v2rayConfig
@@ -720,6 +721,64 @@ object CoreConfigManager {
         if (MmkvManager.decodeSettingsBool(AppConfig.PREF_SPEED_ENABLED, true) != true) {
             v2rayConfig.stats = null
             v2rayConfig.policy?.system = null
+        }
+    }
+
+    /**
+     * Configure Anti-DPI TLS Hello fragmentation and TCP KeepAlive on outbounds.
+     */
+    private fun configureFragment(v2rayConfig: V2rayConfig) {
+        val fragmentEnabled = MmkvManager.decodeSettingsBool(AppConfig.PREF_FRAGMENT_ENABLED, true)
+
+        if (fragmentEnabled) {
+            val packets = MmkvManager.decodeSettingsString(AppConfig.PREF_FRAGMENT_PACKETS) ?: "tlshello"
+            val length = MmkvManager.decodeSettingsString(AppConfig.PREF_FRAGMENT_LENGTH) ?: "100-200"
+            val interval = MmkvManager.decodeSettingsString(AppConfig.PREF_FRAGMENT_INTERVAL) ?: "10-20"
+            val maxSplit = MmkvManager.decodeSettingsString(AppConfig.PREF_FRAGMENT_MAXSPLIT) ?: "10"
+
+            if (v2rayConfig.outbounds.none { it.tag == AppConfig.TAG_FRAGMENT }) {
+                val fragmentSettings = V2rayConfig.OutboundBean.OutSettingsBean(
+                    domainStrategy = "AsIs",
+                    fragment = V2rayConfig.OutboundBean.OutSettingsBean.FragmentBean(
+                        packets = packets,
+                        length = length,
+                        interval = interval,
+                        maxSplit = maxSplit
+                    )
+                )
+                val fragmentStream = V2rayConfig.OutboundBean.StreamSettingsBean(
+                    sockopt = V2rayConfig.OutboundBean.StreamSettingsBean.SockoptBean(
+                        tcpKeepAliveIdle = 15,
+                        tcpKeepAliveInterval = 15
+                    )
+                )
+                v2rayConfig.outbounds.add(
+                    V2rayConfig.OutboundBean(
+                        tag = AppConfig.TAG_FRAGMENT,
+                        protocol = "freedom",
+                        settings = fragmentSettings,
+                        streamSettings = fragmentStream,
+                        mux = null
+                    )
+                )
+            }
+        }
+
+        // Apply dialerProxy = fragment and TCP KeepAlive (15s) to TCP-based proxy outbounds
+        v2rayConfig.outbounds.forEach { ob ->
+            if (ob.tag != AppConfig.TAG_FRAGMENT && ob.tag != AppConfig.TAG_DIRECT && ob.tag != AppConfig.TAG_BLOCKED && ob.tag != "dns-out") {
+                val stream = ob.streamSettings ?: V2rayConfig.OutboundBean.StreamSettingsBean().also { ob.streamSettings = it }
+                val sockopt = stream.sockopt ?: V2rayConfig.OutboundBean.StreamSettingsBean.SockoptBean().also { stream.sockopt = it }
+                sockopt.tcpKeepAliveIdle = 15
+                sockopt.tcpKeepAliveInterval = 15
+
+                // Fragment applies to TCP TLS/Reality connections (VLESS, Trojan, VMess)
+                if (fragmentEnabled && ob.protocol != "hysteria2" && ob.protocol != "wireguard") {
+                    if (sockopt.dialerProxy.isNullOrEmpty()) {
+                        sockopt.dialerProxy = AppConfig.TAG_FRAGMENT
+                    }
+                }
+            }
         }
     }
 

@@ -494,9 +494,15 @@ object SettingsManager {
         }
 
         // Ensure critical anti-censorship, Smart Routing RU & AdBlock flags are enabled by default
-        val initKey = "pulse_anti_dpi_defaults_v6"
+        val initKey = "pulse_anti_dpi_defaults_v7"
         if (!MmkvManager.decodeSettingsBool(initKey, false)) {
+            MmkvManager.encodeSettings(AppConfig.PREF_VPN_MTU, "1360")
+            MmkvManager.encodeSettings(AppConfig.PREF_AUTO_FAILOVER_ENABLED, true)
             MmkvManager.encodeSettings(AppConfig.PREF_FRAGMENT_ENABLED, true)
+            MmkvManager.encodeSettings(AppConfig.PREF_FRAGMENT_PACKETS, "tlshello")
+            MmkvManager.encodeSettings(AppConfig.PREF_FRAGMENT_LENGTH, "100-200")
+            MmkvManager.encodeSettings(AppConfig.PREF_FRAGMENT_INTERVAL, "10-20")
+            MmkvManager.encodeSettings(AppConfig.PREF_FRAGMENT_MAXSPLIT, "10")
             MmkvManager.encodeSettings(AppConfig.PREF_SNIFFING_ENABLED, true)
             MmkvManager.encodeSettings(AppConfig.PREF_LOCAL_DNS_ENABLED, true)
             MmkvManager.encodeSettings(AppConfig.PREF_SPEED_ENABLED, true)
@@ -506,6 +512,7 @@ object SettingsManager {
             MmkvManager.encodeSettings(AppConfig.PREF_ROUTING_DOMAIN_STRATEGY, "IPIfNonMatch")
             MmkvManager.encodeSettings(AppConfig.PREF_REMOTE_DNS, "${AppConfig.DNS_PROXY},tcp://1.1.1.1:53,1.1.1.1,8.8.8.8")
             MmkvManager.encodeSettings(AppConfig.PREF_DELAY_TEST_URL, AppConfig.DELAY_TEST_URL)
+            MmkvManager.encodeSettings(AppConfig.PREF_OBSERVATORY_LEAST_PING_INTERVAL, "1m")
             MmkvManager.encodeSettings(AppConfig.PREF_HEV_TUNNEL_RW_TIMEOUT, AppConfig.HEVTUN_RW_TIMEOUT)
             MmkvManager.encodeSettings(initKey, true)
         }

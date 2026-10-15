@@ -41,7 +41,7 @@
       "protocol": "tun",
       "settings": {
         "name": "xray0",
-        "MTU": 1500,
+        "MTU": 1360,
         "userLevel": 8
       },
       "sniffing": {
@@ -74,6 +74,8 @@
       "streamSettings": {
         "sockopt": {
           "domainStrategy": "UseIP",
+          "tcpKeepAliveIdle": 15,
+          "tcpKeepAliveInterval": 15,
           "happyEyeballs": {
             "tryDelayMs": 250,
             "interleave": 2

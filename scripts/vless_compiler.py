@@ -878,7 +878,12 @@ def _fetch_single_source(url: str, timeout: float = 7.0, is_primary_wl: bool = T
                 filtered_lines = []
                 for ln in lines:
                     low = ln.lower()
-                    if "security=reality" in low or "type=xhttp" in low or "type=splithttp" in low:
+                    if (
+                        "security=reality" in low
+                        or "type=xhttp" in low
+                        or "type=splithttp" in low
+                        or ln.startswith(("hy2://", "hysteria2://", "tuic://"))
+                    ):
                         filtered_lines.append(ln)
                 lines = filtered_lines[:180]
             else:

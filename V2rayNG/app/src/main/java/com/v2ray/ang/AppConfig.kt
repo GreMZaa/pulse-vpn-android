@@ -39,6 +39,7 @@ object AppConfig {
     const val PREF_MUX_CONCURRENCY = "pref_mux_concurrency"
     const val PREF_MUX_XUDP_CONCURRENCY = "pref_mux_xudp_concurrency"
     const val PREF_MUX_XUDP_QUIC = "pref_mux_xudp_quic"
+    const val PREF_AUTO_FAILOVER_ENABLED = "pref_auto_failover_enabled"
     const val PREF_FRAGMENT_ENABLED = "pref_fragment_enabled"
     const val PREF_FRAGMENT_PACKETS = "pref_fragment_packets"
     const val PREF_FRAGMENT_LENGTH = "pref_fragment_length"
@@ -148,11 +149,11 @@ object AppConfig {
     const val DELAY_TEST_URL = "https://cp.cloudflare.com/generate_204"
     const val DELAY_TEST_URL2 = "https://core.telegram.org"
     const val DELAY_TEST_URL3 = "https://www.gstatic.com/generate_204"
-    const val OBSERVATORY_LEAST_PING_INTERVAL = "3m"
-    const val OBSERVATORY_LEAST_LOAD_INTERVAL = "5m"
+    const val OBSERVATORY_LEAST_PING_INTERVAL = "1m"
+    const val OBSERVATORY_LEAST_LOAD_INTERVAL = "3m"
     const val OBSERVATORY_LEAST_LOAD_METHOD = "HEAD"
     const val OBSERVATORY_LEAST_LOAD_SAMPLING = "2"
-    const val OBSERVATORY_LEAST_LOAD_TIMEOUT = "30s"
+    const val OBSERVATORY_LEAST_LOAD_TIMEOUT = "10s"
 
     //    const val IP_API_URL = "https://speed.cloudflare.com/meta"
     const val IP_API_URL = "https://api.ip.sb/geoip"
@@ -235,7 +236,7 @@ object AppConfig {
 
     /** Give a good name to this, IDK*/
     const val VPN = "VPN"
-    const val VPN_MTU = 1500
+    const val VPN_MTU = 1360
 
     /** Root (system-wide) mode runtime constants. */
     const val ROOT_RUNTIME_DIR = "sys_cache"
