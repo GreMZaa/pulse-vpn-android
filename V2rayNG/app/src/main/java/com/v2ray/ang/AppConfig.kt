@@ -158,7 +158,7 @@ object AppConfig {
     const val IP_API_URL = "https://api.ip.sb/geoip"
 
     /** DNS server addresses. */
-    const val DNS_PROXY = "https://cloudflare-dns.com/dns-query"
+    const val DNS_PROXY = "https://1.1.1.1/dns-query"
     const val DNS_ADGUARD_DOH = "https://dns.adguard-dns.com/dns-query"
     const val DNS_DIRECT = "77.88.8.8"
     const val DNS_VPN = "1.1.1.1"

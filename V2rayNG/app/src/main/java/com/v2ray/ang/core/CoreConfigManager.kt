@@ -657,24 +657,13 @@ object CoreConfigManager {
         }
 
         if (SettingsManager.isVpnMode()) {
-            if (SettingsManager.isUsingHevTun()) {
-                //hev-socks5-tunnel dns routing
-                v2rayConfig.routing.rules.add(
-                    0, V2rayConfig.RoutingBean.RulesBean(
-                        inboundTag = arrayListOf("socks"),
-                        outboundTag = "dns-out",
-                        port = "53",
-                    )
+            v2rayConfig.routing.rules.add(
+                0, V2rayConfig.RoutingBean.RulesBean(
+                    inboundTag = arrayListOf("socks", "tun"),
+                    outboundTag = "dns-out",
+                    port = "53",
                 )
-            } else {
-                v2rayConfig.routing.rules.add(
-                    0, V2rayConfig.RoutingBean.RulesBean(
-                        inboundTag = arrayListOf("tun"),
-                        outboundTag = "dns-out",
-                        port = "53",
-                    )
-                )
-            }
+            )
         }
 
         // DNS outbound
@@ -1176,7 +1165,7 @@ object CoreConfigManager {
 
         v2rayConfig.routing.domainStrategy =
             MmkvManager.decodeSettingsString(AppConfig.PREF_ROUTING_DOMAIN_STRATEGY)
-                ?: "AsIs"
+                ?: "IPIfNonMatch"
 
         val balancerTag = policyGroupBalancerTags[AppConfig.TAG_PROXY]
         val outTag = if (balancerTag == null) AppConfig.TAG_PROXY else null
@@ -1215,6 +1204,10 @@ object CoreConfigManager {
                 V2rayConfig.RoutingBean.RulesBean(
                     domain = arrayListOf(
                         "geosite:telegram",
+                        "geosite:instagram",
+                        "geosite:facebook",
+                        "geosite:openai",
+                        "geosite:twitter",
                         "domain:telegram.org",
                         "domain:t.me",
                         "domain:tdesktop.com",
@@ -1222,6 +1215,8 @@ object CoreConfigManager {
                         "domain:stel.com",
                         "domain:telegram.me",
                         "domain:cdn-telegram.org",
+                        "domain:telegram.dog",
+                        "domain:telesco.pe",
                         "domain:2ip.ru",
                         "domain:2ip.io",
                         "domain:whoer.net",
@@ -1235,8 +1230,13 @@ object CoreConfigManager {
                         "domain:ggpht.com",
                         "domain:instagram.com",
                         "domain:cdninstagram.com",
+                        "domain:ig.me",
+                        "domain:threads.net",
                         "domain:facebook.com",
                         "domain:fbcdn.net",
+                        "domain:fbsbx.com",
+                        "domain:meta.com",
+                        "domain:messenger.com",
                         "domain:whatsapp.com",
                         "domain:whatsapp.net",
                         "domain:discord.com",
@@ -1267,10 +1267,12 @@ object CoreConfigManager {
                     balancerTag = balancerTag
                 )
             )
-            // Все официальные IP-подсети Telegram (MTProto DC1–DC5 + голосовые/видео звонки)
+            // Все официальные IP-подсети Telegram (MTProto DC1–DC5 + голосовые/видео звонки) и Meta/Instagram
             v2rayConfig.routing.rules.add(
                 V2rayConfig.RoutingBean.RulesBean(
                     ip = arrayListOf(
+                        "geoip:telegram",
+                        "geoip:facebook",
                         "149.154.160.0/20",
                         "91.108.4.0/22",
                         "91.108.8.0/22",

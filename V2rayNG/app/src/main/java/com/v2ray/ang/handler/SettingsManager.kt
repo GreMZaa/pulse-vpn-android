@@ -359,7 +359,7 @@ object SettingsManager {
             .filter { (Utils.isPureIpAddress(it) || Utils.isCoreDNSAddress(it)) && it != AppConfig.DNS_ADGUARD_DOH }
             .toMutableList()
         if (ret.isEmpty()) {
-            return listOf(AppConfig.DNS_PROXY, "1.1.1.1", "8.8.8.8")
+            return listOf(AppConfig.DNS_PROXY, "tcp://1.1.1.1:53", "1.1.1.1", "8.8.8.8")
         }
         return ret
     }
@@ -494,16 +494,17 @@ object SettingsManager {
         }
 
         // Ensure critical anti-censorship, Smart Routing RU & AdBlock flags are enabled by default
-        val initKey = "pulse_anti_dpi_defaults_v5"
+        val initKey = "pulse_anti_dpi_defaults_v6"
         if (!MmkvManager.decodeSettingsBool(initKey, false)) {
             MmkvManager.encodeSettings(AppConfig.PREF_FRAGMENT_ENABLED, true)
             MmkvManager.encodeSettings(AppConfig.PREF_SNIFFING_ENABLED, true)
-            MmkvManager.encodeSettings(AppConfig.PREF_LOCAL_DNS_ENABLED, false)
+            MmkvManager.encodeSettings(AppConfig.PREF_LOCAL_DNS_ENABLED, true)
             MmkvManager.encodeSettings(AppConfig.PREF_SPEED_ENABLED, true)
             MmkvManager.encodeSettings(AppConfig.PREF_TELEGRAM_CALLS_MODE, true)
             MmkvManager.encodeSettings(AppConfig.PREF_SMART_ROUTING_RU, true)
             MmkvManager.encodeSettings(AppConfig.PREF_ADBLOCK_DNS_ENABLED, true)
-            MmkvManager.encodeSettings(AppConfig.PREF_REMOTE_DNS, "${AppConfig.DNS_PROXY},1.1.1.1,8.8.8.8")
+            MmkvManager.encodeSettings(AppConfig.PREF_ROUTING_DOMAIN_STRATEGY, "IPIfNonMatch")
+            MmkvManager.encodeSettings(AppConfig.PREF_REMOTE_DNS, "${AppConfig.DNS_PROXY},tcp://1.1.1.1:53,1.1.1.1,8.8.8.8")
             MmkvManager.encodeSettings(AppConfig.PREF_DELAY_TEST_URL, AppConfig.DELAY_TEST_URL)
             MmkvManager.encodeSettings(AppConfig.PREF_HEV_TUNNEL_RW_TIMEOUT, AppConfig.HEVTUN_RW_TIMEOUT)
             MmkvManager.encodeSettings(initKey, true)
