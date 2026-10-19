@@ -939,7 +939,7 @@ def launch_standalone_webview_app() -> bool:
             [
                 browser_exe,
                 f"--app={API_BASE_URL}/app",
-                "--window-size=470,760",
+                "--window-size=420,740",
                 "--disable-extensions",
             ],
             stdout=subprocess.DEVNULL,

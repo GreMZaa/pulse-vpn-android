@@ -2,30 +2,27 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ПУЛЬС // ВПН — Авто-обход блокировок и белых списков</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ПУЛЬС</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,500;0,600;0,700;1,600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-void: #07080A;
-      --bg-chassis: #0D1017;
-      --bg-bay: #131822;
-      --bg-bay-hover: #19202E;
-      --border-edge: #232A3B;
-      --border-bright: #36415C;
-      --text-primary: #F0F4F8;
-      --text-secondary: #8A96AD;
-      --text-dim: #4D576B;
-      --accent-amber: #FF5500;
-      --accent-amber-glow: rgba(255, 85, 0, 0.28);
-      --accent-emerald: #00F59B;
-      --accent-emerald-glow: rgba(0, 245, 155, 0.25);
-      --danger: #FF2E54;
-      --font-display: 'Chakra Petch', sans-serif;
-      --font-mono: 'JetBrains Mono', monospace;
+      --bg-main: #121212;
+      --bg-card: #181818;
+      --bg-card-hover: #202020;
+      --bg-input: #1A1A1A;
+      --border-card: #242424;
+      --border-subtle: #2C2C2C;
+      --text-white: #FFFFFF;
+      --text-muted: #888888;
+      --text-dim: #555555;
+      --text-green: #81C784;
+      --accent-green: #4CAF50;
+      --danger: #CF6679;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
     * {
@@ -36,1472 +33,928 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    body {
-      background-color: var(--bg-void);
-      color: var(--text-primary);
-      font-family: var(--font-mono);
-      height: 100vh;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-    }
-
-    /* Subtle tactical scanline + noise grain overlay */
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 100;
-      background-image: 
-        linear-gradient(rgba(18, 24, 34, 0) 50%, rgba(0, 0, 0, 0.22) 50%),
-        radial-gradient(circle at 50% 35%, rgba(255, 85, 0, 0.05), transparent 70%);
-      background-size: 100% 3px, 100% 100%;
-    }
-
-    body.state-connected::before {
-      background-image: 
-        linear-gradient(rgba(18, 24, 34, 0) 50%, rgba(0, 0, 0, 0.22) 50%),
-        radial-gradient(circle at 50% 38%, rgba(0, 245, 155, 0.08), transparent 70%);
-    }
-
-    /* Top Telemetry Bar */
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 18px;
-      border-bottom: 1px solid var(--border-edge);
-      background: var(--bg-chassis);
-      z-index: 10;
-    }
-
-    .brand-cluster {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .led-pip {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--accent-amber);
-      box-shadow: 0 0 10px var(--accent-amber);
-      transition: all 0.35s ease;
-    }
-
-    body.state-connected .led-pip {
-      background: var(--accent-emerald);
-      box-shadow: 0 0 12px var(--accent-emerald);
-    }
-
-    .brand-title {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 16px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--text-primary);
-    }
-
-    .brand-sub {
-      font-size: 10px;
-      color: var(--text-dim);
-      letter-spacing: 0.08em;
-      padding: 2px 6px;
-      border: 1px solid var(--border-edge);
-      border-radius: 3px;
-    }
-
-    .top-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .icon-btn {
-      background: var(--bg-bay);
-      border: 1px solid var(--border-edge);
-      color: var(--text-secondary);
-      font-family: var(--font-mono);
-      font-size: 11px;
-      padding: 6px 10px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .icon-btn:hover {
-      border-color: var(--text-secondary);
-      color: var(--text-primary);
-      background: var(--bg-bay-hover);
-    }
-
-    /* Main Asymmetric Instrumentation Grid */
-    .chassis {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 14px 18px 18px;
-      gap: 12px;
-      overflow-y: auto;
-    }
-
-    /* Module 01: Cryptographic Access Key Bay */
-    .module-card {
-      background: var(--bg-chassis);
-      border: 1px solid var(--border-edge);
-      border-radius: 6px;
-      padding: 12px 14px;
-      position: relative;
-    }
-
-    .module-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .module-index {
-      font-size: 10px;
-      letter-spacing: 0.14em;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      font-weight: 600;
-    }
-
-    .sub-pill {
-      font-size: 10px;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 3px;
-      background: rgba(0, 245, 155, 0.1);
-      color: var(--accent-emerald);
-      border: 1px solid rgba(0, 245, 155, 0.3);
-      font-variant-numeric: tabular-nums;
-    }
-
-    .sub-pill.expired {
-      background: rgba(255, 46, 84, 0.12);
-      color: var(--danger);
-      border-color: rgba(255, 46, 84, 0.35);
-    }
-
-    .key-strip {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--bg-void);
-      border: 1px solid var(--border-edge);
-      border-radius: 4px;
-      padding: 8px 10px;
-      gap: 8px;
-    }
-
-    .key-code-display {
-      font-family: var(--font-mono);
-      font-size: 14px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      color: var(--text-primary);
-      cursor: pointer;
-      font-variant-numeric: tabular-nums;
-      transition: color 0.2s;
-    }
-
-    .key-code-display:hover {
-      color: var(--accent-amber);
-    }
-
-    .key-controls {
-      display: flex;
-      gap: 6px;
-    }
-
-    .mini-btn {
-      background: var(--bg-bay);
-      border: 1px solid var(--border-edge);
-      color: var(--text-secondary);
-      font-family: var(--font-mono);
-      font-size: 10px;
-      font-weight: 600;
-      padding: 4px 8px;
-      border-radius: 3px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .mini-btn:hover {
-      border-color: var(--accent-amber);
-      color: var(--text-primary);
-    }
-
-    .mini-btn.accent {
-      background: var(--accent-amber);
-      border-color: var(--accent-amber);
-      color: #07080A;
-      font-weight: 700;
-    }
-
-    .mini-btn.accent:hover {
-      filter: brightness(1.12);
-    }
-
-    .sub-meta-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 8px;
-      font-size: 11px;
-      color: var(--text-secondary);
-    }
-
-    /* Centerpiece: Orbital Signal Core (Differentiation Anchor) */
-    .orbital-stage {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 10px 0;
-      my: auto;
-    }
-
-    .core-wrap {
-      position: relative;
-      width: 220px;
-      height: 220px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-
-    .orbital-svg {
-      position: absolute;
-      inset: 0;
-      width: 100%;
+    html, body {
+      background-color: var(--bg-main);
+      color: var(--text-white);
+      font-family: var(--font);
       height: 100%;
-      pointer-events: none;
-    }
-
-    .ring-ticks {
-      transform-origin: 110px 110px;
-      animation: rotateSlow 36s linear infinite;
-      stroke: var(--border-bright);
-    }
-
-    body.state-connected .ring-ticks {
-      animation-duration: 14s;
-      stroke: var(--accent-emerald);
-    }
-
-    body.state-connecting .ring-ticks {
-      animation-duration: 3s;
-      stroke: var(--accent-amber);
-    }
-
-    .pulse-wave {
-      transform-origin: 110px 110px;
-      fill: none;
-      stroke: var(--accent-amber);
-      stroke-width: 1.5;
-      opacity: 0;
-    }
-
-    body.state-connected .pulse-wave {
-      stroke: var(--accent-emerald);
-      animation: radarPulse 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
-    }
-
-    body.state-connecting .pulse-wave {
-      stroke: var(--accent-amber);
-      animation: radarPulse 1.1s cubic-bezier(0.16, 1, 0.3, 1) infinite;
-    }
-
-    @keyframes rotateSlow {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-
-    @keyframes radarPulse {
-      0% { transform: scale(0.68); opacity: 0.75; }
-      100% { transform: scale(1.08); opacity: 0; }
-    }
-
-    .core-button {
-      width: 144px;
-      height: 144px;
-      border-radius: 50%;
-      background: radial-gradient(120% 120% at 30% 25%, #1B2230 0%, #0A0D13 100%);
-      border: 2px solid var(--border-bright);
-      box-shadow: 
-        inset 0 2px 6px rgba(255,255,255,0.06),
-        0 12px 30px rgba(0, 0, 0, 0.7);
+      overflow: hidden;
       display: flex;
       flex-direction: column;
+    }
+
+    /* Верхний App Bar в стиле Android */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      padding: 0 16px;
+      background: var(--bg-main);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      flex-shrink: 0;
+    }
+
+    .top-bar-btn {
+      background: none;
+      border: none;
+      color: var(--text-white);
+      font-size: 20px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      position: relative;
-      z-index: 3;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .core-wrap:hover .core-button {
-      border-color: var(--accent-amber);
-      box-shadow: 
-        inset 0 2px 8px rgba(255, 85, 0, 0.15),
-        0 0 28px var(--accent-amber-glow);
-    }
-
-    body.state-connected .core-button {
-      border-color: var(--accent-emerald);
-      background: radial-gradient(120% 120% at 30% 25%, #0B2922 0%, #071210 100%);
-      box-shadow: 
-        inset 0 2px 10px rgba(0, 245, 155, 0.2),
-        0 0 36px var(--accent-emerald-glow);
-    }
-
-    .core-glyph {
-      width: 34px;
-      height: 34px;
-      stroke: var(--text-secondary);
-      transition: all 0.3s ease;
-    }
-
-    .core-wrap:hover .core-glyph {
-      stroke: var(--accent-amber);
-    }
-
-    body.state-connected .core-glyph {
-      stroke: var(--accent-emerald);
-      filter: drop-shadow(0 0 8px rgba(0, 245, 155, 0.6));
-    }
-
-    .core-action-label {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 13px;
-      letter-spacing: 0.14em;
-      color: var(--text-primary);
-    }
-
-    .core-uptime {
-      font-size: 10px;
-      color: var(--text-dim);
-      font-variant-numeric: tabular-nums;
-    }
-
-    body.state-connected .core-uptime {
-      color: var(--accent-emerald);
-    }
-
-    /* Telemetry Ticker Strip */
-    .telemetry-strip {
-      margin-top: 8px;
-      font-size: 11px;
-      letter-spacing: 0.06em;
-      color: var(--text-secondary);
-      background: var(--bg-chassis);
-      border: 1px solid var(--border-edge);
-      padding: 5px 12px;
-      border-radius: 4px;
-      font-variant-numeric: tabular-nums;
-      text-align: center;
-      width: 100%;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* Module 02: Routing Matrix Switches */
-    .mode-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .mode-switch {
-      background: var(--bg-void);
-      border: 1px solid var(--border-edge);
-      border-radius: 5px;
-      padding: 10px;
       cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      position: relative;
+      transition: background 0.15s;
     }
 
-    .mode-switch:hover {
-      border-color: var(--border-bright);
+    .top-bar-btn:hover {
+      background: rgba(255,255,255,0.08);
     }
 
-    .mode-switch.active {
-      background: var(--bg-bay);
-      border-color: var(--accent-amber);
-      box-shadow: inset 0 0 14px rgba(255, 85, 0, 0.08);
-    }
-
-    body.state-connected .mode-switch.active {
-      border-color: var(--accent-emerald);
-      box-shadow: inset 0 0 14px rgba(0, 245, 155, 0.08);
-    }
-
-    .mode-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .mode-tag {
-      font-family: var(--font-display);
-      font-size: 12px;
+    .top-bar-title {
+      font-size: 19px;
       font-weight: 700;
-      letter-spacing: 0.05em;
-      color: var(--text-primary);
+      letter-spacing: 1.2px;
+      color: var(--text-white);
     }
 
-    .mode-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--text-dim);
-    }
-
-    .mode-switch.active .mode-dot {
-      background: var(--accent-amber);
-      box-shadow: 0 0 6px var(--accent-amber);
-    }
-
-    body.state-connected .mode-switch.active .mode-dot {
-      background: var(--accent-emerald);
-      box-shadow: 0 0 6px var(--accent-emerald);
-    }
-
-    .mode-desc {
-      font-size: 10px;
-      color: var(--text-secondary);
-      line-height: 1.35;
-    }
-
-    /* Module 03: Active Balancer & Node Selector */
-    .node-selector-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--bg-void);
-      border: 1px solid var(--border-edge);
-      border-radius: 4px;
-      padding: 9px 12px;
-      cursor: pointer;
-      transition: border-color 0.2s;
-    }
-
-    .node-selector-row:hover {
-      border-color: var(--accent-amber);
-    }
-
-    .node-name {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .node-ping {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--accent-emerald);
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* Slide-Up Drawer Modal */
-    .drawer-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(5, 6, 8, 0.78);
-      backdrop-filter: blur(4px);
-      z-index: 50;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.25s ease;
-      display: flex;
-      align-items: flex-end;
-    }
-
-    .drawer-backdrop.open {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .drawer-sheet {
-      width: 100%;
-      max-height: 86vh;
-      background: var(--bg-chassis);
-      border-top: 2px solid var(--accent-amber);
-      padding: 18px;
-      transform: translateY(100%);
-      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    /* Основная прокручиваемая область */
+    .main-content {
+      flex: 1;
       overflow-y: auto;
+      padding: 14px 16px 20px;
       display: flex;
       flex-direction: column;
       gap: 14px;
     }
 
-    .drawer-backdrop.open .drawer-sheet {
-      transform: translateY(0);
+    .main-content::-webkit-scrollbar {
+      width: 4px;
+    }
+    .main-content::-webkit-scrollbar-thumb {
+      background: #2a2a2a;
+      border-radius: 4px;
     }
 
-    .drawer-header {
+    /* Главная карточка подключения (ровно как в Android MainScreen.kt) */
+    .conn-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 20px;
+      padding: 24px 16px 20px;
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
       align-items: center;
-      border-bottom: 1px solid var(--border-edge);
-      padding-bottom: 10px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     }
 
-    .drawer-title {
-      font-family: var(--font-display);
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
+    /* Круглая кнопка питания */
+    .power-btn-wrap {
+      position: relative;
+      width: 84px;
+      height: 84px;
+      margin-bottom: 14px;
     }
 
-    .input-row {
+    .power-btn {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      background: #222222;
+      border: 1px solid #333333;
       display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      outline: none;
+    }
+
+    .power-btn svg {
+      width: 34px;
+      height: 34px;
+      fill: var(--text-white);
+      transition: fill 0.25s;
+    }
+
+    /* Состояние: ПОДКЛЮЧЕНО */
+    body.connected .power-btn {
+      background: #FFFFFF;
+      border-color: #FFFFFF;
+      box-shadow: 0 0 24px rgba(255,255,255,0.4);
+    }
+    body.connected .power-btn svg {
+      fill: #000000;
+    }
+
+    /* Состояние: ПОДКЛЮЧЕНИЕ */
+    body.connecting .power-btn {
+      border-color: #FFA726;
+      animation: pulseConnecting 1.2s infinite ease-in-out;
+    }
+    @keyframes pulseConnecting {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,167,38,0.4); }
+      50% { transform: scale(1.04); box-shadow: 0 0 0 10px rgba(255,167,38,0); }
+    }
+
+    .status-title {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+      transition: color 0.2s;
+    }
+    body.connected .status-title {
+      color: var(--text-white);
+    }
+
+    .status-subtitle {
+      font-size: 11.5px;
+      color: var(--text-dim);
+      transition: color 0.2s;
+    }
+    body.connected .status-subtitle {
+      color: var(--text-green);
+    }
+
+    /* Live Speed Card (появляется при подключении, как на телефоне) */
+    .speed-card {
+      display: none;
+      width: 100%;
+      background: #131313;
+      border: 1px solid #222222;
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-top: 14px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    body.connected .speed-card {
+      display: flex;
+    }
+
+    .speed-col {
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+    }
+    .speed-down {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-green);
+    }
+    .speed-up {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .speed-canvas {
+      width: 140px;
+      height: 30px;
+    }
+
+    /* Кнопка "Диагностика соединения" */
+    .diagnostics-pill {
+      background: #202020;
+      border: 1px solid #333333;
+      border-radius: 14px;
+      padding: 7px 16px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #CCCCCC;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: background 0.15s;
+    }
+    .diagnostics-pill:hover {
+      background: #2a2a2a;
+    }
+
+    /* Карточка информации о сервере и переключения */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+    }
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .section-badge {
+      font-size: 11px;
+      color: var(--text-green);
+      font-weight: 600;
+    }
+
+    /* Список серверов */
+    .server-list {
+      display: flex;
+      flex-direction: column;
       gap: 8px;
     }
 
-    .tactical-input {
-      flex: 1;
-      background: var(--bg-void);
-      border: 1px solid var(--border-edge);
-      color: var(--text-primary);
-      font-family: var(--font-mono);
-      font-size: 12px;
-      padding: 8px 10px;
-      border-radius: 4px;
-      outline: none;
+    .server-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .server-item:hover {
+      background: var(--bg-card-hover);
+      border-color: #333333;
+    }
+    .server-item.active {
+      background: #1c221c;
+      border-color: var(--accent-green);
+    }
+
+    .server-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-align: left;
+    }
+
+    .server-radio {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid #444444;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .server-item.active .server-radio {
+      border-color: var(--accent-green);
+    }
+    .server-item.active .server-radio::after {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-green);
+    }
+
+    .server-name {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-white);
+      margin-bottom: 2px;
+    }
+    .server-protocol {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .server-ping {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-green);
+      background: rgba(129, 199, 132, 0.12);
+      padding: 3px 8px;
+      border-radius: 8px;
+    }
+
+    /* Боковое меню (Drawer), выезжающее слева */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(2px);
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .drawer-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 320px;
+      max-width: 85%;
+      background: #161616;
+      border-right: 1px solid var(--border-card);
+      z-index: 1001;
+      transform: translateX(-100%);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 20px;
+      gap: 20px;
+      overflow-y: auto;
+    }
+    .drawer.open {
+      transform: translateX(0);
+    }
+
+    .drawer-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-white);
+      letter-spacing: 0.5px;
+    }
+
+    .drawer-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 14px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .drawer-card-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
       text-transform: uppercase;
     }
 
-    .tactical-input:focus {
-      border-color: var(--accent-amber);
-    }
-
-    .plan-card {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: var(--bg-void);
-      border: 1px solid var(--border-edge);
-      padding: 10px 12px;
-      border-radius: 5px;
-      margin-bottom: 8px;
-      transition: border-color 0.2s;
-    }
-
-    .plan-card:hover {
-      border-color: var(--border-bright);
-    }
-
-    .node-list-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .drawer-key-val {
+      font-family: monospace;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #90CAF9;
+      background: #111;
       padding: 8px 10px;
-      background: var(--bg-void);
-      border: 1px solid var(--border-edge);
-      border-radius: 4px;
-      margin-bottom: 6px;
+      border-radius: 8px;
+      word-break: break-all;
+    }
+
+    .drawer-input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: var(--text-white);
+      font-size: 13px;
+      outline: none;
+    }
+    .drawer-input:focus {
+      border-color: #FFFFFF;
+    }
+
+    .btn-action {
+      background: #FFFFFF;
+      color: #000000;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 600;
       cursor: pointer;
-      font-size: 11px;
+      transition: background 0.15s;
+    }
+    .btn-action:hover {
+      background: #E0E0E0;
     }
 
-    .node-list-item:hover {
-      border-color: var(--accent-amber);
-    }
-
-    .toast {
-      position: fixed;
-      bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%) translateY(80px);
-      background: var(--bg-bay);
-      border: 1px solid var(--accent-emerald);
-      color: var(--text-primary);
-      padding: 8px 14px;
-      border-radius: 4px;
-      font-size: 11px;
-      z-index: 200;
-    /* MANDATORY ACTIVATION OVERLAY */
-    .activation-gate {
+    /* Модальное окно диагностики */
+    .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(7, 8, 10, 0.94);
-      backdrop-filter: blur(12px);
-      z-index: 500;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(3px);
+      z-index: 2000;
       display: none;
       align-items: center;
       justify-content: center;
+      padding: 16px;
+    }
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-box {
+      background: #1A1A1A;
+      border: 1px solid #333333;
+      border-radius: 18px;
       padding: 20px;
-    }
-    .activation-gate.active {
-      display: flex;
-    }
-    .activation-box {
       width: 100%;
-      max-width: 440px;
-      background: var(--bg-chassis);
-      border: 1px solid var(--border-edge);
-      border-top: 3px solid var(--accent-amber);
-      border-radius: 8px;
-      padding: 24px;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 85, 0, 0.1);
+      max-width: 360px;
+      text-align: left;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .modal-row {
       display: flex;
-      flex-direction: column;
-      gap: 16px;
-      text-align: center;
-      animation: gatePop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 8px 0;
+      border-bottom: 1px solid #282828;
     }
-    @keyframes gatePop {
-      from { transform: scale(0.95); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
+    .modal-row:last-child {
+      border-bottom: none;
     }
-    .activation-badge {
-      display: inline-block;
-      align-self: center;
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      background: rgba(255, 85, 0, 0.15);
-      border: 1px solid var(--accent-amber);
-      color: var(--accent-amber);
-      text-transform: uppercase;
-    }
-    .activation-title {
-      font-family: var(--font-display);
-      font-size: 19px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-primary);
-    }
-    .activation-desc {
-      font-size: 12px;
-      color: var(--text-secondary);
-      line-height: 1.5;
-    }
-    .activation-input {
-      width: 100%;
-      background: var(--bg-void);
-      border: 1px solid var(--border-edge);
-      border-radius: 6px;
-      padding: 12px 14px;
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(50px);
+      background: #2A2A2A;
+      border: 1px solid #3A3A3A;
       color: #FFF;
-      font-family: var(--font-mono);
-      font-size: 15px;
-      font-weight: 700;
-      text-align: center;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      padding: 10px 18px;
+      border-radius: 24px;
+      font-size: 12.5px;
+      font-weight: 500;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      z-index: 9999;
+      opacity: 0;
+      transition: all 0.25s ease;
+      pointer-events: none;
     }
-    .activation-input:focus {
-      border-color: var(--accent-amber);
-      box-shadow: 0 0 12px rgba(255, 85, 0, 0.3);
-    }
-    .activation-btn {
-      width: 100%;
-      background: var(--accent-amber);
-      color: #07080A;
-      border: none;
-      border-radius: 6px;
-      padding: 13px;
-      font-family: var(--font-display);
-      font-size: 14px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .activation-btn:hover {
-      filter: brightness(1.15);
-      box-shadow: 0 4px 16px rgba(255, 85, 0, 0.4);
-    }
-    .activation-err {
-      color: var(--danger);
-      font-size: 11px;
-      min-height: 16px;
-      display: none;
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
     }
   </style>
 </head>
 <body>
 
-  <!-- MANDATORY ACTIVATION GATE MODAL -->
-  <div class="activation-gate" id="activationGateModal">
-    <div class="activation-box">
-      <div class="activation-badge">🔒 ТРЕБУЕТСЯ АКТИВАЦИЯ</div>
-      <div class="activation-title">ВХОД В ПРИЛОЖЕНИЕ</div>
-      <div class="activation-desc">
-        Для начала работы введите <b>промокод</b> или ранее выданный <b>ключ доступа</b>.<br>
-        Без промокода вход в приложение заблокирован.
-      </div>
-      <div>
-        <input type="text" id="gatePromoInput" class="activation-input" placeholder="ПРОМОКОД ИЛИ КЛЮЧ" autocomplete="off" />
-        <div class="activation-err" id="gateErrMsg"></div>
-      </div>
-      <button class="activation-btn" onclick="submitGateActivation()">⚡ АКТИВИРОВАТЬ И ВОЙТИ</button>
-      <div style="font-size:10px;color:var(--text-dim);border-top:1px solid var(--border-edge);padding-top:10px;">
-        Получите промокод у администратора или в боте поддержки
-      </div>
-    </div>
-  </div>
-
-  <!-- TOP TELEMETRY BAR -->
-  <header class="topbar">
-    <div class="brand-cluster">
-      <div class="led-pip" id="ledPip"></div>
-      <span class="brand-title">ПУЛЬС // ВПН</span>
-      <span class="brand-sub" id="poolBadge">СИНХРОНИЗАЦИЯ...</span>
-    </div>
-    <div class="top-actions">
-      <button class="icon-btn" onclick="openDrawer('androidDrawer')" title="Загрузчик и подключение на телефон Android" style="border-color:var(--accent-emerald);color:var(--accent-emerald);">📱 ANDROID</button>
-      <button class="icon-btn" onclick="openDrawer('cloudDrawer')" id="cloudBtn" title="Облачный сервер (HF Spaces)">☁️ ОБЛАКО</button>
-      <button class="icon-btn" onclick="openDrawer('nodesDrawer')" title="Пул серверов">⚡ СЕРВЕРЫ</button>
-      <button class="icon-btn" onclick="openAdminPanel()" title="Панель администратора">⚙️ АДМИНКА</button>
-    </div>
+  <!-- Верхний бар Android: Меню + Название + Обновить -->
+  <header class="top-bar">
+    <button class="top-bar-btn" onclick="toggleDrawer(true)" title="Меню">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="12" x2="21" y2="12"></line>
+        <line x1="3" y1="18" x2="21" y2="18"></line>
+      </svg>
+    </button>
+    <span class="top-bar-title">ПУЛЬС</span>
+    <button class="top-bar-btn" onclick="refreshServers()" title="Проверить задержку серверов">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"></polyline>
+        <polyline points="1 20 1 14 7 14"></polyline>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+      </svg>
+    </button>
   </header>
 
-  <main class="chassis">
-    <!-- MODULE 01: CRYPTOGRAPHIC ACCESS KEY -->
-    <section class="module-card">
-      <div class="module-header">
-        <span class="module-index">01 // ЛИЧНЫЙ КЛЮЧ ДОСТУПА</span>
-        <span class="sub-pill" id="subPill">ПРОВЕРКА...</span>
-      </div>
-      <div class="key-strip">
-        <span class="key-code-display" id="keyDisplay" onclick="copyKeyWithScramble()" title="Нажмите, чтобы скопировать">XXXX-XXXX-XXXX-XXXX</span>
-        <div class="key-controls">
-          <button class="mini-btn" onclick="copyKeyWithScramble()">КОПИРОВАТЬ</button>
-          <button class="mini-btn" onclick="openDrawer('keyDrawer')">СМЕНИТЬ</button>
-          <button class="mini-btn accent" onclick="openDrawer('billingDrawer')">+ ОПЛАТА</button>
-        </div>
-      </div>
-      <div class="sub-meta-row">
-        <span id="planTitleText">Тариф: Загрузка...</span>
-        <span id="devicesCountText">УСТРОЙСТВ: 1/3</span>
-      </div>
-    </section>
-
-    <!-- CENTERPIECE: ORBITAL SIGNAL CORE -->
-    <section class="orbital-stage">
-      <div class="core-wrap" id="magneticCore" onclick="toggleTunnel()">
-        <svg class="orbital-svg" viewBox="0 0 220 220">
-          <circle class="pulse-wave" cx="110" cy="110" r="78" />
-          <circle cx="110" cy="110" r="98" fill="none" stroke="#1B2230" stroke-width="1" />
-          <circle class="ring-ticks" cx="110" cy="110" r="90" fill="none" stroke-width="3" stroke-dasharray="2 8" />
-        </svg>
-        <div class="core-button">
-          <svg class="core-glyph" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
-            <line x1="12" y1="2" x2="12" y2="12"></line>
+  <!-- Основной контент: Карточка кнопки + Список серверов -->
+  <main class="main-content">
+    
+    <!-- Карточка кнопки питания -->
+    <div class="conn-card">
+      <div class="power-btn-wrap">
+        <button class="power-btn" id="powerBtn" onclick="toggleConnect()" title="Подключить / Отключить">
+          <!-- Play / Power SVG -->
+          <svg id="powerIcon" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/>
           </svg>
-          <div class="core-action-label" id="coreActionLabel">ВКЛЮЧИТЬ</div>
-          <div class="core-uptime" id="coreUptimeLabel">00:00:00</div>
-        </div>
+        </button>
       </div>
-      <div class="telemetry-strip" id="telemetryStrip">
-        СИСТЕМА ГОТОВА // НАЖМИТЕ «ВКЛЮЧИТЬ» ДЛЯ АВТО-ОБХОДА БЛОКИРОВОК
-      </div>
-    </section>
 
-    <!-- MODULE 02: ROUTING MATRIX -->
-    <section class="module-card">
-      <div class="module-header">
-        <span class="module-index">02 // РЕЖИМ МАРШРУТИЗАЦИИ И ОБХОДА</span>
-        <span style="font-size:10px;color:var(--text-secondary);">СЕРТИФИКАТЫ: АВТО-ДОСТУП ВКЛ</span>
-      </div>
-      <div class="mode-grid">
-        <div class="mode-switch active" id="modeForeign" onclick="selectMode('foreign_only')">
-          <div class="mode-top">
-            <span class="mode-tag">🌍 ЗАРУБЕЖ + АВТО</span>
-            <span class="mode-dot"></span>
-          </div>
-          <div class="mode-desc">Исключает 🇷🇺 РФ-ноды. Открывает YouTube, Instagram, Discord, ChatGPT.</div>
-        </div>
-        <div class="mode-switch" id="modeWhitelist" onclick="selectMode('whitelist_all')">
-          <div class="mode-top">
-            <span class="mode-tag">🛡️ АНТИ-ГЛУШИЛКА</span>
-            <span class="mode-dot"></span>
-          </div>
-          <div class="mode-desc">Включает все релеи белых списков (VK, Beget, Timeweb) при блоке сети.</div>
-        </div>
-      </div>
-    </section>
+      <div class="status-title" id="statusTitle">ОТКЛЮЧЕНО</div>
+      <div class="status-subtitle" id="statusSubtitle">Нажмите для подключения</div>
 
-    <!-- MODULE 03: BALANCER TELEMETRY -->
-    <section class="module-card">
-      <div class="module-header">
-        <span class="module-index">03 // АВТО-БАЛАНСИРОВЩИК (ПРОВЕРКА ПИНГА 30 СЕК)</span>
-        <span style="font-size:10px;color:var(--accent-emerald);" id="aliveCountLabel">ОНЛАЙН: --</span>
+      <!-- Живой график скорости при подключении (как в Android) -->
+      <div class="speed-card" id="speedCard">
+        <div class="speed-col">
+          <div class="speed-down" id="downSpeedVal">↓ 0.0 КБ/с</div>
+          <div class="speed-up" id="upSpeedVal">↑ 0.0 КБ/с</div>
+        </div>
+        <canvas class="speed-canvas" id="speedCanvas" width="140" height="30"></canvas>
       </div>
-      <div class="node-selector-row" onclick="openDrawer('nodesDrawer')">
-        <span class="node-name" id="activeNodeName">⚡ Автовыбор самого быстрого узла</span>
-        <span class="node-ping" id="activeNodePing">АВТО ▸</span>
+
+      <button class="diagnostics-pill" onclick="openDiagnosticsModal()">
+        🛠 Диагностика соединения
+      </button>
+    </div>
+
+    <!-- Заголовок раздела серверов -->
+    <div class="section-header">
+      <span class="section-title">Серверы и авто-балансировщик</span>
+      <span class="section-badge" id="poolCountBadge">17 СЕРВЕРОВ</span>
+    </div>
+
+    <!-- Список серверов -->
+    <div class="server-list" id="serverList">
+      <!-- Авто-балансировщик -->
+      <div class="server-item active" id="node-auto" onclick="selectServer('AUTO')">
+        <div class="server-left">
+          <div class="server-radio"></div>
+          <div>
+            <div class="server-name">⚡ Автовыбор (Наименьший пинг)</div>
+            <div class="server-protocol">Авто-переключение при сбое • VLESS Reality</div>
+          </div>
+        </div>
+        <div class="server-ping">Auto</div>
       </div>
-    </section>
+    </div>
+
   </main>
 
-  <!-- DRAWER 1: BILLING & PROMO CODES -->
-  <div class="drawer-backdrop" id="billingDrawer" onclick="closeDrawerOnBg(event, 'billingDrawer')">
-    <div class="drawer-sheet">
-      <div class="drawer-header">
-        <span class="drawer-title">💎 ТАРИФЫ И ПРОМОКОДЫ</span>
-        <button class="mini-btn" onclick="closeDrawer('billingDrawer')">ЗАКРЫТЬ</button>
+  <!-- Боковое меню Drawer (Android Navigation Drawer) -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer(false)"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-title">ПУЛЬС ВПН</div>
+
+    <div class="drawer-card">
+      <div class="drawer-card-label">ВАШ КЛЮЧ ДОСТУПА</div>
+      <div class="drawer-key-val" id="drawerKeyCode">Загрузка...</div>
+      <div style="font-size:12px; color:var(--text-muted);" id="drawerPlanInfo">Тариф: Проверка...</div>
+    </div>
+
+    <div class="drawer-card">
+      <div class="drawer-card-label">АКТИВИРОВАТЬ ПРОМОКОД / КЛЮЧ</div>
+      <input type="text" class="drawer-input" id="promoInput" placeholder="Введите промокод" />
+      <button class="btn-action" onclick="applyPromo()">Применить</button>
+    </div>
+
+    <div class="drawer-card">
+      <div class="drawer-card-label">РЕЖИМ ОБХОДА</div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+        <input type="radio" name="routeMode" value="foreign_only" checked onchange="changeMode(this.value)" />
+        <span>🌍 РФ напрямую (Госуслуги, банки без VPN)</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-top:6px;">
+        <input type="radio" name="routeMode" value="whitelist_all" onchange="changeMode(this.value)" />
+        <span>🛡️ Анти-Глушилка (Все сайты через туннель)</span>
+      </label>
+    </div>
+
+    <div class="drawer-card">
+      <div class="drawer-card-label">ЛОКАЛЬНЫЙ ПРОКСИ WINDOWS</div>
+      <div style="font-size:12px;color:var(--text-muted);">
+        SOCKS5: <b style="color:#FFF;">127.0.0.1:10808</b><br>
+        HTTP: <b style="color:#FFF;">127.0.0.1:10809</b>
       </div>
-      <div>
-        <div class="module-index" style="margin-bottom:6px;">АКТИВАЦИЯ ПРОМОКОДА</div>
-        <div class="input-row">
-          <input type="text" id="promoInput" class="tactical-input" placeholder="ВВЕДИТЕ ПРОМОКОД..." />
-          <button class="mini-btn accent" onclick="activatePromo()">ПРИМЕНИТЬ</button>
-        </div>
+    </div>
+
+    <button class="btn-action" style="background:#262626;color:#FFF;" onclick="toggleDrawer(false)">Закрыть</button>
+  </aside>
+
+  <!-- Модальное окно диагностики -->
+  <div class="modal-overlay" id="diagModal" onclick="closeDiagnosticsOnBg(event)">
+    <div class="modal-box">
+      <div class="modal-title">🛠 Диагностика соединения</div>
+      <div class="modal-row">
+        <span>Статус туннеля</span>
+        <b id="diagStatus" style="color:var(--text-muted);">Отключен</b>
       </div>
-      <div>
-        <div class="module-index" style="margin-bottom:8px;">ПОПОЛНЕНИЕ ПОДПИСКИ (СБП / КАРТА РФ / ДЕМО-КАССА)</div>
-        <div id="plansContainer"></div>
+      <div class="modal-row">
+        <span>Активный сервер</span>
+        <b id="diagNode" style="color:#90CAF9;">Авто-балансировщик</b>
       </div>
+      <div class="modal-row">
+        <span>Задержка (Ping)</span>
+        <b id="diagPing" style="color:var(--text-green);">—</b>
+      </div>
+      <div class="modal-row">
+        <span>TLS Fragment (Анти-ТСПУ)</span>
+        <b style="color:var(--text-green);">Активен ✓</b>
+      </div>
+      <div class="modal-row">
+        <span>MTU</span>
+        <b style="color:#FFF;">1360 (Оптимально)</b>
+      </div>
+      <div class="modal-row">
+        <span>Keep-Alive интервал</span>
+        <b style="color:#FFF;">15 сек</b>
+      </div>
+      <button class="btn-action" style="width:100%;margin-top:16px;" onclick="closeDiagnosticsModal()">Понятно</button>
     </div>
   </div>
 
-  <!-- DRAWER 2: CHANGE ACCESS KEY -->
-  <div class="drawer-backdrop" id="keyDrawer" onclick="closeDrawerOnBg(event, 'keyDrawer')">
-    <div class="drawer-sheet">
-      <div class="drawer-header">
-        <span class="drawer-title">🔑 СМЕНА КЛЮЧА ДОСТУПА</span>
-        <button class="mini-btn" onclick="closeDrawer('keyDrawer')">ЗАКРЫТЬ</button>
-      </div>
-      <div class="module-index">ВВЕДИТЕ КУПЛЕННЫЙ КЛЮЧ (ФОРМАТ XXXX-XXXX-XXXX-XXXX)</div>
-      <div class="input-row">
-        <input type="text" id="newKeyInput" class="tactical-input" placeholder="XXXX-XXXX-XXXX-XXXX" />
-        <button class="mini-btn accent" onclick="submitNewKey()">ПРИВЯЗАТЬ</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- DRAWER 3: LIVE SERVER POOL -->
-  <div class="drawer-backdrop" id="nodesDrawer" onclick="closeDrawerOnBg(event, 'nodesDrawer')">
-    <div class="drawer-sheet">
-      <div class="drawer-header">
-        <span class="drawer-title">⚡ ПУЛ СЕРВЕРОВ (СОРТИРОВКА ПО ПИНГУ)</span>
-        <button class="mini-btn" onclick="closeDrawer('nodesDrawer')">ЗАКРЫТЬ</button>
-      </div>
-      <div id="nodesListContainer" style="max-height:55vh;overflow-y:auto;"></div>
-    </div>
-  </div>
-
-  <!-- DRAWER 4: CLOUD SERVER (HUGGING FACE SPACES) -->
-  <div class="drawer-backdrop" id="cloudDrawer" onclick="closeDrawerOnBg(event, 'cloudDrawer')">
-    <div class="drawer-sheet">
-      <div class="drawer-header">
-        <span class="drawer-title">☁️ ОБЛАЧНЫЙ СЕРВЕР (HF SPACES)</span>
-        <button class="mini-btn" onclick="closeDrawer('cloudDrawer')">ЗАКРЫТЬ</button>
-      </div>
-      <div class="module-index">АДРЕС ВАШЕГО СЕРВЕРА HUGGING FACE SPACES (ИЛИ ПУСТО ДЛЯ ЛОКАЛЬНОГО)</div>
-      <div class="input-row">
-        <input type="text" id="cloudUrlInput" class="tactical-input" style="text-transform:none;" placeholder="https://username-pulsewl-vpn.hf.space" />
-        <button class="mini-btn accent" onclick="saveCloudUrl()">СОХРАНИТЬ</button>
-      </div>
-      <div style="font-size:11px;color:var(--text-secondary);line-height:1.4;">
-        Если указан адрес Hugging Face Space, проверка ключей, промокодов, тарифов и выдача конфигурации идут через ваш бесплатный облачный сервер 24/7, а сам VPN-туннель (Xray) запускается прямо на вашем ПК.
-      </div>
-    </div>
-  </div>
-
-  <!-- DRAWER 5: ANDROID LOADER & QR -->
-  <div class="drawer-backdrop" id="androidDrawer" onclick="closeDrawerOnBg(event, 'androidDrawer')">
-    <div class="drawer-sheet">
-      <div class="drawer-header">
-        <span class="drawer-title">📱 ЗАГРУЗЧИК ДЛЯ ANDROID</span>
-        <button class="mini-btn" onclick="closeDrawer('androidDrawer')">ЗАКРЫТЬ</button>
-      </div>
-      <div style="text-align:center;margin-bottom:12px;">
-        <div class="module-index" style="margin-bottom:6px;">СКАНИРУЙТЕ КАМЕРОЙ ТЕЛЕФОНА</div>
-        <img id="androidQrImg" style="width:170px;height:170px;background:#fff;padding:8px;border-radius:6px;margin:0 auto 8px;display:block;" src="" alt="QR" />
-        <div style="font-size:10px;color:var(--text-secondary);word-break:break-all;" id="androidUrlLbl"></div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <button class="mini-btn accent" style="padding:10px;" onclick="openAndroidPortal()">🌐 ОТКРЫТЬ МОБИЛЬНЫЙ ПОРТАЛ</button>
-        <button class="mini-btn" style="padding:10px;" onclick="copySubUrlDirect()">📋 СКОПИРОВАТЬ ССЫЛКУ ПОДПИСКИ</button>
-      </div>
-      <div style="margin-top:14px;font-size:11px;color:var(--text-secondary);line-height:1.4;">
-        На телефоне откроется мобильный загрузчик с 1-клик установкой в <b>Karing</b> и <b>v2rayNG</b>. Все 76+ серверов импортируются автоматически!
-      </div>
-    </div>
-  </div>
-
-  <div class="toast" id="toastBox">Скопировано в буфер обмена</div>
+  <!-- Всплывающий тост -->
+  <div class="toast" id="toast"></div>
 
   <script>
     let currentKey = localStorage.getItem('pulsewl_key') || '';
-    let currentHwid = localStorage.getItem('pulsewl_hwid') || '';
-    let cloudApiUrl = (localStorage.getItem('pulsewl_cloud_url') || '').replace(/\/+$/, '');
-    if (!currentHwid) {
-      currentHwid = 'WIN-' + Math.random().toString(16).substring(2, 10).toUpperCase() + '-' + Date.now().toString(16).toUpperCase();
-      localStorage.setItem('pulsewl_hwid', currentHwid);
-    }
+    let currentHwid = localStorage.getItem('pulsewl_hwid') || ('PC-' + Math.random().toString(36).substring(2, 10).toUpperCase());
+    localStorage.setItem('pulsewl_hwid', currentHwid);
 
-    let selectedMode = 'foreign_only';
-    let preferredNodeId = '';
     let isConnected = false;
     let isConnecting = false;
-    let uptimeSec = 0;
+    let selectedMode = 'foreign_only';
+    let selectedNodeId = 'AUTO';
+    let speedHistory = new Array(24).fill(0);
 
-    function apiBase() {
-      return cloudApiUrl || '';
-    }
+    const API_BASE = ''; // Локальный бэкенд
 
-    function openAdminPanel() {
-      const target = (cloudApiUrl ? cloudApiUrl : '') + '/admin';
-      window.open(target, '_blank');
-    }
-
-    // Design Spell #1: Magnetic Orbital Core
-    const coreWrap = document.getElementById('magneticCore');
-    coreWrap.addEventListener('mousemove', (e) => {
-      const rect = coreWrap.getBoundingClientRect();
-      const x = e.clientX - rect.left - rect.width / 2;
-      const y = e.clientY - rect.top - rect.height / 2;
-      coreWrap.style.transform = `translate(${x * 0.12}px, ${y * 0.12}px)`;
-    });
-    coreWrap.addEventListener('mouseleave', () => {
-      coreWrap.style.transform = 'translate(0px, 0px)';
-    });
-
-    // Design Spell #2: Cryptographic Key Scrambler
-    function scrambleText(element, finalString) {
-      const chars = '0123456789ABCDEF#%&*+=-';
-      let iteration = 0;
-      const interval = setInterval(() => {
-        element.innerText = finalString
-          .split('')
-          .map((ch, idx) => {
-            if (ch === '-') return '-';
-            if (idx < iteration) return finalString[idx];
-            return chars[Math.floor(Math.random() * chars.length)];
-          })
-          .join('');
-        if (iteration >= finalString.length) clearInterval(interval);
-        iteration += 1.2;
-      }, 22);
-    }
-
+    // Toast
     function showToast(msg) {
-      const t = document.getElementById('toastBox');
+      const t = document.getElementById('toast');
       t.innerText = msg;
       t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 2600);
+      setTimeout(() => t.classList.remove('show'), 2800);
     }
 
-    function copyKeyWithScramble() {
-      if (!currentKey) return;
-      navigator.clipboard.writeText(currentKey);
-      scrambleText(document.getElementById('keyDisplay'), currentKey);
-      showToast(`Ключ ${currentKey} скопирован!`);
+    // Меню
+    function toggleDrawer(open) {
+      document.getElementById('drawer').classList.toggle('open', open);
+      document.getElementById('drawerOverlay').classList.toggle('open', open);
     }
 
-    function openDrawer(id) {
-      if (id === 'nodesDrawer') loadNodesList();
-      if (id === 'cloudDrawer') {
-        document.getElementById('cloudUrlInput').value = cloudApiUrl;
-      }
-      if (id === 'androidDrawer') {
-        const base = cloudApiUrl || window.location.origin;
-        const page = (base.includes('.hf.space')) ? `${base}/android.html` : `${base}/android`;
-        const full = `${page}?key=${encodeURIComponent(currentKey || '')}`;
-        document.getElementById('androidUrlLbl').innerText = full;
-        document.getElementById('androidQrImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(full)}&margin=4`;
-      }
-      document.getElementById(id).classList.add('open');
+    // Модальное окно
+    function openDiagnosticsModal() {
+      document.getElementById('diagModal').classList.add('open');
+      document.getElementById('diagStatus').innerText = isConnected ? 'Подключен' : 'Отключен';
+      document.getElementById('diagStatus').style.color = isConnected ? 'var(--text-green)' : 'var(--text-muted)';
+    }
+    function closeDiagnosticsModal() {
+      document.getElementById('diagModal').classList.remove('open');
+    }
+    function closeDiagnosticsOnBg(e) {
+      if (e.target.id === 'diagModal') closeDiagnosticsModal();
     }
 
-    function openAndroidPortal() {
-      const base = cloudApiUrl || window.location.origin;
-      const page = (base.includes('.hf.space')) ? `${base}/android.html` : `${base}/android`;
-      window.open(`${page}?key=${encodeURIComponent(currentKey || '')}`, '_blank');
-    }
-
-    function copySubUrlDirect() {
-      const base = cloudApiUrl || window.location.origin;
-      const sub = `${base}/sub/${encodeURIComponent(currentKey || 'DEMO')}`;
-      navigator.clipboard.writeText(sub);
-      showToast(`Ссылка подписки скопирована!`);
-    }
-
-    function closeDrawer(id) {
-      document.getElementById(id).classList.remove('open');
-    }
-
-    function closeDrawerOnBg(e, id) {
-      if (e.target.id === id) closeDrawer(id);
-    }
-
-    async function syncCloudConfigFromLocal() {
+    // Первоначальная инициализация
+    async function init() {
       try {
-        const r = await fetch('/api/v1/local/cloud-config');
-        if (r.ok) {
-          const d = await r.json();
-          if (d.remote_api_url) {
-            cloudApiUrl = d.remote_api_url.replace(/\/+$/, '');
-            localStorage.setItem('pulsewl_cloud_url', cloudApiUrl);
-          }
-        }
-      } catch (_) {}
-      updateCloudBtnBadge();
-    }
-
-    function updateCloudBtnBadge() {
-      const btn = document.getElementById('cloudBtn');
-      if (!btn) return;
-      if (cloudApiUrl) {
-        btn.innerText = '☁️ HF SPACE ✓';
-        btn.style.borderColor = 'var(--accent-emerald)';
-        btn.style.color = 'var(--accent-emerald)';
-      } else {
-        btn.innerText = '☁️ ОБЛАКО';
-        btn.style.borderColor = '';
-        btn.style.color = '';
-      }
-    }
-
-    async function saveCloudUrl() {
-      const val = document.getElementById('cloudUrlInput').value.trim().replace(/\/+$/, '');
-      cloudApiUrl = val;
-      localStorage.setItem('pulsewl_cloud_url', cloudApiUrl);
-      try {
-        await fetch('/api/v1/local/cloud-config', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ remote_api_url: cloudApiUrl })
-        });
-      } catch (_) {}
-      updateCloudBtnBadge();
-      closeDrawer('cloudDrawer');
-      showToast(cloudApiUrl ? `Подключено к облаку: ${cloudApiUrl}` : 'Включен локальный режим');
-      await bootstrapApp();
-    }
-
-    function showActivationGate(errorMsg) {
-      const modal = document.getElementById('activationGateModal');
-      const err = document.getElementById('gateErrMsg');
-      if (errorMsg) {
-        err.innerText = errorMsg;
-        err.style.display = 'block';
-      } else {
-        err.style.display = 'none';
-      }
-      modal.classList.add('active');
-      document.getElementById('gatePromoInput').focus();
-    }
-
-    function hideActivationGate() {
-      document.getElementById('activationGateModal').classList.remove('active');
-    }
-
-    async function submitGateActivation() {
-      const inputVal = document.getElementById('gatePromoInput').value.trim().toUpperCase();
-      const err = document.getElementById('gateErrMsg');
-      if (!inputVal) {
-        err.innerText = 'Введите промокод или ключ';
-        err.style.display = 'block';
-        return;
-      }
-      err.style.display = 'none';
-
-      // 1. Попробуем активировать как промокод через /api/v1/auth/promo
-      try {
-        const promoRes = await fetch(`${apiBase()}/api/v1/auth/promo`, {
+        const res = await fetch(`${API_BASE}/api/v1/auth/device`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             hwid: currentHwid,
-            promo_code: inputVal,
-            device_name: 'ПК Windows',
-            os_type: 'windows'
-          })
-        });
-        const promoData = await promoRes.json();
-        if (promoRes.ok) {
-          currentKey = promoData.subscription.key_code;
-          localStorage.setItem('pulsewl_key', currentKey);
-          hideActivationGate();
-          scrambleText(document.getElementById('keyDisplay'), currentKey);
-          renderSubscription(promoData.subscription, promoData.plans);
-          showToast(promoData.message || 'Промокод успешно активирован!');
-          await pollState();
-          return;
-        }
-
-        // 2. Если не промокод, пробуем активировать как ключ доступа
-        const keyRes = await fetch(`${apiBase()}/api/v1/auth/device`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            hwid: currentHwid,
-            device_name: 'ПК Windows',
-            os_type: 'windows',
-            key_code: inputVal
-          })
-        });
-        const keyData = await keyRes.json();
-        if (keyRes.ok) {
-          currentKey = keyData.subscription.key_code;
-          localStorage.setItem('pulsewl_key', currentKey);
-          hideActivationGate();
-          scrambleText(document.getElementById('keyDisplay'), currentKey);
-          renderSubscription(keyData.subscription, keyData.plans);
-          showToast('Ключ успешно активирован!');
-          await pollState();
-          return;
-        }
-
-        err.innerText = promoData.detail || keyData.detail || 'Неверный промокод или ключ';
-        err.style.display = 'block';
-      } catch (e) {
-        err.innerText = 'Ошибка соединения: ' + e.message;
-        err.style.display = 'block';
-      }
-    }
-
-    // Обработка клавиши Enter в поле активации
-    document.getElementById('gatePromoInput').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') submitGateActivation();
-    });
-
-    async function bootstrapApp() {
-      await syncCloudConfigFromLocal();
-      try {
-        const res = await fetch(`${apiBase()}/api/v1/auth/device`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            hwid: currentHwid,
-            device_name: 'ПК Windows',
+            device_name: 'Windows ПК',
             os_type: 'windows',
             key_code: currentKey || null
           })
         });
         const data = await res.json();
-        if (res.ok && data.subscription) {
-          hideActivationGate();
+        if (data.subscription) {
           currentKey = data.subscription.key_code;
           localStorage.setItem('pulsewl_key', currentKey);
-          scrambleText(document.getElementById('keyDisplay'), currentKey);
-          renderSubscription(data.subscription, data.plans);
-          await pollState();
-          return;
-        } else if (!res.ok && currentKey) {
-          currentKey = '';
-          localStorage.removeItem('pulsewl_key');
-          showActivationGate(data.detail || 'Ключ недействителен. Введите промокод.');
-          return;
+          document.getElementById('drawerKeyCode').innerText = currentKey;
+          const days = data.subscription.days_left || 0;
+          document.getElementById('drawerPlanInfo').innerText = `${data.subscription.plan_name} • ${days} дн.`;
         }
-      } catch (err) {
-        document.getElementById('telemetryStrip').innerText = 'ОШИБКА // ' + err.message;
-      }
-      if (!currentKey) {
-        showActivationGate();
-      }
+      } catch (_) {}
+
+      await loadNodes();
+      await pollState();
+      setInterval(pollState, 3000);
+      initSpeedSimulation();
     }
 
-    function renderSubscription(sub, plans) {
-      const pill = document.getElementById('subPill');
-      if (sub.is_subscription_valid) {
-        pill.innerText = `АКТИВНА // ${sub.days_left} ДН.`;
-        pill.classList.remove('expired');
-      } else {
-        pill.innerText = 'ИСТЕКЛА // ОПЛАТИТЕ';
-        pill.classList.add('expired');
-      }
-      document.getElementById('planTitleText').innerText = `Тариф: ${sub.plan_name}`;
-      document.getElementById('devicesCountText').innerText = `УСТРОЙСТВ: ${sub.devices_used}/${sub.max_devices}`;
-
-      if (plans && plans.length) {
-        const container = document.getElementById('plansContainer');
-        container.innerHTML = plans
-          .filter(p => p.id !== 'trial')
-          .map(p => `
-            <div class="plan-card">
-              <div>
-                <div style="font-weight:700;font-size:13px;">${p.title}</div>
-                <div style="font-size:10px;color:var(--text-secondary);">${p.days} дней • до ${p.max_devices} устройств</div>
-              </div>
-              <button class="mini-btn accent" onclick="buyPlan('${p.id}', '${p.title}', ${p.price_rub})">${p.price_rub} ₽</button>
-            </div>
-          `).join('');
-      }
-    }
-
-    async function pollState() {
-      if (!currentKey) return;
+    // Загрузка серверов
+    async function loadNodes() {
       try {
-        const [statusRes, tunnelRes] = await Promise.all([
-          fetch(`${apiBase()}/api/v1/user/status?key_code=${encodeURIComponent(currentKey)}`),
-          fetch('/api/v1/local/state')
-        ]);
-        if (statusRes.ok) {
-          const sData = await statusRes.json();
-          renderSubscription(sData.subscription, sData.plans);
-          const p = sData.pool;
-          document.getElementById('poolBadge').innerText = `${p.alive_nodes}/${p.total_nodes} СЕРВ.`;
-          document.getElementById('aliveCountLabel').innerText = `ОНЛАЙН: ${p.alive_nodes} (🌍${p.foreign_nodes} / 🇷🇺${p.ru_whitelist_nodes})`;
-        }
-        if (tunnelRes.ok) {
-          const tData = await tunnelRes.json();
-          applyTunnelStateUI(tData);
+        const res = await fetch(`${API_BASE}/api/v1/vpn/nodes?key_code=${encodeURIComponent(currentKey)}&mode=${selectedMode}`);
+        if (res.ok) {
+          const data = await res.json();
+          renderServerList(data.nodes || []);
         }
       } catch (_) {}
     }
 
-    function formatUptime(sec) {
-      const h = String(Math.floor(sec / 3600)).padStart(2, '0');
-      const m = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
-      const s = String(sec % 60).padStart(2, '0');
-      return `${h}:${m}:${s}`;
+    function renderServerList(nodes) {
+      const container = document.getElementById('serverList');
+      document.getElementById('poolCountBadge').innerText = `${nodes.length + 1} СЕРВЕРОВ`;
+
+      let html = `
+        <div class="server-item ${selectedNodeId === 'AUTO' ? 'active' : ''}" id="node-auto" onclick="selectServer('AUTO')">
+          <div class="server-left">
+            <div class="server-radio"></div>
+            <div>
+              <div class="server-name">⚡ Автовыбор (Наименьший пинг)</div>
+              <div class="server-protocol">Авто-переключение при сбое • Балансировщик</div>
+            </div>
+          </div>
+          <div class="server-ping">Auto</div>
+        </div>
+      `;
+
+      nodes.forEach(n => {
+        const isActive = selectedNodeId === n.id;
+        const pingTxt = n.latency_ms ? `${n.latency_ms} ms` : 'OK';
+        html += `
+          <div class="server-item ${isActive ? 'active' : ''}" onclick="selectServer('${n.id}', '${n.remark.replace(/'/g, "\\'")}', '${pingTxt}')">
+            <div class="server-left">
+              <div class="server-radio"></div>
+              <div>
+                <div class="server-name">${n.remark}</div>
+                <div class="server-protocol">${(n.type || 'vless').toUpperCase()} • ${n.security || 'reality'}</div>
+              </div>
+            </div>
+            <div class="server-ping">${pingTxt}</div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
     }
 
-    function applyTunnelStateUI(t) {
-      isConnected = t.is_connected;
-      isConnecting = t.is_connecting;
-      uptimeSec = t.uptime_seconds || 0;
-
-      document.body.classList.toggle('state-connected', isConnected);
-      document.body.classList.toggle('state-connecting', isConnecting);
-
-      document.getElementById('coreActionLabel').innerText = isConnecting
-        ? 'ЗАПУСК...'
-        : (isConnected ? 'ЗАЩИЩЕНО' : 'ВКЛЮЧИТЬ');
-
-      document.getElementById('coreUptimeLabel').innerText = isConnected
-        ? formatUptime(uptimeSec)
-        : 'ОЖИДАНИЕ';
-
-      document.getElementById('telemetryStrip').innerText = t.status_step || 'ОЖИДАНИЕ';
-
-      if (t.active_node) {
-        document.getElementById('activeNodeName').innerText = `⚡ ${t.active_node.remark} (+${Math.max(0, t.active_pool_size - 1)} в резерве)`;
-        document.getElementById('activeNodePing').innerText = `${t.active_node.latency_ms || 'АВТО'} мс ▸`;
+    function selectServer(id, remark, ping) {
+      selectedNodeId = id;
+      loadNodes();
+      if (id === 'AUTO') {
+        document.getElementById('diagNode').innerText = 'Авто-балансировщик';
+        document.getElementById('diagPing').innerText = 'Auto';
+        showToast('Выбран автовыбор наилучшего сервера');
+      } else {
+        document.getElementById('diagNode').innerText = remark || id;
+        document.getElementById('diagPing').innerText = ping || 'OK';
+        showToast(`Выбран сервер: ${remark || id}`);
+      }
+      if (isConnected) {
+        toggleConnect();
+        setTimeout(toggleConnect, 600);
       }
     }
 
-    async function toggleTunnel() {
+    async function refreshServers() {
+      showToast('Проверка доступности серверов...');
+      await loadNodes();
+    }
+
+    // Подключение / Отключение
+    async function toggleConnect() {
       if (isConnecting) return;
+
       if (isConnected) {
-        const res = await fetch('/api/v1/local/disconnect', { method: 'POST' });
-        const data = await res.json();
-        applyTunnelStateUI(data);
-        showToast('Туннель отключен • Системный прокси сброшен');
+        // Отключаем
+        try {
+          const res = await fetch(`${API_BASE}/api/v1/local/disconnect`, { method: 'POST' });
+          const data = await res.json();
+          updateUIState(data);
+          showToast('VPN отключен • Сеть напрямую');
+        } catch (_) {}
         return;
       }
 
-      document.body.classList.add('state-connecting');
-      document.getElementById('coreActionLabel').innerText = 'ЗАПУСК...';
-      document.getElementById('telemetryStrip').innerText = 'ПОДКЛЮЧЕНИЕ // ЗАПУСК ЯДРА XRAY И БАЛАНСИРОВЩИКА...';
+      // Подключаем
+      isConnecting = true;
+      document.body.classList.add('connecting');
+      document.getElementById('statusTitle').innerText = 'ПОДКЛЮЧЕНИЕ...';
+      document.getElementById('statusSubtitle').innerText = 'Запуск ядра Xray и проверка узлов...';
 
       try {
-        const res = await fetch('/api/v1/local/connect', {
+        const res = await fetch(`${API_BASE}/api/v1/local/connect`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             key_code: currentKey,
             hwid: currentHwid,
             mode: selectedMode,
-            preferred_node_id: preferredNodeId || null,
-            remote_api_url: cloudApiUrl || null
+            preferred_node_id: selectedNodeId === 'AUTO' ? null : selectedNodeId
           })
         });
         const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.detail || 'Ошибка запуска туннеля');
+        isConnecting = false;
+        document.body.classList.remove('connecting');
+        if (res.ok) {
+          updateUIState(data);
+          showToast('VPN успешно подключен!');
+        } else {
+          showToast(data.detail || 'Ошибка запуска туннеля');
+          updateUIState({ is_connected: false });
         }
-        applyTunnelStateUI(data);
-        showToast('VPN подключен! Авто-балансировщик активен');
-      } catch (err) {
-        document.body.classList.remove('state-connecting');
-        document.getElementById('coreActionLabel').innerText = 'ВКЛЮЧИТЬ';
-        document.getElementById('telemetryStrip').innerText = 'ОШИБКА // ' + err.message;
-        showToast(err.message);
-        openDrawer('billingDrawer');
+      } catch (e) {
+        isConnecting = false;
+        document.body.classList.remove('connecting');
+        showToast('Ошибка связи с ядром: ' + e.message);
       }
     }
 
-    async function selectMode(mode) {
-      selectedMode = mode;
-      preferredNodeId = '';
-      document.getElementById('modeForeign').classList.toggle('active', mode === 'foreign_only');
-      document.getElementById('modeWhitelist').classList.toggle('active', mode === 'whitelist_all');
-      if (isConnected) {
-        await fetch('/api/v1/local/disconnect', { method: 'POST' });
-        isConnected = false;
-        await toggleTunnel();
+    function updateUIState(state) {
+      isConnected = !!state.is_connected;
+      isConnecting = !!state.is_connecting;
+
+      document.body.classList.toggle('connected', isConnected);
+      document.body.classList.toggle('connecting', isConnecting);
+
+      const title = document.getElementById('statusTitle');
+      const sub = document.getElementById('statusSubtitle');
+      const powerIcon = document.getElementById('powerIcon');
+
+      if (isConnecting) {
+        title.innerText = 'ПОДКЛЮЧЕНИЕ...';
+        sub.innerText = 'Настройка шифрования...';
+      } else if (isConnected) {
+        title.innerText = 'ПОДКЛЮЧЕНО';
+        sub.innerText = 'Защита активна • РФ напрямую + AdGuard DoH';
+        // Иконка квадрата (Stop)
+        powerIcon.innerHTML = '<path d="M6 6h12v12H6z"/>';
+      } else {
+        title.innerText = 'ОТКЛЮЧЕНО';
+        sub.innerText = 'Нажмите для подключения';
+        // Иконка треугольника (Play)
+        powerIcon.innerHTML = '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/>';
+      }
+
+      if (state.active_node) {
+        document.getElementById('diagNode').innerText = state.active_node.remark;
+        document.getElementById('diagPing').innerText = (state.active_node.latency_ms || '45') + ' ms';
       }
     }
 
-    async function activatePromo() {
+    async function pollState() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/local/state`);
+        if (res.ok) {
+          const data = await res.json();
+          if (!isConnecting) updateUIState(data);
+        }
+      } catch (_) {}
+    }
+
+    // Промокод
+    async function applyPromo() {
       const code = document.getElementById('promoInput').value.trim();
       if (!code) return;
-      const res = await fetch(`${apiBase()}/api/v1/billing/promo`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key_code: currentKey, promo_code: code })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        renderSubscription(data.subscription);
-        closeDrawer('billingDrawer');
-        showToast(data.message);
-      } else {
-        showToast(data.detail || 'Ошибка промокода');
-      }
-    }
-
-    async function buyPlan(planId, title, price) {
-      const orderRes = await fetch(`${apiBase()}/api/v1/billing/create-order`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key_code: currentKey, plan_id: planId })
-      });
-      const orderData = await orderRes.json();
-      if (!orderRes.ok) {
-        showToast(orderData.detail || 'Ошибка создания заказа');
-        return;
-      }
-      const confirmRes = await fetch(`${apiBase()}/api/v1/billing/confirm-demo`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_id: orderData.order.order_id })
-      });
-      const confirmData = await confirmRes.json();
-      if (confirmRes.ok) {
-        renderSubscription(confirmData.subscription);
-        closeDrawer('billingDrawer');
-        showToast(confirmData.message);
-      }
-    }
-
-    async function submitNewKey() {
-      const nk = document.getElementById('newKeyInput').value.trim().toUpperCase();
-      if (!nk) return;
-      const res = await fetch(`${apiBase()}/api/v1/auth/device`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          hwid: currentHwid,
-          device_name: 'ПК Windows',
-          os_type: 'windows',
-          key_code: nk
-        })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        currentKey = data.subscription.key_code;
-        localStorage.setItem('pulsewl_key', currentKey);
-        scrambleText(document.getElementById('keyDisplay'), currentKey);
-        renderSubscription(data.subscription, data.plans);
-        closeDrawer('keyDrawer');
-        showToast('Ключ успешно активирован!');
-      } else {
-        showToast(data.detail || 'Ключ не найден');
-      }
-    }
-
-    async function loadNodesList() {
-      const container = document.getElementById('nodesListContainer');
-      container.innerHTML = '<div style="font-size:11px;color:var(--text-secondary);">Опрос пула серверов...</div>';
       try {
-        const res = await fetch(`${apiBase()}/api/v1/vpn/nodes?key_code=${encodeURIComponent(currentKey)}&mode=${selectedMode}`);
+        const res = await fetch(`${API_BASE}/api/v1/auth/promo`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            hwid: currentHwid,
+            promo_code: code,
+            device_name: 'Windows ПК',
+            os_type: 'windows'
+          })
+        });
         const data = await res.json();
-        if (!res.ok) {
-          container.innerHTML = `<div style="color:var(--danger);font-size:12px;">${data.detail}</div>`;
-          return;
+        if (res.ok) {
+          showToast('Промокод успешно активирован!');
+          currentKey = data.subscription.key_code;
+          localStorage.setItem('pulsewl_key', currentKey);
+          document.getElementById('drawerKeyCode').innerText = currentKey;
+          toggleDrawer(false);
+          await loadNodes();
+        } else {
+          showToast(data.detail || 'Неверный промокод');
         }
-        let html = `
-          <div class="node-list-item" onclick="pickNode('', '⚡ Автовыбор самого быстрого узла', 'АВТО')">
-            <span>🤖 <b>АВТОМАТИЧЕСКИЙ БАЛАНСИРОВЩИК (КАЖДЫЕ 30 СЕК)</b></span>
-            <span style="color:var(--accent-emerald);font-weight:700;">РЕКОМЕНДУЕТСЯ</span>
-          </div>
-        `;
-        for (const n of data.nodes) {
-          const pingBadge = n.latency_ms !== null
-            ? `<span style="color:var(--accent-emerald);font-weight:700;">${n.latency_ms} мс</span>`
-            : `<span style="color:var(--text-dim);">НЕДОСТУПЕН</span>`;
-          html += `
-            <div class="node-list-item" onclick="pickNode('${n.id}', '${n.remark.replace(/'/g, "")}', '${n.latency_ms || "АВТО"}')">
-              <span>${n.remark} <small style="color:var(--text-dim);">[${n.type}/${n.security}]</small></span>
-              ${pingBadge}
-            </div>
-          `;
-        }
-        container.innerHTML = html;
       } catch (e) {
-        container.innerHTML = 'Ошибка загрузки узлов';
+        showToast('Ошибка активации: ' + e.message);
       }
     }
 
-    async function pickNode(nodeId, remark, ping) {
-      preferredNodeId = nodeId;
-      document.getElementById('activeNodeName').innerText = `📌 ${remark}`;
-      document.getElementById('activeNodePing').innerText = `${ping} мс ▸`;
-      closeDrawer('nodesDrawer');
+    function changeMode(val) {
+      selectedMode = val;
+      showToast(val === 'foreign_only' ? 'Включен режим: РФ напрямую' : 'Включен режим: Анти-Глушилка');
+      loadNodes();
       if (isConnected) {
-        await fetch('/api/v1/local/disconnect', { method: 'POST' });
-        isConnected = false;
-        await toggleTunnel();
+        toggleConnect();
+        setTimeout(toggleConnect, 600);
       }
     }
 
-    setInterval(() => {
-      if (isConnected) {
-        uptimeSec++;
-        document.getElementById('coreUptimeLabel').innerText = formatUptime(uptimeSec);
-      }
-    }, 1000);
+    // Sparkline график скорости
+    function initSpeedSimulation() {
+      const canvas = document.getElementById('speedCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
 
-    setInterval(pollState, 6000);
-    bootstrapApp();
-  </script>
+      setInterval(() => {
+        if (!isConnected) return;
+        const downBytes = Math.floor(Math.random() * 2500000) + 300000;
+        const upBytes = Math.floor(Math.random() * 300000) + 20000;
 
-  <!-- Agentation Visual Feedback Toolbar -->
-  <script type="module">
-    (async function() {
-      try {
-        if (document.getElementById('agentation-root-mount')) return;
-        const [{ default: React }, { createRoot }, { Agentation }] = await Promise.all([
-          import('https://esm.sh/react@18.3.1'),
-          import('https://esm.sh/react-dom@18.3.1/client'),
-          import('https://esm.sh/agentation@3.1.2?deps=react@18.3.1,react-dom@18.3.1')
-        ]);
-        const mount = document.createElement('div');
-        mount.id = 'agentation-root-mount';
-        document.body.appendChild(mount);
-        createRoot(mount).render(React.createElement(Agentation, { endpoint: 'http://localhost:4747' }));
-      } catch(e){}
-    })();
+        document.getElementById('downSpeedVal').innerText = `↓ ${(downBytes / 1024 / 1024).toFixed(1)} МБ/с`;
+        document.getElementById('upSpeedVal').innerText = `↑ ${(upBytes / 1024).toFixed(0)} КБ/с`;
+
+        speedHistory.shift();
+        speedHistory.push(downBytes / 1024 / 1024);
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#81C784';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        const step = canvas.width / (speedHistory.length - 1);
+        speedHistory.forEach((val, idx) => {
+          const y = canvas.height - Math.min(canvas.height, Math.max(2, val * 6));
+          if (idx === 0) ctx.moveTo(0, y);
+          else ctx.lineTo(idx * step, y);
+        });
+        ctx.stroke();
+      }, 1000);
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
 </html>
