@@ -1691,17 +1691,38 @@
             }
         }
 
+        async function getExistingSubFiles() {
+            try {
+                const treeRes = await fetch(`https://huggingface.co/api/spaces/${HF_REPO}/tree/main/sub`, {
+                    headers: { 'Authorization': 'Bearer ' + getHfAuth() }
+                });
+                if (treeRes.ok) {
+                    const data = await treeRes.json();
+                    return new Set(data.map(f => f.path));
+                }
+            } catch (_) {}
+            return new Set();
+        }
+
         async function deleteCloudKey(keyCode, btnEl) {
             if (!confirm(`Удалить ключ ${keyCode}?`)) return;
             if (btnEl) { btnEl.disabled = true; btnEl.textContent = '⏳'; }
             try {
-                const freshState = await fetchFreshCloudState();
+                const [freshState, existingFiles] = await Promise.all([
+                    fetchFreshCloudState(),
+                    getExistingSubFiles()
+                ]);
                 freshState.keys = freshState.keys.filter(k => k.key_code !== keyCode);
                 const b64Json = btoa(unescape(encodeURIComponent(JSON.stringify(freshState, null, 2))));
-                await commitToCloud(`Delete key ${keyCode}`, [
-                    { op: 'delete', path: `sub/${keyCode}` },
+                const ops = [
                     { op: 'add', path: 'api/cloud_state.json', content: b64Json, encoding: 'base64' }
-                ]);
+                ];
+                [`sub/${keyCode}`, `sub/${keyCode}_singbox.json`, `sub/${keyCode}_xray.json`].forEach(p => {
+                    if (existingFiles.has(p)) {
+                        ops.push({ op: 'delete', path: p });
+                    }
+                });
+                await commitToCloud(`Delete key ${keyCode}`, ops);
                 cloudData = freshState;
                 renderAdmin();
                 showToast(`Ключ ${keyCode} удален`);
@@ -1715,13 +1736,21 @@
             if (!confirm(`Удалить промокод ${code}?`)) return;
             if (btnEl) { btnEl.disabled = true; btnEl.textContent = '⏳'; }
             try {
-                const freshState = await fetchFreshCloudState();
+                const [freshState, existingFiles] = await Promise.all([
+                    fetchFreshCloudState(),
+                    getExistingSubFiles()
+                ]);
                 freshState.promos = freshState.promos.filter(p => p.code !== code);
                 const b64Json = btoa(unescape(encodeURIComponent(JSON.stringify(freshState, null, 2))));
-                await commitToCloud(`Delete promo ${code}`, [
-                    { op: 'delete', path: `sub/${code}` },
+                const ops = [
                     { op: 'add', path: 'api/cloud_state.json', content: b64Json, encoding: 'base64' }
-                ]);
+                ];
+                [`sub/${code}`, `sub/${code}_singbox.json`, `sub/${code}_xray.json`].forEach(p => {
+                    if (existingFiles.has(p)) {
+                        ops.push({ op: 'delete', path: p });
+                    }
+                });
+                await commitToCloud(`Delete promo ${code}`, ops);
                 cloudData = freshState;
                 renderAdmin();
                 showToast(`Промокод ${code} удален`);
@@ -1734,10 +1763,21 @@
         async function clearAllCloudData() {
             if (!confirm('Удалить ВСЕ ключи и промокоды на сервере?')) return;
             try {
-                const freshState = await fetchFreshCloudState();
+                const [freshState, existingFiles] = await Promise.all([
+                    fetchFreshCloudState(),
+                    getExistingSubFiles()
+                ]);
                 const operations = [];
-                (freshState.keys || []).forEach(k => operations.push({ op: 'delete', path: `sub/${k.key_code}` }));
-                (freshState.promos || []).forEach(p => operations.push({ op: 'delete', path: `sub/${p.code}` }));
+                (freshState.keys || []).forEach(k => {
+                    [`sub/${k.key_code}`, `sub/${k.key_code}_singbox.json`, `sub/${k.key_code}_xray.json`].forEach(p => {
+                        if (existingFiles.has(p)) operations.push({ op: 'delete', path: p });
+                    });
+                });
+                (freshState.promos || []).forEach(p => {
+                    [`sub/${p.code}`, `sub/${p.code}_singbox.json`, `sub/${p.code}_xray.json`].forEach(p => {
+                        if (existingFiles.has(p)) operations.push({ op: 'delete', path: p });
+                    });
+                });
                 freshState.keys = [];
                 freshState.promos = [];
                 const b64Json = btoa(unescape(encodeURIComponent(JSON.stringify(freshState, null, 2))));
