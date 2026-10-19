@@ -524,6 +524,18 @@
 
   <!-- Основной контент: Карточка кнопки + Список серверов -->
   <main class="main-content">
+
+    <!-- Баннер обновления с GitHub (как на Android) -->
+    <div id="updateBanner" style="display:none; background: linear-gradient(135deg, #1b3a2a, #2e7d32); border: 1px solid #4CAF50; border-radius: 14px; padding: 12px 14px; align-items: center; justify-content: space-between; gap: 10px;">
+      <div style="display:flex; align-items:center; gap: 10px; text-align: left;">
+        <span style="font-size: 20px;">🚀</span>
+        <div>
+          <div style="font-size: 13px; font-weight: 700; color: #fff;" id="updateBannerTitle">Новая версия ПУЛЬС</div>
+          <div style="font-size: 11px; color: rgba(255,255,255,0.8);">Доступно обновление на GitHub</div>
+        </div>
+      </div>
+      <a id="updateBannerBtn" href="#" target="_blank" style="background:#fff; color:#1b3a2a; font-weight:700; font-size:12px; padding:7px 14px; border-radius:8px; text-decoration:none; white-space:nowrap;">Обновить</a>
+    </div>
     
     <!-- Карточка кнопки питания -->
     <div class="conn-card">
@@ -613,6 +625,14 @@
       </div>
     </div>
 
+    <div class="drawer-card">
+      <div class="drawer-card-label">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size: 13px; color: #888;">v0.2.25 (ПК)</span>
+        <button class="btn-action" style="padding: 6px 12px; font-size: 11px; background:#333; color:#fff;" onclick="checkPCUpdates(true)">Проверить</button>
+      </div>
+    </div>
+
     <button class="btn-action" style="background:#262626;color:#FFF;" onclick="toggleDrawer(false)">Закрыть</button>
   </aside>
 
@@ -691,6 +711,49 @@
       if (e.target.id === 'diagModal') closeDiagnosticsModal();
     }
 
+    // Проверка обновлений на GitHub (как на Android)
+    const CURRENT_PC_VERSION = 'v0.2.25';
+
+    function compareVersions(v1, v2) {
+      const p1 = (v1 || '').replace(/^v/, '').split('.').map(Number);
+      const p2 = (v2 || '').replace(/^v/, '').split('.').map(Number);
+      for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
+        const num1 = p1[i] || 0;
+        const num2 = p2[i] || 0;
+        if (num1 > num2) return 1;
+        if (num1 < num2) return -1;
+      }
+      return 0;
+    }
+
+    async function checkPCUpdates(isManual = false) {
+      try {
+        const res = await fetch('https://api.github.com/repos/GreMZaa/pulse-vpn-android/releases/latest');
+        if (!res.ok) {
+          if (isManual) showToast('Не удалось связаться с GitHub');
+          return;
+        }
+        const data = await res.json();
+        const latestTag = data.tag_name;
+        if (latestTag && compareVersions(latestTag, CURRENT_PC_VERSION) > 0) {
+          const exeAsset = (data.assets || []).find(a => a.name.endsWith('.exe')) || { browser_download_url: data.html_url };
+          const banner = document.getElementById('updateBanner');
+          const title = document.getElementById('updateBannerTitle');
+          const btn = document.getElementById('updateBannerBtn');
+          if (banner && title && btn) {
+            title.innerText = `Доступно обновление ${latestTag}`;
+            btn.href = exeAsset.browser_download_url;
+            banner.style.display = 'flex';
+          }
+          if (isManual) showToast(`Доступна новая версия ${latestTag}!`);
+        } else {
+          if (isManual) showToast('У вас актуальная версия (v0.2.25)');
+        }
+      } catch (e) {
+        if (isManual) showToast('Ошибка при проверке обновлений');
+      }
+    }
+
     // Первоначальная инициализация
     async function init() {
       try {
@@ -718,6 +781,7 @@
       await pollState();
       setInterval(pollState, 3000);
       initSpeedSimulation();
+      checkPCUpdates(false);
     }
 
     // Загрузка серверов
