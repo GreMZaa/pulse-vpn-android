@@ -466,46 +466,6 @@ fun MainScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    TextButton(
-                        onClick = {
-                            if (!isActivatingPromo) {
-                                isActivatingPromo = true
-                                promoDialogError = null
-                                scope.launch {
-                                    try {
-                                        val res = com.v2ray.ang.handler.SubscriptionHelper.activateCodeOrKey("TEST")
-                                        if (res.isSuccess) {
-                                            showPromoFullscreen = false
-                                            mainViewModel.setupGroupTab(forceRefresh = true).join()
-                                            val validGuid = MmkvManager.getSelectServer()
-                                                ?: MmkvManager.decodeAllServerList().firstOrNull { MmkvManager.decodeServerConfig(it) != null }
-                                            if (validGuid != null) {
-                                                mainViewModel.updateSelectedGuid(validGuid)
-                                                MmkvManager.setSelectServer(validGuid)
-                                            }
-                                            onAction(MainAction.TestRealAllServers)
-                                        } else {
-                                            promoDialogError = res.exceptionOrNull()?.message
-                                        }
-                                    } catch (e: Exception) {
-                                        promoDialogError = "Ошибка: ${e.message}"
-                                    } finally {
-                                        isActivatingPromo = false
-                                    }
-                                }
-                            }
-                        },
-                        enabled = !isActivatingPromo
-                    ) {
-                        Text(
-                            text = "Попробовать бесплатно (Тестовый доступ)",
-                            color = Color(0xFFAAAAAA),
-                            fontSize = 13.sp
-                        )
-                    }
-
                     Spacer(modifier = Modifier.height(24.dp))
                 }
             }
