@@ -90,27 +90,24 @@ object SubscriptionHelper {
     }
 
     fun getActiveSubscription(): SubscriptionInfo? {
-        val code = MmkvManager.decodeSettingsString(AppConfig.PREF_SUBSCRIPTION_CODE)
+        val code = MmkvManager.decodeSettingsString(AppConfig.PREF_SUBSCRIPTION_CODE)?.trim()
         val serverCount = MmkvManager.decodeAllServerList().size
-        if (code.isNullOrBlank() && serverCount == 0) {
+        if (code.isNullOrBlank() || code == "Импортированные узлы" || serverCount == 0) {
             return null
         }
 
-        val displayCode = if (!code.isNullOrBlank()) code else "Импортированные узлы"
         val plan = MmkvManager.decodeSettingsString(AppConfig.PREF_SUBSCRIPTION_PLAN, "Тариф ПУЛЬС") ?: "Тариф ПУЛЬС"
         val expiresAt = MmkvManager.decodeSettingsLong(AppConfig.PREF_SUBSCRIPTION_EXPIRES, 0L)
         val maxDevices = MmkvManager.decodeSettingsInt(AppConfig.PREF_SUBSCRIPTION_MAX_DEVICES, 2).coerceAtLeast(1)
         val now = System.currentTimeMillis()
         val daysLeft = if (expiresAt > now) {
             ((expiresAt - now) / 86400000.0 * 10).toInt() / 10.0
-        } else if (expiresAt == 0L && serverCount > 0) {
-            30.0
         } else {
             0.0
         }
-        val isActive = (expiresAt == 0L && serverCount > 0) || (expiresAt > now && serverCount > 0)
+        val isActive = expiresAt > now && serverCount > 0
         return SubscriptionInfo(
-            code = displayCode,
+            code = code,
             planName = plan,
             daysLeft = daysLeft,
             expiresAt = expiresAt,
@@ -173,17 +170,15 @@ object SubscriptionHelper {
         val tNorm = normalizeKey(target)
         if (cNorm.equals(tNorm, ignoreCase = true)) return true
 
-        val isTestCandidate = cNorm.equals("TEST", ignoreCase = true) || 
-                              cNorm.equals("ТЕСТ", ignoreCase = true) || 
-                              cNorm.equals("TECT", ignoreCase = true)
-        val isTestTarget = tNorm.equals("TEST", ignoreCase = true) || 
-                           tNorm.equals("ТЕСТ", ignoreCase = true) || 
-                           tNorm.equals("TECT", ignoreCase = true)
-        if (isTestCandidate && isTestTarget) return true
-
         val cAlnum = cNorm.filter { it.isLetterOrDigit() }
         val tAlnum = tNorm.filter { it.isLetterOrDigit() }
-        return cAlnum.isNotEmpty() && cAlnum.equals(tAlnum, ignoreCase = true)
+        if (cAlnum.isNotEmpty() && cAlnum.equals(tAlnum, ignoreCase = true)) return true
+
+        // User typed prefix of 16-character key (missed last letter, e.g. 3EX7-N6UR-5U6H-6AY instead of 3EX7-N6UR-5U6H-6AYL)
+        if (tAlnum.length >= 16 && cAlnum.length >= 14 && tAlnum.startsWith(cAlnum, ignoreCase = true)) return true
+        if (cAlnum.length >= 16 && tAlnum.length >= 14 && cAlnum.startsWith(tAlnum, ignoreCase = true)) return true
+
+        return false
     }
 
     private fun ensureSelectedServerValid() {
@@ -224,8 +219,15 @@ object SubscriptionHelper {
     }
 
     suspend fun validateSubscriptionOnline(): Boolean = withContext(Dispatchers.IO) {
-        val code = MmkvManager.decodeSettingsString(AppConfig.PREF_SUBSCRIPTION_CODE)
-        if (code == "Пользовательский ключ" || (!code.isNullOrBlank() && code.startsWith("http"))) {
+        val code = MmkvManager.decodeSettingsString(AppConfig.PREF_SUBSCRIPTION_CODE)?.trim()
+        if (code.isNullOrBlank() || code == "Импортированные узлы") {
+            // Без активированного ключа доступ закрыт, удаляем оставшиеся узлы
+            clearSubscription()
+            val allGuids = MmkvManager.decodeAllServerList()
+            allGuids.forEach { MmkvManager.removeServer(it) }
+            return@withContext false
+        }
+        if (code == "Пользовательский ключ" || code.startsWith("http")) {
             ensureSelectedServerValid()
             return@withContext true
         }
@@ -236,18 +238,6 @@ object SubscriptionHelper {
             if (json == null) {
                 // Если облако недоступно прямо сейчас — не сбрасываем конфигурацию пользователя
                 ensureSelectedServerValid()
-                return@withContext true
-            }
-
-            // Если код не задан (старая активация), но серверы есть — ничего не перезаписываем
-            if (code.isNullOrBlank()) {
-                if (MmkvManager.decodeAllServerList().isEmpty()) {
-                    val subB64 = json.optJSONObject("subscriptions_b64")?.optString("all")
-                    if (!subB64.isNullOrBlank()) {
-                        AngConfigManager.importBatchConfig(subB64, "", false)
-                        ensureSelectedServerValid()
-                    }
-                }
                 return@withContext true
             }
 
@@ -421,21 +411,6 @@ object SubscriptionHelper {
                             }
                         }
                     }
-                }
-
-                // Резервное распознавание популярных промокодов (TEST, ТЕСТ, PULSE, DEMO и др.)
-                val isTestCode = trimmed.equals("TEST", ignoreCase = true) ||
-                        trimmed.equals("ТЕСТ", ignoreCase = true) ||
-                        trimmed.equals("TECT", ignoreCase = true) ||
-                        trimmed.equals("PULSE", ignoreCase = true) ||
-                        trimmed.equals("ПУЛЬС", ignoreCase = true) ||
-                        trimmed.equals("DEMO", ignoreCase = true) ||
-                        trimmed.equals("FREE", ignoreCase = true)
-                if (!found && isTestCode) {
-                    found = true
-                    matchedDays = 7.0
-                    matchedPlan = "Промокод: ${trimmed.uppercase()}"
-                    matchedMaxDevices = 3
                 }
 
                 if (found) {

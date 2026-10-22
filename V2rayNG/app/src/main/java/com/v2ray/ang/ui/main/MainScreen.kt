@@ -3,6 +3,12 @@ package com.v2ray.ang.ui.main
 import android.content.Intent
 import com.v2ray.ang.handler.MmkvManager
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -127,10 +133,14 @@ fun MainScreen(
     }
 
     var shareTarget by remember { mutableStateOf<Triple<String, ProfileItem, Boolean>?>(null) }
+    val hasActiveSubscription = remember(groups, uiState.selectedGuid) {
+        val sub = com.v2ray.ang.handler.SubscriptionHelper.getActiveSubscription()
+        sub != null && sub.isActive
+    }
     val hasServers = remember(groups, uiState.selectedGuid) {
         com.v2ray.ang.handler.MmkvManager.decodeAllServerList().isNotEmpty()
     }
-    var showPromoFullscreen by remember { mutableStateOf(!hasServers) }
+    var showPromoFullscreen by remember { mutableStateOf(!hasActiveSubscription) }
     var enteredPromoCode by remember { mutableStateOf("") }
     var promoDialogError by remember { mutableStateOf<String?>(null) }
     var isActivatingPromo by remember { mutableStateOf(false) }
@@ -151,8 +161,8 @@ fun MainScreen(
     val lazyListStates = remember { mutableStateMapOf<String, LazyListState>() }
     val lazyGridStates = remember { mutableStateMapOf<String, LazyGridState>() }
 
-    LaunchedEffect(hasServers) {
-        if (!hasServers) {
+    LaunchedEffect(hasActiveSubscription) {
+        if (!hasActiveSubscription) {
             showPromoFullscreen = true
         } else {
             // Автоматически обновляем пул живых серверов из облака при запуске и проверяем реальный пинг
@@ -642,79 +652,130 @@ fun MainScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         var powerBtnFocused by remember { mutableStateOf(false) }
+                        var isConnectingState by remember { mutableStateOf(false) }
+                        val haptic = LocalHapticFeedback.current
+                        val powerInteractionSource = remember { MutableInteractionSource() }
+                        val isPowerPressed by powerInteractionSource.collectIsPressedAsState()
+                        val powerScale by animateFloatAsState(
+                            targetValue = if (isPowerPressed) 0.88f else 1f,
+                            label = "powerScale"
+                        )
 
-                        // МИНИМАЛИСТИЧНАЯ КНОПКА ПИТАНИЯ (С ПОДДЕРЖКОЙ ПУЛЬТА ANDROID TV)
+                        LaunchedEffect(isRunning) {
+                            isConnectingState = false
+                        }
+
+                        val onPowerClick: () -> Unit = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            if (!hasActiveSubscription && !isRunning) {
+                                showPromoFullscreen = true
+                            } else {
+                                if (!isRunning) {
+                                    isConnectingState = true
+                                }
+                                onAction(MainAction.ToggleService)
+                            }
+                        }
+
+                        // МИНИМАЛИСТИЧНАЯ КНОПКА ПИТАНИЯ (С АНИМАЦИЕЙ НАЖАТИЯ, ВИБРООТКЛИКОМ И СТАТУСОМ ЗАГРУЗКИ)
                         Box(
                             modifier = Modifier
+                                .scale(powerScale)
                                 .size(82.dp)
                                 .clip(CircleShape)
                                 .background(
-                                    if (isRunning) Color.White else Color(0xFF222222)
+                                    when {
+                                        isRunning -> Color.White
+                                        isConnectingState -> Color(0xFF2E2611)
+                                        else -> Color(0xFF222222)
+                                    }
                                 )
                                 .border(
-                                    width = if (powerBtnFocused) 3.dp else 1.dp,
+                                    width = if (powerBtnFocused || isConnectingState) 3.dp else 1.dp,
                                     color = when {
                                         powerBtnFocused -> Color(0xFF4CAF50)
                                         isRunning -> Color.White
+                                        isConnectingState -> Color(0xFFFFA000)
                                         else -> Color(0xFF333333)
                                     },
                                     shape = CircleShape
                                 )
                                 .let { mod ->
-                                    mod
-                                        .then(
-                                            androidx.compose.ui.Modifier
-                                                .onKeyEvent { keyEvent ->
-                                                    if ((keyEvent.key == Key.DirectionCenter || keyEvent.key == Key.Enter || keyEvent.key == Key.NumPadEnter) &&
-                                                        keyEvent.type == KeyEventType.KeyUp
-                                                    ) {
-                                                        if (!hasServers && !isRunning) {
-                                                            showPromoFullscreen = true
-                                                        } else {
-                                                            onAction(MainAction.ToggleService)
-                                                        }
-                                                        true
-                                                    } else false
-                                                }
-                                        )
+                                    mod.then(
+                                        androidx.compose.ui.Modifier.onKeyEvent { keyEvent ->
+                                            if ((keyEvent.key == Key.DirectionCenter || keyEvent.key == Key.Enter || keyEvent.key == Key.NumPadEnter) &&
+                                                keyEvent.type == KeyEventType.KeyUp
+                                            ) {
+                                                onPowerClick()
+                                                true
+                                            } else false
+                                        }
+                                    )
                                 }
                                 .onFocusChanged { powerBtnFocused = it.isFocused }
                                 .focusable()
-                                .clickable {
-                                    if (!hasServers && !isRunning) {
-                                        showPromoFullscreen = true
-                                    } else {
-                                        onAction(MainAction.ToggleService)
-                                    }
+                                .clickable(
+                                    interactionSource = powerInteractionSource,
+                                    indication = androidx.compose.material.ripple.rememberRipple(
+                                        bounded = true,
+                                        radius = 42.dp,
+                                        color = if (isRunning) Color.Black else Color.White
+                                    )
+                                ) {
+                                    onPowerClick()
                                 },
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                painter = if (isRunning) painterResource(R.drawable.ic_stop_24dp)
-                                else painterResource(R.drawable.ic_play_24dp),
-                                contentDescription = if (isRunning) "Отключить" else "Подключить",
-                                tint = if (isRunning) Color.Black else Color.White,
-                                modifier = Modifier.size(36.dp)
-                            )
+                            if (isConnectingState) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(36.dp),
+                                    color = Color(0xFFFFA000),
+                                    strokeWidth = 3.dp
+                                )
+                            } else {
+                                Icon(
+                                    painter = if (isRunning) painterResource(R.drawable.ic_stop_24dp)
+                                    else painterResource(R.drawable.ic_play_24dp),
+                                    contentDescription = if (isRunning) "Отключить" else "Подключить",
+                                    tint = if (isRunning) Color.Black else Color.White,
+                                    modifier = Modifier.size(36.dp)
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
 
                         // ТЕКСТ СТАТУСА
                         Text(
-                            text = if (isRunning) "ПОДКЛЮЧЕНО" else "ОТКЛЮЧЕНО",
+                            text = when {
+                                isRunning -> "ПОДКЛЮЧЕНО"
+                                isConnectingState -> "ПОДКЛЮЧЕНИЕ..."
+                                else -> "ОТКЛЮЧЕНО"
+                            },
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 16.sp,
                             letterSpacing = 1.sp,
-                            color = if (isRunning) Color.White else Color(0xFF888888)
+                            color = when {
+                                isRunning -> Color.White
+                                isConnectingState -> Color(0xFFFFA000)
+                                else -> Color(0xFF888888)
+                            }
                         )
 
                         Spacer(modifier = Modifier.height(2.dp))
 
                         Text(
-                            text = if (isRunning) "Защита активна • РФ напрямую + AdGuard DoH" else "Нажмите для подключения",
+                            text = when {
+                                isRunning -> "Защита активна • РФ напрямую + AdGuard DoH"
+                                isConnectingState -> "Настройка шифрования и проверка маршрутов..."
+                                else -> "Нажмите для подключения"
+                            },
                             fontSize = 11.sp,
-                            color = if (isRunning) Color(0xFF81C784) else Color(0xFF555555)
+                            color = when {
+                                isRunning -> Color(0xFF81C784)
+                                isConnectingState -> Color(0xFFFFD54F)
+                                else -> Color(0xFF555555)
+                            }
                         )
 
                         // 📈 ЖИВОЙ ГРАФИК СКОРОСТИ (КОГДА VPN АКТИВЕН)

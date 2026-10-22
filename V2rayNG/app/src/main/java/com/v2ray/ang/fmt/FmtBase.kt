@@ -52,7 +52,8 @@ open class FmtBase {
      * @param queryParam the query parameters to use for populating the ProfileItem
      */
     fun getItemFormQuery(config: ProfileItem, queryParam: Map<String, String>) {
-        config.network = queryParam["type"] ?: NetworkType.TCP.type
+        val rawType = queryParam["type"] ?: NetworkType.TCP.type
+        config.network = rawType.split("#")[0].split("%23")[0].trim().lowercase().ifEmpty { NetworkType.TCP.type }
         config.headerType = queryParam["headerType"]
         config.host = queryParam["host"]
         config.path = queryParam["path"]

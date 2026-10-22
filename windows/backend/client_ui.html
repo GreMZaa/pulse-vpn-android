@@ -628,7 +628,7 @@
     <div class="drawer-card">
       <div class="drawer-card-label">ВЕРСИЯ ПРИЛОЖЕНИЯ</div>
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-size: 13px; color: #888;">v0.2.25 (ПК)</span>
+        <span style="font-size: 13px; color: #888;">v0.2.26 (ПК)</span>
         <button class="btn-action" style="padding: 6px 12px; font-size: 11px; background:#333; color:#fff;" onclick="checkPCUpdates(true)">Проверить</button>
       </div>
     </div>
@@ -712,7 +712,7 @@
     }
 
     // Проверка обновлений на GitHub (как на Android)
-    const CURRENT_PC_VERSION = 'v0.2.25';
+    const CURRENT_PC_VERSION = 'v0.2.26';
 
     function compareVersions(v1, v2) {
       const p1 = (v1 || '').replace(/^v/, '').split('.').map(Number);
@@ -747,7 +747,7 @@
           }
           if (isManual) showToast(`Доступна новая версия ${latestTag}!`);
         } else {
-          if (isManual) showToast('У вас актуальная версия (v0.2.25)');
+          if (isManual) showToast('У вас актуальная версия (v0.2.26)');
         }
       } catch (e) {
         if (isManual) showToast('Ошибка при проверке обновлений');

@@ -296,6 +296,15 @@ object CoreConfigContextBuilder {
                 .filter { Utils.isPureIpAddress(it.server!!) || Utils.isValidUrl(it.server!!) }
                 .filter { !it.configType.isComplexType() }
                 .filter { it.server != primaryProfile.server || it.serverPort != primaryProfile.serverPort }
+                .filter {
+                    val net = it.network?.split("#")?.get(0)?.split("%23")?.get(0)?.trim()?.lowercase().orEmpty().ifEmpty { "tcp" }
+                    val isValidNet = net in listOf("tcp", "raw", "grpc", "ws", "httpupgrade", "splithttp", "xhttp", "kcp")
+                    if (it.security == AppConfig.REALITY) {
+                        isValidNet && !it.publicKey.isNullOrBlank() && net in listOf("tcp", "raw", "grpc", "splithttp", "xhttp")
+                    } else {
+                        isValidNet || it.configType == EConfigType.HYSTERIA2 || it.configType == EConfigType.WIREGUARD
+                    }
+                }
                 .toList()
 
             // Separate into Hysteria 2 (QUIC) and VLESS (TCP/Reality) to ensure protocol diversity
