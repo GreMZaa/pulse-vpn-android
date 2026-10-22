@@ -773,8 +773,7 @@ object CoreConfigManager {
                 sockopt.tcpKeepAliveInterval = 15
 
                 // Fragment applies to TCP TLS/Reality connections without Vision flow (vision cannot use dialerProxy)
-                val isVision = ob.streamSettings?.realitySettings?.flow?.contains("vision", ignoreCase = true) == true
-                    || ob.settings?.vnext?.any { v -> v.users?.any { u -> u.flow?.contains("vision", ignoreCase = true) == true } } == true
+                val isVision = ob.settings?.flow?.contains("vision", ignoreCase = true) == true
                 if (fragmentEnabled && !isVision && ob.protocol != "hysteria2" && ob.protocol != "wireguard") {
                     if (sockopt.dialerProxy.isNullOrEmpty()) {
                         sockopt.dialerProxy = AppConfig.TAG_FRAGMENT

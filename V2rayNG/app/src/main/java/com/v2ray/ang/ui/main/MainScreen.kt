@@ -716,11 +716,7 @@ fun MainScreen(
                                 .focusable()
                                 .clickable(
                                     interactionSource = powerInteractionSource,
-                                    indication = androidx.compose.material.ripple.rememberRipple(
-                                        bounded = true,
-                                        radius = 42.dp,
-                                        color = if (isRunning) Color.Black else Color.White
-                                    )
+                                    indication = null
                                 ) {
                                     onPowerClick()
                                 },
