@@ -479,7 +479,19 @@ def personal_subscription_link(key_code: str, mode: str = Query("all")) -> Plain
     return PlainTextResponse(content=b64_payload, headers=headers)
 
 
-CLOUD_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cloud_config.json")
+def _resolve_cloud_config_path() -> str:
+    local_app_data = os.environ.get("LOCALAPPDATA")
+    if local_app_data and getattr(sys, "frozen", False):
+        app_dir = os.path.join(local_app_data, "PulseVPN")
+        try:
+            os.makedirs(app_dir, exist_ok=True)
+            return os.path.join(app_dir, "cloud_config.json")
+        except Exception:
+            pass
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "cloud_config.json")
+
+
+CLOUD_CONFIG_PATH = _resolve_cloud_config_path()
 
 
 def get_saved_cloud_url() -> str:
@@ -522,9 +534,21 @@ def api_set_cloud_config(req: CloudConfigRequest) -> Dict[str, Any]:
 @app.get("/favicon.ico")
 def serve_favicon():
     from fastapi.responses import FileResponse
-    ico_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "windows_client", "app_icon.ico"))
-    if os.path.exists(ico_path):
-        return FileResponse(ico_path, media_type="image/x-icon")
+    candidates = [
+        os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "windows_client", "app_icon.ico")),
+        os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "app_icon.ico")),
+    ]
+    if getattr(sys, "frozen", False):
+        exe_dir = os.path.dirname(sys.executable)
+        candidates.extend([
+            os.path.join(exe_dir, "app_icon.ico"),
+            os.path.join(exe_dir, "windows_client", "app_icon.ico"),
+            os.path.join(getattr(sys, "_MEIPASS", exe_dir), "app_icon.ico"),
+            os.path.join(getattr(sys, "_MEIPASS", exe_dir), "windows_client", "app_icon.ico"),
+        ])
+    for ico_path in candidates:
+        if os.path.exists(ico_path):
+            return FileResponse(ico_path, media_type="image/x-icon")
     raise HTTPException(status_code=404)
 
 
@@ -588,10 +612,21 @@ def root_redirect():
 
 @app.get("/app", response_class=HTMLResponse)
 def app_view():
-    ui_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "client_ui.html")
-    if os.path.exists(ui_path):
-        with open(ui_path, "r", encoding="utf-8") as f:
-            return HTMLResponse(content=f.read())
+    candidates = [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "client_ui.html"),
+    ]
+    if getattr(sys, "frozen", False):
+        exe_dir = os.path.dirname(sys.executable)
+        candidates.extend([
+            os.path.join(exe_dir, "client_ui.html"),
+            os.path.join(exe_dir, "backend", "client_ui.html"),
+            os.path.join(getattr(sys, "_MEIPASS", exe_dir), "client_ui.html"),
+            os.path.join(getattr(sys, "_MEIPASS", exe_dir), "backend", "client_ui.html"),
+        ])
+    for ui_path in candidates:
+        if os.path.exists(ui_path):
+            with open(ui_path, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read())
     return HTMLResponse(content="<h1>Клиентский интерфейс не найден</h1>", status_code=404)
 
 

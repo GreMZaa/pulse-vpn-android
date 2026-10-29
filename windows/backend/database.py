@@ -1,13 +1,26 @@
 import os
 import secrets
 import sqlite3
+import sys
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
-DB_PATH = os.environ.get(
-    "VPN_DB_PATH",
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), "vpn_service.db"),
-)
+
+def _resolve_db_path() -> str:
+    if os.environ.get("VPN_DB_PATH"):
+        return os.environ["VPN_DB_PATH"]
+    local_app_data = os.environ.get("LOCALAPPDATA")
+    if local_app_data and getattr(sys, "frozen", False):
+        app_dir = os.path.join(local_app_data, "PulseVPN")
+        try:
+            os.makedirs(app_dir, exist_ok=True)
+            return os.path.join(app_dir, "vpn_service.db")
+        except Exception:
+            pass
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "vpn_service.db")
+
+
+DB_PATH = _resolve_db_path()
 
 PLANS = {
     "trial": {"id": "trial", "title": "Пробный (24 часа)", "days": 1, "price_rub": 0, "max_devices": 2},

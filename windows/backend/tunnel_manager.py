@@ -17,8 +17,30 @@ if sys.platform == "win32":
 from database import create_or_bind_device
 from vless_compiler import build_xray_auto_config, is_safe_public_host
 
+def _find_bin_dir() -> str:
+    candidates = []
+    if getattr(sys, "frozen", False):
+        exe_dir = os.path.dirname(sys.executable)
+        candidates.extend([
+            os.path.join(exe_dir, "bin"),
+            os.path.join(exe_dir, "windows_client", "bin"),
+            exe_dir,
+            os.path.join(getattr(sys, "_MEIPASS", exe_dir), "bin"),
+            os.path.join(getattr(sys, "_MEIPASS", exe_dir), "windows_client", "bin"),
+        ])
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    candidates.extend([
+        os.path.abspath(os.path.join(base_dir, "..", "windows_client", "bin")),
+        os.path.abspath(os.path.join(base_dir, "bin")),
+        os.path.abspath(os.path.join(base_dir, "windows_client", "bin")),
+    ])
+    for c in candidates:
+        if os.path.exists(os.path.join(c, "xray.exe")):
+            return c
+    return candidates[0]
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-BIN_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "windows_client", "bin"))
+BIN_DIR = _find_bin_dir()
 XRAY_EXE = os.path.join(BIN_DIR, "xray.exe")
 RUNTIME_CONFIG_PATH = os.path.join(BIN_DIR, "runtime_config.json")
 

@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ПУЛЬС // ВПН — ЗАГРУЗЧИК ДЛЯ ANDROID</title>
+  <meta name="theme-color" content="#07080A">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-void: #07080A;
+      --bg-chassis: #0D1017;
+      --bg-bay: #131822;
+      --border-edge: #232A3B;
+      --border-bright: #3D4A66;
+      --text-primary: #F0F4F8;
+      --text-secondary: #8A96AD;
+      --accent-amber: #FF5500;
+      --accent-emerald: #00F59B;
+      --accent-blue: #00A6FF;
+      --font-display: 'Chakra Petch', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-mono); -webkit-tap-highlight-color: transparent; }
+    body { background: var(--bg-void); color: var(--text-primary); padding: 16px; min-height: 100vh; display: flex; justify-content: center; }
+    .mobile-container { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 14px; }
+
+    /* HEADER */
+    .top-header {
+      background: var(--bg-chassis);
+      border: 1px solid var(--border-edge);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand-title {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--text-primary);
+    }
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      background: rgba(0, 245, 155, 0.1);
+      border: 1px solid rgba(0, 245, 155, 0.3);
+      color: var(--accent-emerald);
+    }
+    .dot-live { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-emerald); box-shadow: 0 0 8px var(--accent-emerald); }
+
+    /* HERO CARD */
+    .hero-card {
+      background: linear-gradient(180deg, #131822 0%, #0D1017 100%);
+      border: 1px solid var(--border-edge);
+      border-radius: 8px;
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--accent-amber), var(--accent-emerald));
+    }
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      letter-spacing: 0.05em;
+    }
+    .hero-desc {
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+
+    /* ACTION BUTTONS */
+    .btn-main {
+      width: 100%;
+      background: var(--accent-emerald);
+      color: #07080A;
+      border: none;
+      border-radius: 6px;
+      padding: 14px;
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 18px rgba(0, 245, 155, 0.25);
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .btn-main:active { transform: scale(0.98); }
+
+    .btn-secondary {
+      width: 100%;
+      background: var(--bg-bay);
+      color: var(--text-primary);
+      border: 1px solid var(--border-edge);
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      transition: border-color 0.2s;
+    }
+    .btn-secondary:hover { border-color: var(--accent-amber); }
+
+    /* SECTION CARDS */
+    .section-card {
+      background: var(--bg-chassis);
+      border: 1px solid var(--border-edge);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* KEY INPUT ROW */
+    .key-box {
+      background: var(--bg-void);
+      border: 1px solid var(--border-edge);
+      border-radius: 6px;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .key-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent-amber);
+      letter-spacing: 0.08em;
+    }
+    .key-input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--accent-amber);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      width: 100%;
+      text-transform: uppercase;
+    }
+
+    /* STEP LIST */
+    .step-item {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+      align-items: flex-start;
+    }
+    .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--bg-bay);
+      border: 1px solid var(--border-bright);
+      color: var(--accent-emerald);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .step-content {
+      font-size: 11px;
+      line-height: 1.45;
+      color: var(--text-primary);
+    }
+    .step-content b { color: var(--accent-emerald); }
+
+    /* APP DOWNLOAD GRID */
+    .app-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .app-card {
+      background: var(--bg-void);
+      border: 1px solid var(--border-edge);
+      border-radius: 6px;
+      padding: 12px;
+      text-decoration: none;
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: border-color 0.2s;
+    }
+    .app-card:hover { border-color: var(--accent-emerald); }
+    .app-name { font-weight: 700; font-size: 13px; }
+    .app-badge { font-size: 9px; color: var(--text-secondary); }
+
+    /* QR CODE CONTAINER */
+    .qr-card {
+      background: var(--bg-chassis);
+      border: 1px solid var(--border-edge);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+    .qr-img {
+      width: 180px;
+      height: 180px;
+      border-radius: 6px;
+      margin: 12px auto;
+      display: block;
+      background: #fff;
+      padding: 8px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--bg-bay);
+      border: 1px solid var(--accent-emerald);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      z-index: 100;
+      transition: transform 0.25s;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+  <div class="mobile-container">
+    <!-- TOP BAR -->
+    <header class="top-header">
+      <div>
+        <div class="brand-title">ПУЛЬС // ANDROID</div>
+        <div style="font-size:10px;color:var(--text-secondary);">АВТОМАТИЧЕСКИЙ ОБХОД БЕЛЫХ СПИСКОВ</div>
+      </div>
+      <div class="badge-status">
+        <span class="dot-live"></span>
+        <span id="poolStatusLbl">76+ ОНЛАЙН</span>
+      </div>
+    </header>
+
+    <!-- HERO CONNECT / PROMO GATE -->
+    <section class="hero-card" id="activationCard">
+      <div id="gateSection">
+        <div class="hero-title" style="color:var(--accent-amber);">🔒 ВХОД ПО ПРОМОКОДУ</div>
+        <div class="hero-desc">
+          Для доступа к сервису на Android требуется ввести <b>промокод</b> или выданный <b>ключ доступа</b>.
+        </div>
+        <div class="key-box">
+          <input type="text" id="promoInput" class="key-input" placeholder="ВВЕДИТЕ ПРОМОКОД ИЛИ КЛЮЧ" autocomplete="off" />
+        </div>
+        <div id="promoErrMsg" style="color:#FF2E54;font-size:11px;margin-bottom:10px;display:none;"></div>
+        <button onclick="activatePromoOnAndroid()" class="btn-main" style="background:var(--accent-amber);box-shadow:0 4px 18px rgba(255,85,0,0.3);">
+          ⚡ АКТИВИРОВАТЬ И ВОЙТИ
+        </button>
+      </div>
+
+      <div id="unlockedSection" style="display:none;">
+        <div class="hero-title" style="color:var(--accent-emerald);">🚀 ДОСТУП АКТИВЕН</div>
+        <div class="hero-desc">
+          Ваш ключ активен! Скачайте приложение <b>«ПУЛЬС // ВПН»</b> ниже или скопируйте ссылку подписки для ручного ввода:
+        </div>
+        <div class="key-box">
+          <input type="text" id="userKeyInput" class="key-input" readonly />
+        </div>
+        <div style="font-size:11px;color:var(--accent-emerald);margin-bottom:12px;font-weight:700;" id="keyPlanStatus">
+          Подписка активна
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <a href="https://github.com/GreMZaa/pulse-vpn-android/releases/download/v2.3.10-pulse/PulseVPN_2.3.10_arm64-v8a.apk" class="btn-main">
+            📥 СКАЧАТЬ ПУЛЬС ВПН ДЛЯ ANDROID
+          </a>
+          <button onclick="copySubUrl()" class="btn-secondary">
+            📋 СКОПИРОВАТЬ ССЫЛКУ ПОДПИСКИ
+          </button>
+          <button onclick="resetAndroidKey()" style="background:transparent;border:none;color:var(--text-secondary);font-size:11px;padding:6px;cursor:pointer;">
+            Сменить промокод / ключ
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION: DOWNLOAD APPS -->
+    <section class="section-card">
+      <div class="section-header">
+        <span class="section-title">01 // СКАЧАТЬ НАШЕ ПРИЛОЖЕНИЕ «ПУЛЬС ВПН»</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px;">
+        Официальный клиент <b>ПУЛЬС // ВПН</b> для Android со встроенной активацией:
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <a href="https://github.com/GreMZaa/pulse-vpn-android/releases/download/v2.3.10-pulse/PulseVPN_2.3.10_arm64-v8a.apk" class="btn-main" style="text-align:center;">
+          🔥 СКАЧАТЬ ПУЛЬС ВПН (ARM64 • Для большинства телефонов)
+        </a>
+        <a href="https://github.com/GreMZaa/pulse-vpn-android/releases/download/v2.3.10-pulse/PulseVPN_2.3.10_universal.apk" class="btn-secondary" style="text-align:center;">
+          📲 СКАЧАТЬ УНИВЕРСАЛЬНЫЙ APK (Для любых устройств)
+        </a>
+      </div>
+    </section>
+
+    <!-- SECTION: STEPS -->
+    <section class="section-card">
+      <div class="section-header">
+        <span class="section-title">02 // КАК ПОДКЛЮЧИТЬСЯ ЗА 30 СЕКУНД</span>
+      </div>
+
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          Скачайте и установите APK <b>ПУЛЬС // ВПН</b> по кнопке выше.
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          При первом запуске введите ваш промокод (например: <b>PULSE-FREE</b> или купленный ключ).
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          Приложение автоматически загрузит список быстрых серверов — выберите сервер и нажмите кнопку подключения!
+        </div>
+      </div>
+    </section>
+
+
+    <!-- SECTION: QR CODE (FOR PC VIEWERS) -->
+    <section class="qr-card">
+      <div class="section-title" style="margin-bottom:4px;">📲 ОТКРЫТЬ НА ТЕЛЕФОНЕ ПО QR-КОДУ</div>
+      <div style="font-size:10px;color:var(--text-secondary);">Наведите камеру смартфона на этот QR-код:</div>
+      <img id="qrImage" class="qr-img" alt="QR-код" src="" />
+      <div style="font-size:10px;color:var(--text-secondary);word-break:break-all;" id="pageUrlText"></div>
+    </section>
+  </div>
+
+  <div class="toast" id="toastMsg">Скопировано!</div>
+
+  <script>
+    const currentOrigin = window.location.origin;
+    let savedKey = localStorage.getItem('pulsewl_key') || '';
+    let savedSub = null;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('key')) {
+      savedKey = urlParams.get('key').toUpperCase().trim();
+      localStorage.setItem('pulsewl_key', savedKey);
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toastMsg');
+      t.innerText = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    function getSubUrl() {
+      const k = savedKey || 'DEMO';
+      return `${currentOrigin}/sub/${k}`;
+    }
+
+    function updateSubLinks() {
+      // Подготовка данных
+    }
+
+    function setUnlockedState(key, planText) {
+      savedKey = key;
+      localStorage.setItem('pulsewl_key', key);
+      document.getElementById('userKeyInput').value = key;
+      document.getElementById('keyPlanStatus').innerText = `✓ ${planText || 'Подписка активна'}`;
+      document.getElementById('gateSection').style.display = 'none';
+      document.getElementById('unlockedSection').style.display = 'block';
+      updateSubLinks();
+    }
+
+    function setLockedState(errMsg) {
+      savedKey = '';
+      localStorage.removeItem('pulsewl_key');
+      document.getElementById('gateSection').style.display = 'block';
+      document.getElementById('unlockedSection').style.display = 'none';
+      const err = document.getElementById('promoErrMsg');
+      if (errMsg) {
+        err.innerText = errMsg;
+        err.style.display = 'block';
+      } else {
+        err.style.display = 'none';
+      }
+    }
+
+    function resetAndroidKey() {
+      if (confirm('Сменить промокод/ключ?')) {
+        setLockedState();
+        document.getElementById('promoInput').value = '';
+        document.getElementById('promoInput').focus();
+      }
+    }
+
+    async function activatePromoOnAndroid() {
+      const val = document.getElementById('promoInput').value.trim().toUpperCase();
+      const err = document.getElementById('promoErrMsg');
+      if (!val) {
+        err.innerText = 'Введите промокод или ключ';
+        err.style.display = 'block';
+        return;
+      }
+      err.style.display = 'none';
+
+      // 1. Проверяем в облаке через api/cloud_state.json или локальный API
+      try {
+        let isActivated = false;
+        // Попытка 1: Проверка через локальный /api/v1/auth/promo
+        try {
+          const res = await fetch(`${currentOrigin}/api/v1/auth/promo`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              hwid: 'AND-' + Math.random().toString(16).substring(2, 10).toUpperCase(),
+              promo_code: val,
+              device_name: 'Android Phone',
+              os_type: 'android'
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setUnlockedState(data.subscription.key_code, data.subscription.plan_name);
+            showToast(data.message || 'Промокод активирован!');
+            return;
+          }
+        } catch (_) {}
+
+        // Попытка 2: Проверка через cloud_state.json (для статического HF Space)
+        try {
+          const stRes = await fetch(`api/cloud_state.json?t=${Date.now()}`);
+          if (stRes.ok) {
+            const st = await stRes.json();
+            const foundPromo = (st.promos || []).find(p => p.code === val);
+            if (foundPromo) {
+              const newKey = 'PULS-AND-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-2026';
+              setUnlockedState(newKey, `Промокод «${foundPromo.code}» (+${foundPromo.days} дн.)`);
+              showToast(`Промокод активирован! +${foundPromo.days} дней доступа.`);
+              return;
+            }
+            const foundKey = (st.keys || []).find(k => k.key_code === val);
+            if (foundKey && foundKey.is_active) {
+              setUnlockedState(foundKey.key_code, foundKey.plan_name);
+              showToast('Ключ доступа подтвержден!');
+              return;
+            }
+          }
+        } catch (_) {}
+
+        // Попытка 3: Проверка ключа через /api/v1/auth/device
+        try {
+          const devRes = await fetch(`${currentOrigin}/api/v1/auth/device`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              hwid: 'AND-' + Math.random().toString(16).substring(2, 10).toUpperCase(),
+              device_name: 'Android Phone',
+              os_type: 'android',
+              key_code: val
+            })
+          });
+          if (devRes.ok) {
+            const data = await devRes.json();
+            setUnlockedState(data.subscription.key_code, data.subscription.plan_name);
+            showToast('Ключ активирован!');
+            return;
+          }
+        } catch (_) {}
+
+        err.innerText = 'Неверный промокод или ключ. Попробуйте еще раз.';
+        err.style.display = 'block';
+      } catch (e) {
+        err.innerText = 'Ошибка соединения: ' + e.message;
+        err.style.display = 'block';
+      }
+    }
+
+    async function initAndroidState() {
+      if (savedKey) {
+        // Проверяем статус ключа
+        try {
+          const res = await fetch(`${currentOrigin}/api/v1/user/status?key_code=${encodeURIComponent(savedKey)}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.subscription && data.subscription.is_subscription_valid) {
+              setUnlockedState(savedKey, data.subscription.plan_name);
+              return;
+            }
+          }
+        } catch (_) {
+          // Если офлайн или статический хостинг, но ключ сохранён
+          setUnlockedState(savedKey, 'Подписка сохранена');
+          return;
+        }
+      }
+      setLockedState();
+    }
+
+    function copySubUrl() {
+      const url = getSubUrl();
+      navigator.clipboard.writeText(url);
+      showToast('Ссылка подписки скопирована!');
+    }
+
+    // QR код
+    const currentFullUrl = window.location.href.split('?')[0];
+    document.getElementById('pageUrlText').innerText = currentFullUrl;
+    document.getElementById('qrImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(currentFullUrl)}&margin=4`;
+
+    document.getElementById('promoInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') activatePromoOnAndroid();
+    });
+
+    initAndroidState();
+  </script>
+</body>
+</html>
